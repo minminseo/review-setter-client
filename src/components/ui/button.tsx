@@ -35,25 +35,24 @@ const buttonVariants = cva(
   }
 )
 
-function Button({
-  className,
-  variant,
-  size,
-  asChild = false,
-  ...props
-}: React.ComponentProps<"button"> &
+const Button = React.forwardRef<
+  HTMLButtonElement, // refが渡される要素の型を明示
+  React.ComponentPropsWithoutRef<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
-  }) {
+  }
+>(({ className, variant, size, asChild = false, ...props }, ref) => { // refを受け取る
   const Comp = asChild ? Slot : "button"
 
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      ref={ref} // refをComp（Slotまたはbutton）に渡す
       {...props}
     />
   )
-}
+})
+Button.displayName = "Button" // デバッグ時のコンポーネント名を維持
 
 export { Button, buttonVariants }
