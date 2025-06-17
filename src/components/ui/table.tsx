@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
-      data-slot="table-container"
+      // data-slot="table-container"
       className="relative w-full overflow-x-auto"
     >
       <table
@@ -63,17 +63,19 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   )
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+function TableHead({ className, style, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       data-slot="table-head"
       className={cn(
-        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap",
         className
       )}
+      style={style}
       {...props}
     />
   )
+
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
