@@ -1,0 +1,40 @@
+{
+    "auth": {
+        "login": "Login",
+        "signup": "Sign Up",
+        "email": "Email Address",
+        "password": "Password",
+        "timezone": "Timezone",
+        "themeColor": "Theme Color",
+        "language": "Language",
+        "noAccount": "Don't have an account? Sign up",
+        "haveAccount": "Already have an account? Login",
+        "verifyTitle": "Please enter the verification code",
+        "verifySubtitle": "A 6-digit code has been sent to {{email}}.",
+        "submit": "Submit",
+        "back": "Back"
+    },
+    "sidebar": {
+        "home": "Home",
+        "createItem": "New Item",
+        "createPattern": "New Pattern",
+        "settings": "Settings"
+    },
+    "home": {
+        "todaysReview": "Today's Review",
+        "total": "Total",
+        "unclassifiedBox": "Unclassified Items",
+        "reviewPatterns": "Review Patterns",
+        "createCategory": "Create Category"
+    },
+    "common": {
+        "create": "Create",
+        "save": "Save",
+        "delete": "Delete",
+        "close": "Close",
+        "edit": "Edit",
+        "cancel": "Cancel",
+        "loading": "Loading...",
+        "unclassified": "Unclassified"
+    }
+}

@@ -1,0 +1,124 @@
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { createCategory } from '@/api/categoryApi';
+import { useCategoryStore } from '@/store';
+import { CreateCategoryInput } from '@/types';
+
+// UI Components
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+
+// フォームのバリデーションルールをzodで定義
+const categorySchema = z.object({
+    // カテゴリー名は1文字以上必須
+    name: z.string().min(1, 'Category name is required.'),
+});
+
+// このモーダルが受け取るPropsの型定義
+type CreateCategoryModalProps = {
+    isOpen: boolean;    // モーダルが開いているかどうか
+    onClose: () => void; // モーダルを閉じるための関数
+};
+
+/**
+ * 新しいカテゴリーを作成するためのモーダルコンポーネント。
+ * ホーム画面やカテゴリー内部画面から呼び出されることを想定。
+ */
+export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProps) => {
+    // React Queryのキャッシュを操作するためのクライアント
+    const queryClient = useQueryClient();
+    // Zustandストアからカテゴリーを追加するアクションを取得
+    const addCategoryToStore = useCategoryStore((state) => state.addCategory);
+
+    // react-hook-formを使ってフォームの状態とバリデーションを管理
+    const form = useForm<z.infer<typeof categorySchema>>({
+        resolver: zodResolver(categorySchema),
+        defaultValues: { name: '' },
+    });
+
+    // カテゴリー作成APIを呼び出すためのmutationを定義
+    const mutation = useMutation({
+        mutationFn: (data: CreateCategoryInput) => createCategory(data),
+        // mutationが成功した後の処理
+        onSuccess: (newCategory) => {
+            // 1. サーバーから最新のカテゴリーリストを再取得するよう、キャッシュを無効化
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            // 2. Zustandストアにも新しいカテゴリーを追加し、UIに即時反映（楽観的更新）
+            addCategoryToStore(newCategory);
+
+            toast.success('Category created successfully!');
+            onClose(); // モーダルを閉じる
+            form.reset(); // 次回開いた時のためにフォームをリセット
+        },
+        // mutationが失敗した後の処理
+        onError: (error) => {
+            toast.error(`Failed to create category: ${error.message}`);
+        },
+    });
+
+    // フォームが送信されたときの処理
+    const onSubmit = (values: z.infer<typeof categorySchema>) => {
+        // mutationを実行してAPIを呼び出す
+        mutation.mutate(values);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>カテゴリー作成モーダル</DialogTitle>
+                    <DialogDescription>
+                        新しいカテゴリー名を入力してください。
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>カテゴリー名</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="例: プログラミング, 英語学習" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={onClose}>
+                                キャンセル
+                            </Button>
+                            <Button type="submit" disabled={mutation.isPending}>
+                                {/* mutationの実行中はボタンを無効化し、テキストを変更 */}
+                                {mutation.isPending ? '作成中...' : '作成'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
