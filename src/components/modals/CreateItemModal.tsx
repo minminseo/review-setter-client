@@ -146,6 +146,9 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
         }
     }, [isOpen, form, defaultCategoryId, defaultBoxId]);
 
+    const [isCalendarOpen, setIsCalendarOpen] = React.useState(false); //
+
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-lg">
@@ -159,7 +162,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                         <FormField name="detail" control={form.control} render={({ field }) => (<FormItem><FormLabel>詳細 (任意)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField name="learned_date" control={form.control} render={({ field }) => (
                             <FormItem className="flex flex-col"><FormLabel>学習日</FormLabel>
-                                <Popover>
+                                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}> {/* openとonOpenChangeを追加 */}
                                     <PopoverTrigger asChild>
                                         <FormControl>
                                             <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
@@ -168,7 +171,18 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                             </Button>
                                         </FormControl>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={(date) => {
+                                                field.onChange(date);
+                                                setIsCalendarOpen(false); // 日付選択後、カレンダーを閉じる
+                                            }}
+                                            disabled={(date) => date > new Date()}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
                                 </Popover><FormMessage />
                             </FormItem>
                         )} />
