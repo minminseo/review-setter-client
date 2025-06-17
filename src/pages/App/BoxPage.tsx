@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useParams/*, useNavigate*/ } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, /*CardHeader, *//*CardTitle*/ } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, /*AlertDialogTrigger*/ } from '@/components/ui/alert-dialog';
-// import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EllipsisHorizontalIcon, DocumentTextIcon, CheckCircleIcon, XCircleIcon, CogIcon, InformationCircleIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 
 // Modals
@@ -32,6 +32,8 @@ import { EditReviewDateModal } from '@/components/modals/EditReviewDateModal';
 import { BoxSummaryModal } from '@/components/modals/BoxSummaryModal';
 import { EditBoxModal } from '@/components/modals/EditBoxModal';
 import { FinishedItemsModal } from '@/components/modals/FinishedItemsModal';
+import { SelectCategoryModal } from '@/components/modals/SelectCategoryModal';
+import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
 import { cn } from '@/lib/utils';
 
 /**
@@ -40,7 +42,7 @@ import { cn } from '@/lib/utils';
  */
 const BoxPage = () => {
     const { categoryId, boxId } = useParams<{ categoryId: string; boxId: string }>();
-    // const navigate = useNavigate();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { openCreateItemModal } = useModal();
 
@@ -51,7 +53,8 @@ const BoxPage = () => {
 
     const items = itemsByBoxId[boxId || ''] || [];
     const currentCategory = categories.find(c => c.id === categoryId);
-    const currentBox = boxesByCategoryId[categoryId || '']?.find(b => b.id === boxId);
+    const boxesForTabs = boxesByCategoryId[categoryId || ''] || [];
+    const currentBox = boxesForTabs.find(b => b.id === boxId);
 
     // モーダルの開閉状態を一元管理
     const [detailItem, setDetailItem] = React.useState<ItemResponse | null>(null);
@@ -61,6 +64,14 @@ const BoxPage = () => {
     const [isSummaryModalOpen, setSummaryModalOpen] = React.useState(false);
     const [isEditBoxModalOpen, setEditBoxModalOpen] = React.useState(false);
     const [isFinishedItemsModalOpen, setFinishedItemsModalOpen] = React.useState(false);
+    const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
+    const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false);
+
+    // オーバーフロー検知用のstateとref
+    const [showMoreCategories, setShowMoreCategories] = React.useState(false);
+    const [showMoreBoxes, setShowMoreBoxes] = React.useState(false);
+    const categoryTabsRef = React.useRef<HTMLDivElement>(null);
+    const boxTabsRef = React.useRef<HTMLDivElement>(null);
 
     // --- データ取得 ---
     // 1. このボックスに属するアイテムリスト
@@ -81,7 +92,27 @@ const BoxPage = () => {
     // --- データ取得後の副作用 (ストアの更新) ---
     React.useEffect(() => { if (isSuccess && fetchedItems) setItemsForBox(boxId!, fetchedItems); }, [isSuccess, fetchedItems, boxId, setItemsForBox]);
     React.useEffect(() => { if (catSuccess && fetchedCategories) setCategories(fetchedCategories); }, [catSuccess, fetchedCategories, setCategories]);
-    React.useEffect(() => { if (boxSuccess && fetchedBoxes) setBoxesForCategory(categoryId!, fetchedBoxes); }, [boxSuccess, fetchedBoxes, categoryId, setBoxesForCategory]);
+    React.useEffect(() => { if (boxSuccess && fetchedBoxes && categoryId) setBoxesForCategory(categoryId, fetchedBoxes); }, [boxSuccess, fetchedBoxes, categoryId, setBoxesForCategory]);
+
+
+    // --- UIロジック ---
+    // タブコンテナのオーバーフローを検知する副作用
+    React.useEffect(() => {
+        const checkOverflow = () => {
+            if (categoryTabsRef.current) {
+                setShowMoreCategories(categoryTabsRef.current.scrollWidth > categoryTabsRef.current.clientWidth);
+            }
+            if (boxTabsRef.current) {
+                setShowMoreBoxes(boxTabsRef.current.scrollWidth > boxTabsRef.current.clientWidth);
+            }
+        };
+        const resizeObserver = new ResizeObserver(checkOverflow);
+        if (categoryTabsRef.current) resizeObserver.observe(categoryTabsRef.current);
+        if (boxTabsRef.current) resizeObserver.observe(boxTabsRef.current);
+        checkOverflow();
+        return () => resizeObserver.disconnect();
+    }, [categories, boxesForTabs]);
+
 
     // --- データ操作 (Mutation) ---
     const deleteMutation = useMutation({
@@ -134,6 +165,46 @@ const BoxPage = () => {
     return (
         <div className="space-y-4">
             <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: currentCategory?.name || '...', href: `/categories/${categoryId}` }, { label: currentBox?.name || 'Box' }]} />
+
+            {/* --- 上部ナビゲーションタブ --- */}
+            <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                    <span className="text-sm font-semibold shrink-0">カテゴリー:</span>
+                    <div ref={categoryTabsRef} className="overflow-hidden flex-grow">
+                        <Tabs value={categoryId} onValueChange={(value) => navigate(`/categories/${value}`)}>
+                            <TabsList>
+                                <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                {categories.map(cat => (
+                                    <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
+                    </div>
+                    {showMoreCategories && (
+                        <Button variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)} className="shrink-0 h-8 w-8">
+                            <EllipsisHorizontalIcon className="h-5 w-5" />
+                        </Button>
+                    )}
+                </div>
+                <div className="flex items-center gap-1">
+                    <span className="text-sm font-semibold shrink-0">ボックス:</span>
+                    <div ref={boxTabsRef} className="overflow-hidden flex-grow">
+                        <Tabs value={boxId} onValueChange={(value) => navigate(`/categories/${categoryId}/boxes/${value}`)}>
+                            <TabsList>
+                                {boxesForTabs.map(box => (
+                                    <TabsTrigger key={box.id} value={box.id}>{box.name}</TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
+                    </div>
+                    {showMoreBoxes && (
+                        <Button variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)} className="shrink-0 h-8 w-8">
+                            <EllipsisHorizontalIcon className="h-5 w-5" />
+                        </Button>
+                    )}
+                </div>
+            </div>
+
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">{currentBox?.name}</h1>
                 <div className="flex items-center gap-2">
@@ -175,6 +246,8 @@ const BoxPage = () => {
             {currentBox && <BoxSummaryModal isOpen={isSummaryModalOpen} onClose={() => setSummaryModalOpen(false)} box={currentBox} itemCount={items.length} />}
             {currentCategory && currentBox && <EditBoxModal isOpen={isEditBoxModalOpen} onClose={() => setEditBoxModalOpen(false)} category={currentCategory} box={currentBox} />}
             <FinishedItemsModal isOpen={isFinishedItemsModalOpen} onClose={() => setFinishedItemsModalOpen(false)} boxId={boxId} categoryId={categoryId} />
+            <SelectCategoryModal isOpen={isSelectCategoryModalOpen} onClose={() => setSelectCategoryModalOpen(false)} onSelect={(category) => navigate(`/categories/${category.id}`)} />
+            <SelectBoxModal isOpen={isSelectBoxModalOpen} onClose={() => setSelectBoxModalOpen(false)} onSelect={(box) => navigate(`/categories/${categoryId}/boxes/${box.id}`)} categoryId={categoryId} />
         </div>
     );
 };

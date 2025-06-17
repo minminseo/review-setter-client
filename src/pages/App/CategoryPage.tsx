@@ -6,7 +6,7 @@ import { fetchBoxes } from '@/api/boxApi';
 import { fetchCategories } from '@/api/categoryApi';
 import { useModal } from '@/contexts/ModalContext';
 // import { fetchItemCountByBox, fetchUnclassifiedItemCountByCategory } from '@/api/itemApi'; // サマリー表示に必要
-import { GetBoxOutput, /*GetCategoryOutput*/ } from '@/types';
+import { GetBoxOutput, GetCategoryOutput } from '@/types';
 import { UNCLASSIFIED_ID } from '@/constants';
 
 // Shared & UI Components
@@ -22,6 +22,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
 import { EditBoxModal } from '@/components/modals/EditBoxModal';
 import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
+import { SelectCategoryModal } from '@/components/modals/SelectCategoryModal';
+import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
+
 
 /**
  * 特定のカテゴリーに属するボックス一覧を表示するページ。
@@ -49,6 +52,14 @@ const CategoryPage = () => {
     const [isCreateBoxModalOpen, setCreateBoxModalOpen] = React.useState(false);
     const [editingBox, setEditingBox] = React.useState<GetBoxOutput | null>(null);
     const [isEditCategoryModalOpen, setEditCategoryModalOpen] = React.useState(false);
+    const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
+    const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false);
+
+    // オーバーフロー検知用のstateとref
+    const [showMoreCategories, setShowMoreCategories] = React.useState(false);
+    const [showMoreBoxes, setShowMoreBoxes] = React.useState(false);
+    const categoryTabsRef = React.useRef<HTMLDivElement>(null);
+    const boxTabsRef = React.useRef<HTMLDivElement>(null);
 
     // --- データ取得 ---
     // 1. 全カテゴリーリスト (上部タブ表示用)
@@ -76,6 +87,24 @@ const CategoryPage = () => {
         }
     }, [boxesSuccess, fetchedBoxes, categoryId, setBoxesForCategory]);
 
+    // --- UIロジック ---
+    // タブコンテナのオーバーフローを検知する副作用
+    React.useEffect(() => {
+        const checkOverflow = () => {
+            if (categoryTabsRef.current) {
+                setShowMoreCategories(categoryTabsRef.current.scrollWidth > categoryTabsRef.current.clientWidth);
+            }
+            if (boxTabsRef.current) {
+                setShowMoreBoxes(boxTabsRef.current.scrollWidth > boxTabsRef.current.clientWidth);
+            }
+        };
+        const resizeObserver = new ResizeObserver(checkOverflow);
+        if (categoryTabsRef.current) resizeObserver.observe(categoryTabsRef.current);
+        if (boxTabsRef.current) resizeObserver.observe(boxTabsRef.current);
+        checkOverflow();
+        return () => resizeObserver.disconnect();
+    }, [categories, boxes]);
+
 
     // パンくずリスト用のデータを生成
     const breadcrumbItems = [
@@ -91,24 +120,42 @@ const CategoryPage = () => {
 
             {/* --- 上部ナビゲーションタブ --- */}
             <div className="space-y-2">
-                {/* カテゴリー選択タブ */}
-                <Tabs value={categoryId} onValueChange={(value) => navigate(`/categories/${value}`)}>
-                    <TabsList>
-                        <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
-                        {categories.map(cat => (
-                            <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                </Tabs>
-                {/* ボックス選択タブ (未分類ページでは表示しない) */}
+                <div className="flex items-center gap-1">
+                    <span className="text-sm font-semibold shrink-0">カテゴリー:</span>
+                    <div ref={categoryTabsRef} className="overflow-hidden flex-grow">
+                        <Tabs value={categoryId} onValueChange={(value) => navigate(`/categories/${value}`)}>
+                            <TabsList>
+                                <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                {categories.map(cat => (
+                                    <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
+                    </div>
+                    {showMoreCategories && (
+                        <Button variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)} className="shrink-0 h-8 w-8">
+                            <MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                    )}
+                </div>
                 {!isUnclassifiedPage && (
-                    <Tabs onValueChange={(value) => navigate(`/categories/${categoryId}/boxes/${value}`)}>
-                        <TabsList>
-                            {boxes.map(box => (
-                                <TabsTrigger key={box.id} value={box.id}>{box.name}</TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
+                    <div className="flex items-center gap-1">
+                        <span className="text-sm font-semibold shrink-0">ボックス:</span>
+                        <div ref={boxTabsRef} className="overflow-hidden flex-grow">
+                            <Tabs onValueChange={(value) => navigate(`/categories/${categoryId}/boxes/${value}`)}>
+                                <TabsList>
+                                    {boxes.map(box => (
+                                        <TabsTrigger key={box.id} value={box.id}>{box.name}</TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
+                        </div>
+                        {showMoreBoxes && (
+                            <Button variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)} className="shrink-0 h-8 w-8">
+                                <MoreHorizontal className="h-5 w-5" />
+                            </Button>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -127,7 +174,7 @@ const CategoryPage = () => {
                         <>
                             <Button onClick={() => setCreateBoxModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />ボックス作成</Button>
                             <Button variant="ghost" size="icon" onClick={() => setEditCategoryModalOpen(true)}>
-                                {/* カテゴリー編集ボタン（歯車アイコンなど） */}
+                                <MoreHorizontal className="h-5 w-5" />
                             </Button>
                         </>
                     )}
@@ -180,6 +227,8 @@ const CategoryPage = () => {
             </div>
 
             {/* --- モーダルコンポーネント --- */}
+            <SelectCategoryModal isOpen={isSelectCategoryModalOpen} onClose={() => setSelectCategoryModalOpen(false)} onSelect={(category) => navigate(`/categories/${category.id}`)} />
+            <SelectBoxModal isOpen={isSelectBoxModalOpen} onClose={() => setSelectBoxModalOpen(false)} onSelect={(box) => navigate(`/categories/${categoryId}/boxes/${box.id}`)} categoryId={categoryId} />
             {currentCategory && <CreateBoxModal isOpen={isCreateBoxModalOpen} onClose={() => setCreateBoxModalOpen(false)} categoryId={currentCategory.id} categoryName={currentCategory.name} />}
             {editingBox && currentCategory && <EditBoxModal isOpen={!!editingBox} onClose={() => setEditingBox(null)} box={editingBox} category={currentCategory} />}
             {currentCategory && <EditCategoryModal isOpen={isEditCategoryModalOpen} onClose={() => setEditCategoryModalOpen(false)} category={currentCategory} />}

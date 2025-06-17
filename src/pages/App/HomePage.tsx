@@ -156,10 +156,6 @@ const HomePage = () => {
                                         </div>
                                     </Link>
                                     <div className="ml-4 flex items-center">
-                                        <Button size="sm" variant="outline" className="h-8" onClick={(e) => { e.stopPropagation(); setCreatingBoxInCategory(category); }}>
-                                            <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
-                                            ボックス作成
-                                        </Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
