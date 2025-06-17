@@ -10,6 +10,7 @@ import { fetchItemsByBox, deleteItem } from '@/api/itemApi';
 import { fetchCategories } from '@/api/categoryApi';
 import { fetchBoxes } from '@/api/boxApi';
 import { useItemStore, useBoxStore, useCategoryStore } from '@/store';
+import { useModal } from '@/contexts/ModalContext';
 import { ItemResponse, ReviewDateResponse } from '@/types';
 import { UNCLASSIFIED_ID } from '@/constants';
 
@@ -22,7 +23,7 @@ import { Card, CardContent, /*CardHeader, *//*CardTitle*/ } from '@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, /*AlertDialogTrigger*/ } from '@/components/ui/alert-dialog';
 // import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { EllipsisHorizontalIcon, DocumentTextIcon, CheckCircleIcon, XCircleIcon, CogIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { EllipsisHorizontalIcon, DocumentTextIcon, CheckCircleIcon, XCircleIcon, CogIcon, InformationCircleIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 
 // Modals
 import { ItemDetailModal } from '@/components/modals/ItemDetailModal';
@@ -41,6 +42,7 @@ const BoxPage = () => {
     const { categoryId, boxId } = useParams<{ categoryId: string; boxId: string }>();
     // const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const { openCreateItemModal } = useModal();
 
     // Zustandストアから各種データを取得
     const { categories, setCategories } = useCategoryStore();
@@ -135,6 +137,12 @@ const BoxPage = () => {
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">{currentBox?.name}</h1>
                 <div className="flex items-center gap-2">
+                    <Button
+                        onClick={() => openCreateItemModal({ categoryId, boxId })}
+                        variant="default"
+                    >
+                        <PlusCircleIcon className="mr-2 h-5 w-5" />復習物作成
+                    </Button>
                     <Button variant="outline" onClick={() => setFinishedItemsModalOpen(true)}>完了済みを確認</Button>
                     <Button variant="ghost" size="icon" onClick={() => setSummaryModalOpen(true)}><InformationCircleIcon className="h-5 w-5" /></Button>
                     <Button variant="ghost" size="icon" onClick={() => setEditBoxModalOpen(true)}><CogIcon className="h-5 w-5" /></Button>

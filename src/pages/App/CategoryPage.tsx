@@ -4,6 +4,7 @@ import { useQuery, /*useQueries*/ } from '@tanstack/react-query';
 import { useBoxStore, useCategoryStore } from '@/store';
 import { fetchBoxes } from '@/api/boxApi';
 import { fetchCategories } from '@/api/categoryApi';
+import { useModal } from '@/contexts/ModalContext';
 // import { fetchItemCountByBox, fetchUnclassifiedItemCountByCategory } from '@/api/itemApi'; // サマリー表示に必要
 import { GetBoxOutput, /*GetCategoryOutput*/ } from '@/types';
 import { UNCLASSIFIED_ID } from '@/constants';
@@ -28,6 +29,12 @@ import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
 const CategoryPage = () => {
     const { categoryId } = useParams<{ categoryId: string }>();
     const navigate = useNavigate();
+    const { openCreateItemModal } = useModal();
+
+    // categoryIdが存在しない場合はログイン画面にリダイレクト
+    if (!categoryId) {
+        return <div>カテゴリーIDが見つかりません</div>;
+    }
 
     // Zustandストアから必要なデータを取得
     const { categories, setCategories } = useCategoryStore();
@@ -36,7 +43,7 @@ const CategoryPage = () => {
     // 現在表示しているのが「未分類」ページかどうかを判定
     const isUnclassifiedPage = categoryId === UNCLASSIFIED_ID;
     const currentCategory = categories.find(c => c.id === categoryId);
-    const boxes = boxesByCategoryId[categoryId || ''] || [];
+    const boxes = boxesByCategoryId[categoryId] || [];
 
     // モーダルの開閉状態を管理
     const [isCreateBoxModalOpen, setCreateBoxModalOpen] = React.useState(false);
@@ -50,11 +57,12 @@ const CategoryPage = () => {
         queryFn: fetchCategories,
     });
     // 2. このカテゴリーに属するボックスリスト
-    const { data: fetchedBoxes, isSuccess: boxesSuccess, isLoading } = useQuery({
+    const { data: fetchedBoxes, isSuccess: boxesSuccess, isLoading, error: boxesError } = useQuery({
         queryKey: ['boxes', categoryId],
-        queryFn: () => fetchBoxes(categoryId!),
+        queryFn: () => fetchBoxes(categoryId),
         // categoryIdが存在し、かつ「未分類」ページでない場合のみ実行
-        enabled: !!categoryId && !isUnclassifiedPage,
+        enabled: !isUnclassifiedPage,
+        retry: false, // エラー時のリトライを無効化
     });
 
     // --- データ取得後の副作用 (ストアの更新) ---
@@ -108,19 +116,40 @@ const CategoryPage = () => {
                 <h1 className="text-2xl font-bold tracking-tight">
                     {isUnclassifiedPage ? '未分類ボックス' : `ボックス一覧: ${currentCategory?.name}`}
                 </h1>
-                {!isUnclassifiedPage && (
-                    <div className="flex items-center gap-2">
-                        <Button onClick={() => setCreateBoxModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />ボックス作成</Button>
-                        <Button variant="ghost" size="icon" onClick={() => setEditCategoryModalOpen(true)}>
-                            {/* カテゴリー編集ボタン（歯車アイコンなど） */}
-                        </Button>
-                    </div>
-                )}
+                <div className="flex items-center gap-2">
+                    <Button
+                        onClick={() => openCreateItemModal({ categoryId: isUnclassifiedPage ? undefined : categoryId })}
+                        variant="default"
+                    >
+                        <PlusCircle className="mr-2 h-4 w-4" />復習物作成
+                    </Button>
+                    {!isUnclassifiedPage && (
+                        <>
+                            <Button onClick={() => setCreateBoxModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />ボックス作成</Button>
+                            <Button variant="ghost" size="icon" onClick={() => setEditCategoryModalOpen(true)}>
+                                {/* カテゴリー編集ボタン（歯車アイコンなど） */}
+                            </Button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* --- メインコンテンツ（ボックス一覧） --- */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {isLoading ? (<CardListSkeleton count={4} />) : (
+                {isLoading ? (
+                    <CardListSkeleton count={4} />
+                ) : boxesError ? (
+                    // エラーが発生した場合
+                    <div className="col-span-full text-center py-8">
+                        <p className="text-red-500">データの読み込みに失敗しました。</p>
+                        <p className="text-sm text-muted-foreground mt-2">ページを再読み込みしてください。</p>
+                    </div>
+                ) : boxes.length === 0 && !isUnclassifiedPage ? (
+                    // データが空の場合（未分類ページ以外）
+                    <div className="col-span-full text-center py-8">
+                        <p className="text-muted-foreground">ボックスがありません。</p>
+                    </div>
+                ) : (
                     boxes.map((box) => (
                         <Card key={box.id} className="flex flex-col">
                             <CardHeader>

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/useAuth';
-import { updateUser, updatePassword } from '@/api/authApi';
+import { updateUser } from '@/api/authApi';
 import { UpdateUserInput } from '@/types';
 import { THEME_COLORS, LANGUAGES, TIMEZONES } from '@/constants';
 

@@ -14,7 +14,7 @@ import { useUserStore } from '@/store';
 export const useAuth = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { setUser, clearUser, isAuthenticated } = useUserStore();
+    const { setUser, clearUser } = useUserStore();
 
     // 認証状態の「源泉」。このクエリが成功するかどうかで、有効なセッションを持つかを判断する。
     const { data: user, isLoading: isUserLoading, isSuccess, isError } = useQuery({
@@ -22,6 +22,9 @@ export const useAuth = () => {
         queryFn: fetchUser,
         staleTime: 1000 * 60 * 30, // 30分間はキャッシュを有効にする
         retry: false, // 初回読み込みで失敗（401など）した場合、リトライしない
+        refetchOnWindowFocus: false, // ウィンドウフォーカス時の自動再取得を無効化
+        refetchOnMount: true, // マウント時は必ず実行
+        enabled: true, // クエリを有効にする
     });
 
     // useQueryのv5の作法。コールバックの代わりにuseEffectで副作用を処理する。
@@ -81,9 +84,12 @@ export const useAuth = () => {
         mutationFn: logout,
         onSuccess: () => {
             clearUser();
-            // ログアウト時は全てのクエリキャッシュをクリアする
+            // ログアウト時は全てのクエリキャッシュをクリア
             queryClient.clear();
-            navigate('/login');
+            // ユーザークエリを明示的にエラー状態にセット
+            queryClient.setQueryData(['user'], undefined);
+            // ログインページにリダイレクト
+            navigate('/login', { replace: true });
             toast.info("ログアウトしました。");
         },
         onError: (error: any) => {
@@ -92,10 +98,16 @@ export const useAuth = () => {
         }
     });
 
+    // 認証状態の判定: APIクエリが成功してユーザーデータがある場合のみ認証済みとする
+    // エラーが発生した場合は明確に未認証とする
+    const actualIsAuthenticated = isSuccess && !!user;
+    // ローディング状態: 初回読み込み中かつエラーが発生していない場合のみ
+    const actualIsUserLoading = isUserLoading;
+
     return {
         user,
-        isUserLoading,
-        isAuthenticated, // ストアから直接、認証状態を取得
+        isUserLoading: actualIsUserLoading, // ローディング状態を適切に管理
+        isAuthenticated: actualIsAuthenticated, // APIクエリの結果に基づく認証状態
         login: loginMutation.mutate,
         isLoggingIn: loginMutation.isPending,
         signup: signupMutation.mutate,

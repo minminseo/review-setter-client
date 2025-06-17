@@ -19,7 +19,6 @@ import CategoryPage from './pages/App/CategoryPage';
 import BoxPage from './pages/App/BoxPage';
 import TodaysReviewPage from './pages/App/TodaysReviewPage';
 import PatternsPage from './pages/App/PatternsPage';
-import NotFoundPage from './pages/NotFoundPage';
 
 // UIコンポーネント
 import { Toaster } from "@/components/ui/sonner";
@@ -32,15 +31,38 @@ const ProtectedRoute = () => {
   // useAuthフックが内部で/userエンドポイントを叩き、認証状態を管理する
   const { isAuthenticated, isUserLoading } = useAuth();
 
-  // 認証状態を確認中（初回アクセス時など）は、ローディング画面を表示
+  // ローディング中は現在のページを表示（リダイレクトしない）
   if (isUserLoading) {
-    // この表示はアプリケーションの要件に合わせて、よりリッチなスピナーなどに変更可能
-    return <div>Loading session...</div>;
+    return <AppLayout />;
   }
 
-  // 認証済みであれば子要素（＝メインアプリのレイアウト）を表示
-  // 未認証であればログインページへ強制的に遷移させる
-  return isAuthenticated ? <AppLayout /> : <Navigate to="/login" />;
+  // 未認証の場合のみログインページにリダイレクト
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // 認証済みの場合はメインアプリのレイアウトを表示
+  return <AppLayout />;
+};
+
+/**
+ * 認証済みユーザーが認証ページ（ログイン、サインアップ等）にアクセスした場合にホームページにリダイレクトするためのコンポーネント。
+ */
+const AuthGuard = () => {
+  const { isAuthenticated, isUserLoading } = useAuth();
+
+  // ローディング中は認証レイアウトを表示（ローディング画面は表示しない）
+  if (isUserLoading) {
+    return <AuthLayout />;
+  }
+
+  // 認証済みの場合はホームページへリダイレクト
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  // 未認証の場合は認証レイアウトを表示
+  return <AuthLayout />;
 };
 
 /**
@@ -73,8 +95,8 @@ const App = () => {
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       {/* react-router-domによるルーティング設定 */}
       <Routes>
-        {/* 認証が不要なページのルート設定 */}
-        <Route element={<AuthLayout />}>
+        {/* 認証ページのルート設定（認証済みユーザーはホームページにリダイレクト） */}
+        <Route element={<AuthGuard />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/verify" element={<VerifyPage />} />
@@ -89,8 +111,8 @@ const App = () => {
           <Route path="/today" element={<TodaysReviewPage />} />
         </Route>
 
-        {/* 上記のどのルートにも一致しない場合に表示される404ページ */}
-        <Route path="*" element={<NotFoundPage />} />
+        {/* 上記のどのルートにも一致しない場合はログインページにリダイレクト */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
       {/* sonnerによる通知（トースト）を表示するためのグローバルコンポーネント */}
