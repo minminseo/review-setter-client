@@ -1,0 +1,195 @@
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+
+// API関数
+import { createItem } from '@/api/itemApi';
+import { fetchCategories } from '@/api/categoryApi';
+import { fetchBoxes } from '@/api/boxApi';
+import { fetchPatterns } from '@/api/patternApi';
+
+// Zustandストアから、データを読み取るためのセレクターと、データを書き込むためのアクションの両方を取得
+import { useCategoryStore } from '@/store/categoryStore';
+import { useBoxStore } from '@/store/boxStore';
+import { usePatternStore } from '@/store/patternStore';
+
+// 型定義とユーティリティ
+import { cn } from '@/lib/utils';
+import { CreateItemRequest } from '@/types';
+
+// UIコンポーネント
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+
+const itemSchema = z.object({
+    name: z.string().min(1, "復習物名は必須です。"),
+    detail: z.string().optional(),
+    learned_date: z.date({ required_error: "学習日は必須です。" }),
+    category_id: z.string().uuid("正しいカテゴリーを選択してください。").nullable().optional(),
+    box_id: z.string().uuid("正しいボックスを選択してください。").nullable().optional(),
+    pattern_id: z.string().uuid("正しいパターンを選択してください。").nullable().optional(),
+});
+
+type CreateItemModalProps = {
+    isOpen: boolean;
+    onClose: () => void;
+};
+
+export const CreateItemModal = ({ isOpen, onClose }: CreateItemModalProps) => {
+    const queryClient = useQueryClient();
+    const form = useForm<z.infer<typeof itemSchema>>({
+        resolver: zodResolver(itemSchema),
+        defaultValues: { name: '', detail: '', learned_date: new Date() },
+    });
+
+    const watchedCategoryId = form.watch('category_id');
+
+    // --- Zustandストアとの連携 ---
+    // データを表示するために、各ストアから状態を読み取る
+    const { categories, setCategories } = useCategoryStore();
+    const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
+    const { patterns, setPatterns } = usePatternStore();
+
+    // watchedCategoryIdに紐づくボックスリストをストアから取得
+    const boxes = boxesByCategoryId[watchedCategoryId || ''] || [];
+
+    // --- データ取得とストアへの同期 ---
+    // 1. カテゴリー取得
+    const { data: fetchedCategories, isSuccess: categoriesSuccess } = useQuery({
+        queryKey: ['categories'],
+        queryFn: fetchCategories,
+        staleTime: 1000 * 60 * 5,
+    });
+    React.useEffect(() => {
+        if (categoriesSuccess) setCategories(fetchedCategories);
+    }, [categoriesSuccess, fetchedCategories, setCategories]);
+
+    // 2. ボックス取得（カテゴリー依存）
+    const { data: fetchedBoxes, isSuccess: boxesSuccess } = useQuery({
+        queryKey: ['boxes', watchedCategoryId],
+        queryFn: () => fetchBoxes(watchedCategoryId!),
+        enabled: !!watchedCategoryId,
+    });
+    React.useEffect(() => {
+        if (boxesSuccess && watchedCategoryId) {
+            setBoxesForCategory(watchedCategoryId, fetchedBoxes);
+        }
+    }, [boxesSuccess, fetchedBoxes, watchedCategoryId, setBoxesForCategory]);
+
+    // 3. パターン取得
+    const { data: fetchedPatterns, isSuccess: patternsSuccess } = useQuery({
+        queryKey: ['patterns'],
+        queryFn: fetchPatterns,
+        staleTime: 1000 * 60 * 5,
+    });
+    React.useEffect(() => {
+        if (patternsSuccess) setPatterns(fetchedPatterns);
+    }, [patternsSuccess, fetchedPatterns, setPatterns]);
+
+    // アイテム作成APIを呼び出すためのmutation
+    const mutation = useMutation({
+        mutationFn: (data: CreateItemRequest) => createItem(data), //　もしくは「createItem,」？？？？？？？？？？？？？
+
+        onSuccess: (_, variables) => {
+            toast.success("アイテムを作成しました！");
+            // 関連する全てのクエリを無効化し、UIを最新の状態に保つ
+            queryClient.invalidateQueries({ queryKey: ['items', variables.box_id] });
+            queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
+            queryClient.invalidateQueries({ queryKey: ['summary'] }); // サマリーデータも更新
+            onClose();
+        },
+        onError: (err) => toast.error(`作成に失敗しました: ${err.message}`),
+    });
+
+    // フォーム送信時の処理
+    const onSubmit = (values: z.infer<typeof itemSchema>) => {
+        const data: CreateItemRequest = {
+            ...values,
+            // Dateオブジェクトを "YYYY-MM-DD" 形式の文字列に変換
+            learned_date: format(values.learned_date, "yyyy-MM-dd"),
+            today: format(new Date(), "yyyy-MM-dd"),
+            // 過去の復習日を完了扱いにするかどうかのフラグ
+            is_mark_overdue_as_completed: true,
+        };
+        mutation.mutate(data);
+    };
+
+    // モーダルが閉じられた時にフォームをリセットする
+    React.useEffect(() => {
+        if (!isOpen) {
+            form.reset({ name: '', detail: '', learned_date: new Date() });
+        }
+    }, [isOpen, form]);
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>復習物作成モーダル</DialogTitle>
+                    <DialogDescription>新しい復習アイテムの情報を入力してください。</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+                        <FormField name="name" control={form.control} render={({ field }) => (<FormItem><FormLabel>復習物名</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField name="detail" control={form.control} render={({ field }) => (<FormItem><FormLabel>詳細 (任意)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField name="learned_date" control={form.control} render={({ field }) => (
+                            <FormItem className="flex flex-col"><FormLabel>学習日</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
+                                </Popover><FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField name="category_id" control={form.control} render={({ field }) => (
+                            <FormItem><FormLabel>カテゴリー</FormLabel>
+                                <Select onValueChange={(value) => { field.onChange(value); form.resetField('box_id'); }} defaultValue={field.value ?? ""}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="カテゴリーを選択 (任意)" /></SelectTrigger></FormControl>
+                                    <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                </Select><FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField name="box_id" control={form.control} render={({ field }) => (
+                            <FormItem><FormLabel>ボックス</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!watchedCategoryId}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="ボックスを選択 (任意)" /></SelectTrigger></FormControl>
+                                    <SelectContent>{boxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
+                                </Select><FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField name="pattern_id" control={form.control} render={({ field }) => (
+                            <FormItem><FormLabel>復習パターン</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value ?? ""}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="パターンを選択 (任意)" /></SelectTrigger></FormControl>
+                                    <SelectContent>{patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                                </Select><FormMessage />
+                            </FormItem>
+                        )} />
+
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                            <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? '作成中...' : '作成'}</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};

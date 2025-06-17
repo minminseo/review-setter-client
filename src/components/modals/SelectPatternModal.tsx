@@ -1,0 +1,108 @@
+import * as React from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+import { fetchPatterns } from '@/api/patternApi';
+import { usePatternStore } from '@/store';
+import { PatternResponse } from '@/types';
+
+// UI Components
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
+// import { SortDropdown } from '@/components/shared/SortDropdown'; // 必要に応じてソート機能を追加
+
+// このモーダルが親コンポーネントから受け取るPropsの型を定義
+type SelectPatternModalProps = {
+    isOpen: boolean;
+    onClose: () => void;
+    onSelect: (pattern: PatternResponse) => void;
+};
+
+/**
+ * 復習パターンを一覧表示し、ユーザーに選択させるための汎用モーダル。
+ * このモーダル自身も、データ取得のためにuseQueryを利用する。
+ */
+export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternModalProps) => {
+    // グローバルなZustandストアから、キャッシュされたパターンリストとセッター関数を取得
+    const { patterns, setPatterns } = usePatternStore();
+
+    // APIからパターンリストを取得するためのReact Query
+    const { data: fetchedPatterns, isLoading, isSuccess } = useQuery({
+        queryKey: ['patterns'],
+        queryFn: fetchPatterns,
+        staleTime: 1000 * 60 * 5, // 5分間はキャッシュを有効にする
+        enabled: isOpen,         // モーダルが開いている時にのみAPIリクエストを実行
+    });
+
+    // v5の作法に則り、useEffectでデータ取得後の副作用（ストアの更新）を処理
+    React.useEffect(() => {
+        if (isSuccess && fetchedPatterns) {
+            setPatterns(fetchedPatterns);
+        }
+    }, [isSuccess, fetchedPatterns, setPatterns]);
+
+    // ユーザーがリスト内のパターンカードをクリックしたときの処理
+    const handleSelect = (pattern: PatternResponse) => {
+        onSelect(pattern); // 親に選択されたパターンを渡す
+        onClose();      // モーダルを閉じる
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>復習パターン一覧モーダル</DialogTitle>
+                    <DialogDescription>
+                        適用する復習パターンを選択してください。
+                    </DialogDescription>
+                    {/*
+          <div className="absolute top-4 right-16">
+            <SortDropdown options={[{value: 'name_asc', label: '名前順'}]} value={'name_asc'} onValueChange={() => {}} />
+          </div>
+          */}
+                </DialogHeader>
+
+                {/* パターンリストのコンテナ */}
+                <div className="max-h-[60vh] overflow-y-auto space-y-3 p-1">
+                    {isLoading ? (
+                        <CardListSkeleton count={6} />
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {patterns.map((pattern) => (
+                                <Card
+                                    key={pattern.id}
+                                    className="cursor-pointer hover:bg-accent transition-colors"
+                                    onClick={() => handleSelect(pattern)}
+                                >
+                                    <CardHeader>
+                                        <CardTitle className="text-base">{pattern.name}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm">重み: {pattern.target_weight}</p>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            ステップ: {pattern.steps.map(s => s.interval_days).join(' | ')}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        閉じる
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
