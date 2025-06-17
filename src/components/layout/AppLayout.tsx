@@ -7,6 +7,7 @@ import Sidebar from './Sidebar';
 import { CreateItemModal } from '../modals/CreateItemModal';
 import { CreatePatternModal } from '../modals/CreatePatternModal';
 import { SettingsModal } from '../modals/SettingsModal';
+import { ModalProvider } from '@/contexts/ModalContext';
 
 /**
  * メインアプリケーション（ログイン後）の共通レイアウト。
@@ -16,14 +17,20 @@ import { SettingsModal } from '../modals/SettingsModal';
 const AppLayout = () => {
     // サイドバーから開く各モーダルの開閉状態を管理するstate
     const [isCreateItemModalOpen, setCreateItemModalOpen] = React.useState(false);
+    const [modalContext, setModalContext] = React.useState<{ categoryId?: string; boxId?: string }>({});
     const [isCreatePatternModalOpen, setCreatePatternModalOpen] = React.useState(false);
     const [isSettingsModalOpen, setSettingsModalOpen] = React.useState(false);
+
+    const openCreateItemModal = React.useCallback((context: { categoryId?: string; boxId?: string } = {}) => {
+        setModalContext(context);
+        setCreateItemModalOpen(true);
+    }, []);
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/10">
             {/* サイドバーコンポーネントに、モーダルを開くためのコールバック関数をpropsとして渡す */}
             <Sidebar
-                onOpenCreateItem={() => setCreateItemModalOpen(true)}
+                onOpenCreateItem={openCreateItemModal}
                 onOpenCreatePattern={() => setCreatePatternModalOpen(true)}
                 onOpenSettings={() => setSettingsModalOpen(true)}
             />
@@ -31,7 +38,9 @@ const AppLayout = () => {
             <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
                 <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                     {/* ここにHomePageやCategoryPageなどの、各ページコンポーネントが描画される */}
-                    <Outlet />
+                    <ModalProvider openCreateItemModal={openCreateItemModal}>
+                        <Outlet />
+                    </ModalProvider>
                 </main>
             </div>
 
@@ -40,7 +49,12 @@ const AppLayout = () => {
 
             <CreateItemModal
                 isOpen={isCreateItemModalOpen}
-                onClose={() => setCreateItemModalOpen(false)}
+                onClose={() => {
+                    setCreateItemModalOpen(false);
+                    setModalContext({});
+                }}
+                defaultCategoryId={modalContext.categoryId}
+                defaultBoxId={modalContext.boxId}
             />
 
             <CreatePatternModal

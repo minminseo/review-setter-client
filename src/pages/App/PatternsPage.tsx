@@ -19,6 +19,8 @@ import { EditPatternModal } from '@/components/modals/EditPatternModal';
  * ホームページやサイドバーから遷移してくる。
  */
 const PatternsPage = () => {
+    console.log('PatternsPage component rendered'); // デバッグ用ログ
+
     // グローバルなZustandストアからパターンリストとセッター関数を取得
     const { patterns, setPatterns } = usePatternStore();
 
@@ -28,11 +30,16 @@ const PatternsPage = () => {
     const [sortOrder, setSortOrder] = React.useState('name_asc');
 
     // APIからパターンリストを取得するためのReact Query
-    const { data: fetchedPatterns, isLoading, isSuccess } = useQuery({
+    const { data: fetchedPatterns, isLoading, isSuccess, error } = useQuery({
         queryKey: ['patterns'],
         queryFn: fetchPatterns,
         staleTime: 1000 * 60 * 5, // 5分間はキャッシュを有効にする
+        retry: 1, // 1回だけリトライする
+        refetchOnMount: true, // マウント時に必ず実行
+        refetchOnWindowFocus: false, // ウィンドウフォーカス時の再取得を無効化
     });
+
+    console.log('PatternsPage state:', { isLoading, isSuccess, error, fetchedPatterns, patterns }); // デバッグ用ログ
 
     // データ取得成功時に、Zustandストアの状態を更新する
     React.useEffect(() => {
@@ -47,13 +54,8 @@ const PatternsPage = () => {
     };
 
     // 表示用のパターンリスト。ソート状態に応じて並び替えを行う。
-    // useMemoを使うことで、sortOrderかpatternsが変わらない限り再計算されないように最適化。
-    const sortedPatterns = React.useMemo(() => {
-        const sortable = [...patterns];
-        // TODO: ここに実際のソートロジックを追加する
-        // if (sortOrder === 'name_asc') { ... }
-        return sortable;
-    }, [patterns, sortOrder]);
+    // 一時的にuseMemoを削除してテスト
+    const sortedPatterns = patterns || [];
 
 
     return (
@@ -73,11 +75,27 @@ const PatternsPage = () => {
 
             <h1 className="text-2xl font-bold tracking-tight">復習パターン一覧</h1>
 
+
+
             {/* メインコンテンツ */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {isLoading ? (
                     // ローディング中はスケルトンUIを表示
                     <CardListSkeleton count={4} />
+                ) : error ? (
+                    // エラーが発生した場合
+                    <div className="col-span-full text-center py-8">
+                        <p className="text-red-500">データの読み込みに失敗しました。</p>
+                        <p className="text-sm text-muted-foreground mt-2">エラー: {String(error)}</p>
+                        <p className="text-sm text-muted-foreground mt-2">ページを再読み込みしてください。</p>
+                    </div>
+                ) : sortedPatterns.length === 0 ? (
+                    // データが空の場合
+                    <div className="col-span-full text-center py-8">
+                        <p className="text-muted-foreground">復習パターンがありません。</p>
+                        <p className="text-xs text-gray-400 mt-2">API呼び出しが成功したが、データが空です。</p>
+                        <p className="text-xs text-gray-400 mt-1">サイドバーの「復習パターンを作成」ボタンから新しいパターンを作成できます。</p>
+                    </div>
                 ) : (
                     // 取得したパターンをループして表示
                     sortedPatterns.map((pattern) => (

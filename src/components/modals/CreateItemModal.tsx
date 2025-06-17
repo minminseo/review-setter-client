@@ -44,13 +44,21 @@ const itemSchema = z.object({
 type CreateItemModalProps = {
     isOpen: boolean;
     onClose: () => void;
+    defaultCategoryId?: string;
+    defaultBoxId?: string;
 };
 
-export const CreateItemModal = ({ isOpen, onClose }: CreateItemModalProps) => {
+export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBoxId }: CreateItemModalProps) => {
     const queryClient = useQueryClient();
     const form = useForm<z.infer<typeof itemSchema>>({
         resolver: zodResolver(itemSchema),
-        defaultValues: { name: '', detail: '', learned_date: new Date() },
+        defaultValues: {
+            name: '',
+            detail: '',
+            learned_date: new Date(),
+            category_id: defaultCategoryId || null,
+            box_id: defaultBoxId || null,
+        },
     });
 
     const watchedCategoryId = form.watch('category_id');
@@ -128,9 +136,15 @@ export const CreateItemModal = ({ isOpen, onClose }: CreateItemModalProps) => {
     // モーダルが閉じられた時にフォームをリセットする
     React.useEffect(() => {
         if (!isOpen) {
-            form.reset({ name: '', detail: '', learned_date: new Date() });
+            form.reset({
+                name: '',
+                detail: '',
+                learned_date: new Date(),
+                category_id: defaultCategoryId || null,
+                box_id: defaultBoxId || null,
+            });
         }
-    }, [isOpen, form]);
+    }, [isOpen, form, defaultCategoryId, defaultBoxId]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>

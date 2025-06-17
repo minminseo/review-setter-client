@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, PlusCircleIcon, DocumentPlusIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, PlusCircleIcon, DocumentPlusIcon, UserCircleIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from '@/hooks/useAuth';
 
 // 親コンポーネントから受け取るPropsの型を定義
 type SidebarProps = {
-    onOpenCreateItem: () => void;
+    onOpenCreateItem: (context?: { categoryId?: string; boxId?: string }) => void;
     onOpenCreatePattern: () => void;
     onOpenSettings: () => void;
 }
@@ -18,6 +19,12 @@ type SidebarProps = {
  * @param onOpenSettings - 設定モーダルを開くためのコールバック関数
  */
 const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings }: SidebarProps) => {
+    const { logout, isLoggingOut } = useAuth();
+
+    const handleLogout = () => {
+        logout();
+    };
+
     return (
         // position: fixedで画面左に固定表示
         <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
@@ -38,7 +45,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings }: Side
                     {/* 復習物作成ボタン: デザイン案の青いプラスボタンを再現 */}
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="rounded-full bg-blue-500 text-white hover:bg-blue-600 h-9 w-9" onClick={onOpenCreateItem}>
+                            <Button variant="ghost" size="icon" className="rounded-full bg-blue-500 text-white hover:bg-blue-600 h-9 w-9" onClick={() => onOpenCreateItem()}>
                                 <PlusCircleIcon className="h-6 w-6" />
                                 <span className="sr-only">復習物を追加</span>
                             </Button>
@@ -58,8 +65,26 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings }: Side
                     </Tooltip>
                 </nav>
 
-                {/* 下部の設定アイコン: mt-autoで要素をコンテナ下部に押しやる */}
+                {/* 下部の設定・ログアウトアイコン: mt-autoで要素をコンテナ下部に押しやる */}
                 <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
+                    {/* ログアウトボタン */}
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                                onClick={handleLogout}
+                                disabled={isLoggingOut}
+                            >
+                                <ArrowRightOnRectangleIcon className="h-6 w-6" />
+                                <span className="sr-only">ログアウト</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">ログアウト</TooltipContent>
+                    </Tooltip>
+
+                    {/* 設定ボタン */}
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="rounded-lg text-muted-foreground" onClick={onOpenSettings}>
