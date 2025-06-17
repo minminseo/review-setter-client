@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, /*CardHeader, *//*CardTitle*/ } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, /*AlertDialogTrigger*/ } from '@/components/ui/alert-dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; // TabsListとTabsTriggerをインポート
 import { EllipsisHorizontalIcon, DocumentTextIcon, CheckCircleIcon, XCircleIcon, CogIcon, InformationCircleIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 
 // Modals
@@ -67,12 +67,6 @@ const BoxPage = () => {
     const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
     const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false);
 
-    // オーバーフロー検知用のstateとref
-    const [showMoreCategories, setShowMoreCategories] = React.useState(false);
-    const [showMoreBoxes, setShowMoreBoxes] = React.useState(false);
-    const categoryTabsRef = React.useRef<HTMLDivElement>(null);
-    const boxTabsRef = React.useRef<HTMLDivElement>(null);
-
     // --- データ取得 ---
     // 1. このボックスに属するアイテムリスト
     const { data: fetchedItems, isLoading, isSuccess } = useQuery({
@@ -95,23 +89,13 @@ const BoxPage = () => {
     React.useEffect(() => { if (boxSuccess && fetchedBoxes && categoryId) setBoxesForCategory(categoryId, fetchedBoxes); }, [boxSuccess, fetchedBoxes, categoryId, setBoxesForCategory]);
 
 
-    // --- UIロジック ---
-    // タブコンテナのオーバーフローを検知する副作用
-    React.useEffect(() => {
-        const checkOverflow = () => {
-            if (categoryTabsRef.current) {
-                setShowMoreCategories(categoryTabsRef.current.scrollWidth > categoryTabsRef.current.clientWidth);
-            }
-            if (boxTabsRef.current) {
-                setShowMoreBoxes(boxTabsRef.current.scrollWidth > boxTabsRef.current.clientWidth);
-            }
-        };
-        const resizeObserver = new ResizeObserver(checkOverflow);
-        if (categoryTabsRef.current) resizeObserver.observe(categoryTabsRef.current);
-        if (boxTabsRef.current) resizeObserver.observe(boxTabsRef.current);
-        checkOverflow();
-        return () => resizeObserver.disconnect();
-    }, [categories, boxesForTabs]);
+    // 表示するカテゴリータブを制限
+    const displayedCategories = categories.slice(0, 7); // 最大7つまで表示
+    const hasMoreCategories = categories.length > 7; // 8つ以上あれば「その他」を表示
+
+    // 表示するボックスタブを制限
+    const displayedBoxes = boxesForTabs.slice(0, 7); // 最大7つまで表示
+    const hasMoreBoxes = boxesForTabs.length > 7; // 8つ以上あれば「その他」を表示
 
 
     // --- データ操作 (Mutation) ---
@@ -170,38 +154,38 @@ const BoxPage = () => {
             <div className="space-y-2">
                 <div className="flex items-center gap-1">
                     <span className="text-sm font-semibold shrink-0">カテゴリー:</span>
-                    <div ref={categoryTabsRef} className="overflow-hidden flex-grow">
+                    <div className="relative flex-grow"> {/* relativeとflex-growを追加 */}
                         <Tabs value={categoryId} onValueChange={(value) => navigate(`/categories/${value}`)}>
-                            <TabsList>
+                            <TabsList className="w-full"> {/* w-fullを追加 */}
                                 <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
-                                {categories.map(cat => (
+                                {displayedCategories.map(cat => (
                                     <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
                                 ))}
                             </TabsList>
                         </Tabs>
+                        {hasMoreCategories && (
+                            <Button variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)} className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0 h-8 w-8"> {/* absolute, right-0, top-1/2, -translate-y-1/2を追加 */}
+                                <EllipsisHorizontalIcon className="h-5 w-5" />
+                            </Button>
+                        )}
                     </div>
-                    {showMoreCategories && (
-                        <Button variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)} className="shrink-0 h-8 w-8">
-                            <EllipsisHorizontalIcon className="h-5 w-5" />
-                        </Button>
-                    )}
                 </div>
                 <div className="flex items-center gap-1">
                     <span className="text-sm font-semibold shrink-0">ボックス:</span>
-                    <div ref={boxTabsRef} className="overflow-hidden flex-grow">
+                    <div className="relative flex-grow"> {/* relativeとflex-growを追加 */}
                         <Tabs value={boxId} onValueChange={(value) => navigate(`/categories/${categoryId}/boxes/${value}`)}>
-                            <TabsList>
-                                {boxesForTabs.map(box => (
+                            <TabsList className="w-full"> {/* w-fullを追加 */}
+                                {displayedBoxes.map(box => (
                                     <TabsTrigger key={box.id} value={box.id}>{box.name}</TabsTrigger>
                                 ))}
                             </TabsList>
                         </Tabs>
+                        {hasMoreBoxes && (
+                            <Button variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)} className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0 h-8 w-8"> {/* absolute, right-0, top-1/2, -translate-y-1/2を追加 */}
+                                <EllipsisHorizontalIcon className="h-5 w-5" />
+                            </Button>
+                        )}
                     </div>
-                    {showMoreBoxes && (
-                        <Button variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)} className="shrink-0 h-8 w-8">
-                            <EllipsisHorizontalIcon className="h-5 w-5" />
-                        </Button>
-                    )}
                 </div>
             </div>
 

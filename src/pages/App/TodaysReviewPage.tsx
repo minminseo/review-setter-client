@@ -19,7 +19,12 @@ import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; // TabsListとTabsTriggerをインポート
+import { MoreHorizontal } from 'lucide-react'; // MoreHorizontalアイコンをインポート
+
+// Modals
+import { SelectCategoryModal } from '@/components/modals/SelectCategoryModal'; // SelectCategoryModalをインポート
+import { SelectBoxModal } from '@/components/modals/SelectBoxModal'; // SelectBoxModalをインポート
 
 /**
  * APIから取得したネストされた今日の復習データを、テーブルで表示しやすいようにフラットな配列に変換するヘルパー関数
@@ -70,6 +75,9 @@ const TodaysReviewPage = () => {
     // フィルターの状態管理
     const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
     const [selectedBox, setSelectedBox] = React.useState<string>('all');
+    const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false); //
+    const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false); //
+
 
     // --- データ取得 ---
     // 1. カテゴリー一覧 (フィルタータブ用)
@@ -147,24 +155,54 @@ const TodaysReviewPage = () => {
         else navigate(`/categories/${selectedCategory}/boxes/${selectedBox}`);
     };
 
+    // 表示するカテゴリータブを制限
+    const displayedCategories = categories.slice(0, 7); // 最大7つまで表示
+    const hasMoreCategories = categories.length > 7; // 8つ以上あれば「その他」を表示
+
+    // 表示するボックスタブを制限
+    const displayedBoxes = boxesForSelectedCategory.slice(0, 7); // 最大7つまで表示
+    const hasMoreBoxes = boxesForSelectedCategory.length > 7; // 8つ以上あれば「その他」を表示
+
+
     return (
         <div className="space-y-4">
             <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: "今日の復習" }]} />
             <div className="flex justify-between items-start">
                 <div className='space-y-2'>
-                    <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <TabsList>
-                            <TabsTrigger value="all">全て</TabsTrigger>
-                            <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
-                            {categories.map(cat => <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>)}
-                        </TabsList>
-                    </Tabs>
-                    <Tabs value={selectedBox} onValueChange={setSelectedBox}>
-                        <TabsList>
-                            <TabsTrigger value="all">全て</TabsTrigger>
-                            {boxesForSelectedCategory.map(box => <TabsTrigger key={box.box_id} value={box.box_id}>{box.box_name}</TabsTrigger>)}
-                        </TabsList>
-                    </Tabs>
+                    <div className="flex items-center gap-1"> {/* 新しいdivでラップ */}
+                        <span className="text-sm font-semibold shrink-0">カテゴリー:</span> {/* 追加 */}
+                        <div className="relative flex-grow"> {/* overflow-hiddenとflex-grow、relativeを追加 */}
+                            <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+                                <TabsList className="w-full"> {/* w-fullを追加 */}
+                                    <TabsTrigger value="all">全て</TabsTrigger>
+                                    <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                    {displayedCategories.map(cat => <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>)} {/* displayedCategoriesを使用 */}
+                                </TabsList>
+                            </Tabs>
+                        </div>
+                        {hasMoreCategories && (
+                            <Button variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)} className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0 h-8 w-8">
+                                <MoreHorizontal className="h-5 w-5" />
+                            </Button>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-1"> {/* 新しいdivでラップ */}
+                        <span className="text-sm font-semibold shrink-0">ボックス:</span> {/* 追加 */}
+                        <div className="relative flex-grow"> {/* overflow-hiddenとflex-grow、relativeを追加 */}
+                            <Tabs value={selectedBox} onValueChange={setSelectedBox}>
+                                <TabsList className="w-full"> {/* w-fullを追加 */}
+                                    <TabsTrigger value="all">全て</TabsTrigger>
+                                    {displayedBoxes.map(box => <TabsTrigger key={box.box_id} value={box.box_id}>{box.box_name}</TabsTrigger>)} {/* displayedBoxesを使用 */}
+                                </TabsList>
+                            </Tabs>
+                        </div>
+                        {hasMoreBoxes && (
+                            <Button variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)} className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0 h-8 w-8">
+                                <MoreHorizontal className="h-5 w-5" />
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <div className="flex items-center gap-4">
                     <Card>
@@ -182,6 +220,10 @@ const TodaysReviewPage = () => {
                     {isLoading ? <TableSkeleton /> : <DataTable columns={columns} data={filteredReviews} />}
                 </CardContent>
             </Card>
+
+            {/* モーダルコンポーネントを追加 */}
+            <SelectCategoryModal isOpen={isSelectCategoryModalOpen} onClose={() => setSelectCategoryModalOpen(false)} onSelect={(category) => { setSelectedCategory(category.id); setSelectCategoryModalOpen(false); }} /> {/* */}
+            <SelectBoxModal isOpen={isSelectBoxModalOpen} onClose={() => setSelectBoxModalOpen(false)} onSelect={(box) => { setSelectedBox(box.id); setSelectBoxModalOpen(false); }} categoryId={selectedCategory === 'all' ? undefined : selectedCategory} /> {/* */}
         </div>
     );
 };
