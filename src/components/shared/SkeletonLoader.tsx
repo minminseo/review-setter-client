@@ -36,7 +36,7 @@ export const TableSkeleton = ({ columns = 5, rows = 5 }) => (
  * @param count - 表示するカードの数
  */
 export const CardListSkeleton = ({ count = 3 }) => (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <>
         {Array.from({ length: count }).map((_, i) => (
             <Card key={i}>
                 <CardHeader>
@@ -47,5 +47,5 @@ export const CardListSkeleton = ({ count = 3 }) => (
                 </CardContent>
             </Card>
         ))}
-    </div>
+    </>
 );
