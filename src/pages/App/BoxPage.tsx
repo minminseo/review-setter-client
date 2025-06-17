@@ -20,10 +20,9 @@ import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, /*CardHeader, *//*CardTitle*/ } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, /*AlertDialogTrigger*/ } from '@/components/ui/alert-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; // TabsListとTabsTriggerをインポート
-import { EllipsisHorizontalIcon, DocumentTextIcon, CheckCircleIcon, XCircleIcon, CogIcon, InformationCircleIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import { EllipsisHorizontalIcon, DocumentTextIcon, CheckCircleIcon, XCircleIcon, CogIcon, InformationCircleIcon, PlusCircleIcon, PencilIcon } from '@heroicons/react/24/outline';
 
 // Modals
 import { ItemDetailModal } from '@/components/modals/ItemDetailModal';
@@ -113,23 +112,31 @@ const BoxPage = () => {
     // --- テーブルの列定義 ---
     const columns = React.useMemo<ColumnDef<ItemResponse>[]>(() => [
         { accessorKey: 'is_finished', header: '状態', cell: ({ row }) => row.original.is_finished ? <CheckCircleIcon className="h-5 w-5 text-green-500" /> : <XCircleIcon className="h-5 w-5 text-muted-foreground" /> },
-        { accessorKey: 'name', header: '復習物名', cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
         {
             id: 'actions', header: '操作', cell: ({ row }) => (
                 <div className="flex items-center">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailItem(row.original)}><DocumentTextIcon className="h-4 w-4" /></Button>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><EllipsisHorizontalIcon className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => setEditingItem(row.original)}>編集</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => setDeletingItem(row.original)}>削除</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setEditingItem(row.original)}
+                    >
+                        <PencilIcon className="h-4 w-4" />
+                    </Button>
                 </div>
             )
         },
+        { accessorKey: 'name', header: '復習物名', cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
+        {
+            id: 'detail',
+            header: '詳細',
+            cell: ({ row }) => (
+                <Button variant="ghost" size="icon" onClick={() => setDetailItem(row.original)}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                </Button>
+            )
+        },
         { accessorKey: 'learned_date', header: '学習日', cell: ({ row }) => format(new Date(row.original.learned_date), 'yyyy-MM-dd') },
-        // 復習日の列を動的に生成
         ...Array.from({ length: Math.max(0, ...items.map(i => i.review_dates.length)) }).map((_, index) => ({
             id: `review_date_${index + 1}`,
             header: `${index + 1}回目`,
@@ -144,7 +151,7 @@ const BoxPage = () => {
                 );
             },
         })),
-    ], [items, queryClient]); // itemsが変更されたら列定義も再計算
+    ], [items, queryClient]);
 
     return (
         <div className="space-y-4">
