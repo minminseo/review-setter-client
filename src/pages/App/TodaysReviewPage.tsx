@@ -205,13 +205,15 @@ const TodaysReviewPage = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Card>
-                        <CardHeader className="p-3">
-                            <CardDescription>このレイヤーの完了状況</CardDescription>
-                            <CardTitle className="text-lg">✔: {filteredReviews.filter(r => r.is_completed).length} / 残: {filteredReviews.filter(r => !r.is_completed).length}</CardTitle>
-                        </CardHeader>
-                    </Card>
-                    <Button onClick={handleNavigate}>このレイヤーへ移動</Button>
+                    <div className="flex flex-col gap-2">
+                        <Button onClick={handleNavigate}>このレイヤーへ移動</Button>
+                        <Card>
+                            <CardHeader className="p-3">
+                                <CardDescription>このレイヤーの完了状況</CardDescription>
+                                <CardTitle className="text-lg">✔: {filteredReviews.filter(r => r.is_completed).length} / 残: {filteredReviews.filter(r => !r.is_completed).length}</CardTitle>
+                            </CardHeader>
+                        </Card>
+                    </div>
                 </div>
             </div>
 

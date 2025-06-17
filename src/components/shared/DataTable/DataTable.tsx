@@ -10,7 +10,6 @@ import {
 } from '@tanstack/react-table';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DataTablePagination } from './DataTablePagination';
 
 // DataTableコンポーネントが受け取るPropsの型定義
 // TDataはテーブルに表示するデータの型、TValueはセルの値の型（ジェネリクスで柔軟性を持たせる）
@@ -91,8 +90,7 @@ export const DataTable = <TData, TValue>({
                     </TableBody>
                 </Table>
             </div>
-            {/* ページネーションUIコンポーネント */}
-            <DataTablePagination table={table} />
+
         </div>
     );
 };
