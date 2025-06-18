@@ -36,22 +36,15 @@ const CategoryPage = () => {
     const { categories, setCategories } = useCategoryStore();
     const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
 
-    // categoryIdが存在しない場合はログイン画面にリダイレクト
-    if (!categoryId) {
-        return <div>カテゴリーIDが見つかりません</div>;
-    }
-
-    // 現在表示しているのが「未分類」ページかどうかを判定
-    const isUnclassifiedPage = categoryId === UNCLASSIFIED_ID;
-    const currentCategory = categories.find(c => c.id === categoryId);
-    const boxes = boxesByCategoryId[categoryId] || [];
-
     // モーダルの開閉状態を管理
     const [isCreateBoxModalOpen, setCreateBoxModalOpen] = React.useState(false);
     const [editingBox, setEditingBox] = React.useState<GetBoxOutput | null>(null);
     const [isEditCategoryModalOpen, setEditCategoryModalOpen] = React.useState(false);
     const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
     const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false);
+
+    // 現在表示しているのが「未分類」ページかどうかを判定
+    const isUnclassifiedPage = categoryId === UNCLASSIFIED_ID;
 
     // --- データ取得 ---
     // 1. 全カテゴリーリスト (上部タブ表示用)
@@ -62,9 +55,9 @@ const CategoryPage = () => {
     // 2. このカテゴリーに属するボックスリスト
     const { data: fetchedBoxes, isSuccess: boxesSuccess, isLoading, error: boxesError } = useQuery({
         queryKey: ['boxes', categoryId],
-        queryFn: () => fetchBoxes(categoryId),
+        queryFn: () => fetchBoxes(categoryId || ''),
         // categoryIdが存在し、かつ「未分類」ページでない場合のみ実行
-        enabled: !isUnclassifiedPage,
+        enabled: !!categoryId && !isUnclassifiedPage,
         retry: false, // エラー時のリトライを無効化
     });
 
@@ -78,6 +71,14 @@ const CategoryPage = () => {
             setBoxesForCategory(categoryId, fetchedBoxes);
         }
     }, [boxesSuccess, fetchedBoxes, categoryId, setBoxesForCategory]);
+
+    // categoryIdが存在しない場合はエラーメッセージを表示
+    if (!categoryId) {
+        return <div>カテゴリーIDが見つかりません</div>;
+    }
+
+    const currentCategory = categories.find(c => c.id === categoryId);
+    const boxes = boxesByCategoryId[categoryId] || [];
 
     // パンくずリスト用のデータを生成
     const breadcrumbItems = [
