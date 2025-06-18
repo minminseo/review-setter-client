@@ -46,22 +46,11 @@ const ProtectedRoute = () => {
 };
 
 /**
- * 認証済みユーザーが認証ページ（ログイン、サインアップ等）にアクセスした場合にホームページにリダイレクトするためのコンポーネント。
+ * 認証ページ用のレイアウトコンポーネント。
+ * 認証プロセス中（ログイン→サインアップ→認証コード入力）の遷移を妨げないよう、
+ * 強制的なリダイレクトは行わない。
  */
 const AuthGuard = () => {
-  const { isAuthenticated, isUserLoading } = useAuth();
-
-  // ローディング中は認証レイアウトを表示（ローディング画面は表示しない）
-  if (isUserLoading) {
-    return <AuthLayout />;
-  }
-
-  // 認証済みの場合はホームページへリダイレクト
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-
-  // 未認証の場合は認証レイアウトを表示
   return <AuthLayout />;
 };
 
