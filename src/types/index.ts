@@ -10,7 +10,7 @@ export type Timezone = string; // Example: "Asia/Tokyo"
 
 export interface CreateUserInput {
     email: string;
-    password?: string;
+    password: string;
     timezone: Timezone;
     theme_color: ThemeColor;
     language: Language;
@@ -20,7 +20,7 @@ export interface CreateUserInput {
 
 export interface LoginUserInput {
     email: string;
-    password?: string;
+    password: string;
 }
 
 export interface LoginUserOutput {
@@ -55,7 +55,7 @@ export interface UpdateUserInput {
 export interface UpdateUserOutput extends GetUserOutput { }
 
 export interface UpdatePasswordRequest {
-    password?: string;
+    password: string;
 }
 
 
