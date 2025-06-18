@@ -124,7 +124,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
 
     // アイテム作成APIを呼び出すためのmutation
     const mutation = useMutation({
-        mutationFn: (data: CreateItemRequest) => createItem(data), //　もしくは「createItem,」？？？？？？？？？？？？？
+        mutationFn: (data: CreateItemRequest) => createItem(data),
 
         onSuccess: (_, variables) => {
             toast.success("アイテムを作成しました！");
