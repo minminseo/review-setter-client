@@ -114,15 +114,46 @@ const TodaysReviewPage = () => {
 
 
     // --- データ操作 (Mutation) ---
-    const mutationOptions = {
-        onSuccess: () => {
+    const createMutationOptions = (isCompleting: boolean) => ({
+        onSuccess: (_: any, variables: any) => {
             toast.success("状態を更新しました。");
+            
+            // 楽観的UI更新: 即座にZustandストアを更新
+            if (todaysReviews) {
+                const updatedReviews = { ...todaysReviews };
+                
+                // レビュー日の完了状態を即座に更新
+                updatedReviews.categories.forEach(category => {
+                    category.boxes.forEach(box => {
+                        box.review_dates.forEach(reviewDate => {
+                            if (reviewDate.review_date_id === variables.reviewDateId) {
+                                reviewDate.is_completed = isCompleting;
+                            }
+                        });
+                    });
+                    category.unclassified_daily_review_dates_by_category.forEach(reviewDate => {
+                        if (reviewDate.review_date_id === variables.reviewDateId) {
+                            reviewDate.is_completed = isCompleting;
+                        }
+                    });
+                });
+                updatedReviews.daily_review_dates_grouped_by_user.forEach(reviewDate => {
+                    if (reviewDate.review_date_id === variables.reviewDateId) {
+                        reviewDate.is_completed = isCompleting;
+                    }
+                });
+                
+                setTodaysReviews(updatedReviews);
+            }
+            
+            // バックグラウンドでデータ再取得
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
         },
         onError: (err: any) => toast.error(`更新に失敗しました: ${err.message}`),
-    };
-    const completeMutation = useMutation({ mutationFn: completeReviewDate, ...mutationOptions });
-    const incompleteMutation = useMutation({ mutationFn: incompleteReviewDate, ...mutationOptions });
+    });
+    
+    const completeMutation = useMutation({ mutationFn: completeReviewDate, ...createMutationOptions(true) });
+    const incompleteMutation = useMutation({ mutationFn: incompleteReviewDate, ...createMutationOptions(false) });
 
     // --- テーブルの列定義 ---
     const columns = React.useMemo<ColumnDef<DailyReviewDate>[]>(() => [

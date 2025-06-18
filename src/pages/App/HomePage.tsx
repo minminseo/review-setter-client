@@ -126,7 +126,7 @@ const HomePage = () => {
             {/* 右ペイン */}
             <div className="grid auto-rows-max items-start gap-4 md:gap-8 xl:col-span-2">
                 <div className="grid gap-4 sm:grid-cols-2">
-                    <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate(`/categories/${UNCLASSIFIED_ID}`)}>
+                    <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate(`/categories/${UNCLASSIFIED_ID}/boxes/${UNCLASSIFIED_ID}`)}>
                         <CardHeader><CardTitle>未分類復習物ボックス</CardTitle></CardHeader>
                         <CardContent>
                             {isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold">総数: {unclassifiedItemCountQuery.data?.count ?? 0}</p>}

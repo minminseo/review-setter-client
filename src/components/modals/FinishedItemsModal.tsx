@@ -5,7 +5,10 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 // API関数
-import { fetchFinishedItemsByBox, markItemAsUnfinished } from '@/api/itemApi';
+import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate } from '@/api/itemApi';
+import { UNCLASSIFIED_ID } from '@/constants';
+// Zustandストア
+import { useItemStore } from '@/store';
 // 型定義
 import { ItemResponse } from '@/types';
 // UIコンポーネント
@@ -28,15 +31,26 @@ type FinishedItemsModalProps = {
  */
 export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: FinishedItemsModalProps) => {
     const queryClient = useQueryClient();
+    const { addItemToBox } = useItemStore();
     // 詳細表示モーダルで表示するアイテムを管理するstate
     const [detailItem, setDetailItem] = React.useState<ItemResponse | null>(null);
 
     const queryKey = ['finishedItems', { boxId, categoryId }];
     const queryFn = () => {
         if (boxId) {
+            // 未分類ボックスの場合は異なるAPIを使用
+            if (boxId === UNCLASSIFIED_ID) {
+                if (categoryId === UNCLASSIFIED_ID) {
+                    // ホーム画面からの真の未分類（category_id、box_id両方NULL）
+                    return fetchFinishedUnclassifiedItems();
+                } else {
+                    // カテゴリー内の未分類（category_id設定、box_id NULL）
+                    return fetchFinishedUnclassifiedItemsByCategory(categoryId!);
+                }
+            }
+            // 通常のボックス
             return fetchFinishedItemsByBox(boxId);
         }
-        // TODO: カテゴリーIDや未分類全般の完了済みアイテムを取得するAPI関数もここに追加する
         return Promise.resolve([]);
     };
 
@@ -58,26 +72,88 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             };
             return markItemAsUnfinished(unfinishData);
         },
-        onSuccess: (_, variables) => {
+        onSuccess: (updatedItem, variables) => {
             toast.success(`「${variables.name}」の復習を再開しました。`);
+            
+            // 楽観的UI更新: 即座にZustandストアに復習アイテムを追加
+            if (variables.box_id) {
+                // is_finishedをfalseに設定して、通常のアイテムとして追加
+                const reactivatedItem = { ...updatedItem, is_finished: false };
+                addItemToBox(variables.box_id, reactivatedItem);
+            }
+            
+            // バックグラウンドでデータ再取得
             queryClient.invalidateQueries({ queryKey: queryKey });
             queryClient.invalidateQueries({ queryKey: ['items', variables.box_id] });
+            queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
+            
             onClose();
         },
         onError: (err: any) => toast.error(`処理に失敗しました: ${err.message}`),
+    });
+
+    const incompleteReviewMutation = useMutation({
+        mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number }) => 
+            incompleteReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
+        onSuccess: () => {
+            toast.success("復習を未完了に戻しました。");
+            queryClient.invalidateQueries({ queryKey: queryKey });
+            queryClient.invalidateQueries({ queryKey: ['items', boxId] });
+            queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
+            onClose();
+        },
+        onError: (err) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
     });
 
     const columns = React.useMemo<ColumnDef<ItemResponse>[]>(() => [
         {
             id: 'actions',
             header: '操作',
-            cell: ({ row }) => (
-                <div className='flex gap-2'>
-                    <Button size="sm" variant="outline" onClick={() => unfinishMutation.mutate(row.original)}>
-                        再開
-                    </Button>
-                </div>
-            ),
+            cell: ({ row }) => {
+                const today = format(new Date(), 'yyyy-MM-dd');
+                const item = row.original;
+                
+                // 最後の復習日を取得
+                const lastReviewDate = item.review_dates[item.review_dates.length - 1];
+                const isLastReviewDateToday = lastReviewDate && 
+                    format(new Date(lastReviewDate.scheduled_date), 'yyyy-MM-dd') === today;
+                
+                // すべての復習日が完了しているかチェック
+                const hasIncompleteReviewDate = item.review_dates.some(rd => !rd.is_completed);
+                
+                return (
+                    <div className='flex gap-2'>
+                        {/* 最後の復習日が今日の場合は「取消」ボタンを表示 */}
+                        {isLastReviewDateToday && (
+                            <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="text-gray-600 border-gray-400"
+                                onClick={() => incompleteReviewMutation.mutate({
+                                    itemId: item.item_id,
+                                    reviewDateId: lastReviewDate.review_date_id,
+                                    stepNumber: lastReviewDate.step_number
+                                })}
+                                disabled={incompleteReviewMutation.isPending}
+                            >
+                                取消
+                            </Button>
+                        )}
+                        
+                        {/* 未完了の復習日がある場合は「再開」ボタンを表示 */}
+                        {hasIncompleteReviewDate && (
+                            <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => unfinishMutation.mutate(item)}
+                                disabled={unfinishMutation.isPending}
+                            >
+                                再開
+                            </Button>
+                        )}
+                    </div>
+                );
+            },
         },
         {
             accessorKey: 'name',
@@ -97,7 +173,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             header: '学習日',
             cell: ({ row }) => format(new Date(row.original.learned_date), 'yyyy-MM-dd'),
         },
-    ], [unfinishMutation]);
+    ], [unfinishMutation, incompleteReviewMutation]);
 
     return (
         <>

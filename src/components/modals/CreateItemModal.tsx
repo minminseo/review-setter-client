@@ -62,6 +62,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     });
 
     const watchedCategoryId = form.watch('category_id');
+    const watchedBoxId = form.watch('box_id');
 
     // --- Zustandストアとの連携 ---
     // データを表示するために、各ストアから状態を読み取る
@@ -71,6 +72,12 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
 
     // watchedCategoryIdに紐づくボックスリストをストアから取得
     const boxes = boxesByCategoryId[watchedCategoryId || ''] || [];
+    
+    // 選択されたボックスの情報を取得
+    const selectedBox = watchedBoxId ? boxes.find(box => box.id === watchedBoxId) : null;
+    
+    // ボックスが選択されている場合は復習パターン選択を無効化
+    const isPatternDisabled = !!selectedBox;
 
     // --- データ取得とストアへの同期 ---
     // 1. カテゴリー取得
@@ -104,6 +111,16 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     React.useEffect(() => {
         if (patternsSuccess) setPatterns(fetchedPatterns);
     }, [patternsSuccess, fetchedPatterns, setPatterns]);
+
+    // ボックス選択時に自動で復習パターンを設定する
+    React.useEffect(() => {
+        if (selectedBox && selectedBox.pattern_id) {
+            form.setValue('pattern_id', selectedBox.pattern_id);
+        } else if (!selectedBox) {
+            // ボックスが選択解除された場合は復習パターンをクリア
+            form.setValue('pattern_id', null);
+        }
+    }, [selectedBox, form]);
 
     // アイテム作成APIを呼び出すためのmutation
     const mutation = useMutation({
@@ -203,11 +220,30 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                             </FormItem>
                         )} />
                         <FormField name="pattern_id" control={form.control} render={({ field }) => (
-                            <FormItem><FormLabel>復習パターン</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value ?? ""}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="パターンを選択 (任意)" /></SelectTrigger></FormControl>
-                                    <SelectContent>{patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-                                </Select><FormMessage />
+                            <FormItem>
+                                <FormLabel>復習パターン{isPatternDisabled && " (ボックスの設定を使用)"}</FormLabel>
+                                <Select 
+                                    onValueChange={field.onChange} 
+                                    value={field.value ?? ""} 
+                                    disabled={isPatternDisabled}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger className={isPatternDisabled ? "bg-muted text-muted-foreground" : ""}>
+                                            <SelectValue 
+                                                placeholder={isPatternDisabled ? 
+                                                    (selectedBox?.pattern_id ? 
+                                                        patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" 
+                                                        : "未設定") 
+                                                    : "パターンを選択 (任意)"
+                                                } 
+                                            />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
                             </FormItem>
                         )} />
 
