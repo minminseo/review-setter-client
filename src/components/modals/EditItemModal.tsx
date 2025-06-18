@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
+import * as React from 'react';
+
 // API関数
 import { updateItem, deleteItem, markItemAsFinished } from '@/api/itemApi';
 import { fetchCategories } from '@/api/categoryApi';
@@ -47,7 +49,7 @@ type EditItemModalProps = {
 
 export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => {
     const queryClient = useQueryClient();
-    const { updateItemInBox, removeItemFromBox } = useItemStore();
+    const { updateItemInBox, removeItemFromBox, addItemToBox } = useItemStore();
 
     const form = useForm<z.infer<typeof itemSchema>>({
         resolver: zodResolver(itemSchema),
@@ -62,6 +64,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     });
 
     const watchedCategoryId = form.watch('category_id');
+    const watchedBoxId = form.watch('box_id');
 
     // データ取得: フォームの選択肢を生成するために必要
     const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories, staleTime: Infinity });
@@ -72,15 +75,113 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     });
     const { data: patterns = [] } = useQuery({ queryKey: ['patterns'], queryFn: fetchPatterns, staleTime: Infinity });
 
+    // 復習パターンの間隔配列が完全に一致するかを判定する関数
+    const arePatternIntervalsEqual = (pattern1: any, pattern2: any): boolean => {
+        if (!pattern1 || !pattern2) return false;
+        if (!pattern1.steps || !pattern2.steps) return false;
+        
+        const intervals1 = pattern1.steps
+            .sort((a: any, b: any) => a.step_number - b.step_number)
+            .map((step: any) => step.interval_days);
+        const intervals2 = pattern2.steps
+            .sort((a: any, b: any) => a.step_number - b.step_number)
+            .map((step: any) => step.interval_days);
+            
+        if (intervals1.length !== intervals2.length) return false;
+        return intervals1.every((interval: number, index: number) => interval === intervals2[index]);
+    };
+
+    // 現在のアイテムの復習パターンと一致するボックスのみをフィルタリング
+    const filteredBoxes = React.useMemo(() => {
+        if (!item.pattern_id) return boxes; // パターンが未設定の場合は全ボックス表示
+        
+        const currentPattern = patterns.find(p => p.id === item.pattern_id);
+        if (!currentPattern) return boxes;
+        
+        return boxes.filter(box => {
+            if (!box.pattern_id) return false; // パターンが未設定のボックスは除外
+            const boxPattern = patterns.find(p => p.id === box.pattern_id);
+            return arePatternIntervalsEqual(currentPattern, boxPattern);
+        });
+    }, [boxes, patterns, item.pattern_id]);
+
+    // 選択されたボックスの情報を取得（フィルタリング後のリストから）
+    const selectedBox = watchedBoxId ? filteredBoxes.find(box => box.id === watchedBoxId) : null;
+    
+    // ボックスが選択されている場合は復習パターン選択を無効化
+    const isPatternDisabled = !!selectedBox;
+
+    // ボックス選択時に自動で復習パターンを設定する
+    React.useEffect(() => {
+        if (selectedBox && selectedBox.pattern_id) {
+            form.setValue('pattern_id', selectedBox.pattern_id);
+        } else if (!selectedBox) {
+            // ボックスが選択解除された場合は復習パターンをクリア
+            form.setValue('pattern_id', null);
+        }
+    }, [selectedBox, form]);
+
     const updateMutation = useMutation({
         mutationFn: (data: UpdateItemRequest) => updateItem({ itemId: item.item_id, data }),
-        onSuccess: (updatedItem) => {
+        onSuccess: (updatedItem, variables) => {
             toast.success("アイテムを更新しました！");
-            queryClient.invalidateQueries({ queryKey: ['items', item.box_id] });
-            // box_idが存在する場合のみ、ストアを更新する
-            if (item.box_id) {
-                updateItemInBox(item.box_id, updatedItem);
+            
+            const oldBoxId = item.box_id;
+            const newBoxId = variables.box_id;
+            
+            // 1. Zustandストアを即座にサーバーレスポンスで更新
+            if (oldBoxId !== newBoxId) {
+                // ボックス間移動の場合
+                if (oldBoxId) {
+                    removeItemFromBox(oldBoxId, item.item_id);
+                }
+                if (newBoxId) {
+                    addItemToBox(newBoxId, updatedItem);
+                }
+            } else {
+                // 同じボックス内での更新
+                if (oldBoxId) {
+                    updateItemInBox(oldBoxId, updatedItem);
+                }
             }
+            
+            // 2. TanStack Queryのキャッシュも直接更新
+            if (oldBoxId) {
+                // 元のボックスのキャッシュからアイテムを削除
+                queryClient.setQueryData(['items', oldBoxId, item.category_id], (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return oldData.filter((item: any) => item.item_id !== updatedItem.item_id);
+                });
+            }
+            
+            if (newBoxId && newBoxId !== oldBoxId) {
+                // 新しいボックスのキャッシュにアイテムを追加
+                queryClient.setQueryData(['items', newBoxId, variables.category_id], (oldData: any) => {
+                    if (!oldData) return [updatedItem];
+                    // 既存アイテムに追加、または既存アイテムを更新
+                    const existingIndex = oldData.findIndex((item: any) => item.item_id === updatedItem.item_id);
+                    if (existingIndex >= 0) {
+                        const newData = [...oldData];
+                        newData[existingIndex] = updatedItem;
+                        return newData;
+                    }
+                    return [...oldData, updatedItem];
+                });
+            } else if (oldBoxId) {
+                // 同じボックス内での更新
+                queryClient.setQueryData(['items', oldBoxId, item.category_id], (oldData: any) => {
+                    if (!oldData) return [updatedItem];
+                    return oldData.map((item: any) => 
+                        item.item_id === updatedItem.item_id ? updatedItem : item
+                    );
+                });
+            }
+            
+            // 3. 関連データの無効化
+            queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
+            queryClient.invalidateQueries({ queryKey: ['summary'] });
+            queryClient.invalidateQueries({ queryKey: ['finishedItems'] });
+            
             onClose();
         },
         onError: (err: any) => toast.error(`更新に失敗しました: ${err.message}`),
@@ -174,19 +275,54 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                             </FormItem>
                         )} />
                         <FormField name="box_id" control={form.control} render={({ field }) => (
-                            <FormItem><FormLabel>ボックス</FormLabel>
+                            <FormItem>
+                                <FormLabel>
+                                    ボックス
+                                    {item.pattern_id && filteredBoxes.length < boxes.length && (
+                                        <span className="text-xs text-muted-foreground ml-1">
+                                            (同じ復習パターンのボックスのみ)
+                                        </span>
+                                    )}
+                                </FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!watchedCategoryId}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="ボックスを選択 (任意)" /></SelectTrigger></FormControl>
-                                    <SelectContent>{boxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
-                                </Select><FormMessage />
+                                    <SelectContent>
+                                        {filteredBoxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                {item.pattern_id && filteredBoxes.length === 0 && (
+                                    <p className="text-xs text-orange-600">
+                                        この復習パターンと一致するボックスがありません
+                                    </p>
+                                )}
                             </FormItem>
                         )} />
                         <FormField name="pattern_id" control={form.control} render={({ field }) => (
-                            <FormItem><FormLabel>復習パターン</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="パターンを選択 (任意)" /></SelectTrigger></FormControl>
-                                    <SelectContent>{patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-                                </Select><FormMessage />
+                            <FormItem>
+                                <FormLabel>復習パターン{isPatternDisabled && " (ボックスの設定を使用)"}</FormLabel>
+                                <Select 
+                                    onValueChange={field.onChange} 
+                                    value={field.value ?? ""} 
+                                    disabled={isPatternDisabled}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger className={isPatternDisabled ? "bg-muted text-muted-foreground" : ""}>
+                                            <SelectValue 
+                                                placeholder={isPatternDisabled ? 
+                                                    (selectedBox?.pattern_id ? 
+                                                        patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" 
+                                                        : "未設定") 
+                                                    : "パターンを選択 (任意)"
+                                                } 
+                                            />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
                             </FormItem>
                         )} />
                         <DialogFooter className="justify-between">

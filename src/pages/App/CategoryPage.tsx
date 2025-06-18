@@ -4,9 +4,8 @@ import { useQuery, /*useQueries*/ } from '@tanstack/react-query';
 import { useBoxStore, useCategoryStore } from '@/store';
 import { fetchBoxes } from '@/api/boxApi';
 import { fetchCategories } from '@/api/categoryApi';
-import { useModal } from '@/contexts/ModalContext';
 // import { fetchItemCountByBox, fetchUnclassifiedItemCountByCategory } from '@/api/itemApi'; // サマリー表示に必要
-import { GetBoxOutput, GetCategoryOutput } from '@/types';
+import { GetBoxOutput } from '@/types';
 import { UNCLASSIFIED_ID } from '@/constants';
 
 // Shared & UI Components
@@ -32,16 +31,15 @@ import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
 const CategoryPage = () => {
     const { categoryId } = useParams<{ categoryId: string }>();
     const navigate = useNavigate();
-    const { openCreateItemModal } = useModal();
+
+    // Zustandストアから必要なデータを取得
+    const { categories, setCategories } = useCategoryStore();
+    const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
 
     // categoryIdが存在しない場合はログイン画面にリダイレクト
     if (!categoryId) {
         return <div>カテゴリーIDが見つかりません</div>;
     }
-
-    // Zustandストアから必要なデータを取得
-    const { categories, setCategories } = useCategoryStore();
-    const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
 
     // 現在表示しているのが「未分類」ページかどうかを判定
     const isUnclassifiedPage = categoryId === UNCLASSIFIED_ID;
@@ -150,20 +148,23 @@ const CategoryPage = () => {
                 )}
             </div>
 
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">
-                    {isUnclassifiedPage ? '未分類ボックス' : `ボックス一覧: ${currentCategory?.name}`}
-                </h1>
-                <div className="flex items-center gap-2">
+            <div className="flex items-center justify-end w-full py-2">
+                {!isUnclassifiedPage && (
                     <Button
-                        onClick={() => openCreateItemModal({ categoryId: isUnclassifiedPage ? undefined : categoryId })}
-                        variant="default"
+                        variant="outline"
+                        className="mr-2"
+                        onClick={() => navigate(`/categories/${categoryId}/boxes/unclassified`)}
                     >
-                        <PlusCircle className="mr-2 h-4 w-4" />復習物作成
+                        未分類ボックス
                     </Button>
+                )}
+                <div className="flex items-center gap-2">
                     {!isUnclassifiedPage && (
                         <>
-                            <Button onClick={() => setCreateBoxModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />ボックス作成</Button>
+                            <Button onClick={() => setCreateBoxModalOpen(true)}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                ボックス作成
+                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => setEditCategoryModalOpen(true)}>
                                 <MoreHorizontal className="h-5 w-5" />
                             </Button>

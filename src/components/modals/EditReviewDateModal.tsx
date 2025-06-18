@@ -22,9 +22,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 
-// フォームのバリデーションルール
-const formSchema = z.object({
-    request_scheduled_date: z.date({ required_error: "新しい復習日の選択は必須です。" }),
+// フォームのバリデーションルール（動的に生成）
+const createFormSchema = (initialScheduledDate: string) => z.object({
+    request_scheduled_date: z.date({ required_error: "新しい復習日の選択は必須です。" })
+        .refine((date) => {
+            const today = new Date(new Date().setHours(0, 0, 0, 0));
+            const initialDate = new Date(initialScheduledDate);
+            return date < today && date >= initialDate;
+        }, {
+            message: "復習日は今日より前、かつ最初の復習予定日以降の日付である必要があります。"
+        }),
     is_mark_overdue_as_completed: z.boolean(),
 });
 
@@ -43,7 +50,13 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
     // useItemStoreからupdateItemInBoxアクションを取得
     const { updateItemInBox } = useItemStore();
 
-    const form = useForm<z.infer<typeof formSchema>>({
+    // 動的にバリデーションスキーマを生成
+    const formSchema = React.useMemo(() => {
+        if (!data) return createFormSchema(new Date().toISOString());
+        return createFormSchema(data.reviewDate.initial_scheduled_date);
+    }, [data]);
+
+    const form = useForm<z.infer<ReturnType<typeof createFormSchema>>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             is_mark_overdue_as_completed: true,
@@ -73,7 +86,7 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
     });
 
     // onSubmitハンドラのロジックは変更なし
-    const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const onSubmit = (values: z.infer<ReturnType<typeof createFormSchema>>) => {
         if (!data) return;
         const currentPattern = patterns.find(p => p.id === data.item.pattern_id);
         if (!currentPattern) {
@@ -121,6 +134,9 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">現在の復習日</p>
                             <p className="font-semibold">{format(new Date(data.reviewDate.scheduled_date), "yyyy-MM-dd")}</p>
+                            <p className="text-xs text-muted-foreground">
+                                変更可能範囲: {format(new Date(data.reviewDate.initial_scheduled_date), "yyyy-MM-dd")} ～ 昨日まで
+                            </p>
                         </div>
 
                         <FormField name="request_scheduled_date" control={form.control} render={({ field }) => (
@@ -136,7 +152,18 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                                         </FormControl>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                        <Calendar 
+                                            mode="single" 
+                                            selected={field.value} 
+                                            onSelect={field.onChange} 
+                                            disabled={(date) => {
+                                                const today = new Date(new Date().setHours(0, 0, 0, 0));
+                                                const initialDate = new Date(data.reviewDate.initial_scheduled_date);
+                                                // 今日以降、またはinitial_scheduled_dateより前の日付は無効
+                                                return date >= today || date < initialDate;
+                                            }}
+                                            initialFocus 
+                                        />
                                     </PopoverContent>
                                 </Popover>
                                 <FormMessage />
