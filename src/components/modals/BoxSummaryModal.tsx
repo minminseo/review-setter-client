@@ -34,21 +34,13 @@ export const BoxSummaryModal = ({ isOpen, onClose, box, itemCount }: BoxSummaryM
     const { categories } = useCategoryStore();
     const { patterns, setPatterns } = usePatternStore();
 
-    // 表示対象のボックスが存在しない場合は、何もレンダリングしない
-    if (!box) {
-        return null;
-    }
-
-    // ボックスIDに紐づくカテゴリー名をストアから検索
-    const categoryName = categories.find(c => c.id === box.category_id)?.name || 'N/A';
-
     // パターンIDに紐づくパターン情報を取得するためのクエリ
     // パターン情報は頻繁に変わるものではないため、キャッシュを長めに設定
     const { data: fetchedPatterns, isSuccess } = useQuery({
         queryKey: ['patterns'],
         queryFn: fetchPatterns,
         staleTime: 1000 * 60 * 5, // 5 minutes
-        enabled: isOpen && !!box.pattern_id, // モーダルが開いていて、パターンIDが存在する場合のみ実行
+        enabled: isOpen && !!box?.pattern_id, // モーダルが開いていて、パターンIDが存在する場合のみ実行
     });
 
     // 取得したパターン情報をZustandストアに同期させる
@@ -57,6 +49,14 @@ export const BoxSummaryModal = ({ isOpen, onClose, box, itemCount }: BoxSummaryM
             setPatterns(fetchedPatterns);
         }
     }, [isSuccess, fetchedPatterns, setPatterns]);
+
+    // 表示対象のボックスが存在しない場合は、何もレンダリングしない
+    if (!box) {
+        return null;
+    }
+
+    // ボックスIDに紐づくカテゴリー名をストアから検索
+    const categoryName = categories.find(c => c.id === box.category_id)?.name || 'N/A';
 
     // ストアから該当のパターン情報を検索
     const pattern = patterns.find(p => p.id === box.pattern_id);

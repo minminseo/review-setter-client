@@ -11,7 +11,8 @@ import { useUserStore } from '@/store';
  * 認証関連のロジックをまとめたカスタムフック
  * APIコール、状態管理、画面遷移をこのフックで一元管理する
  */
-export const useAuth = () => {
+export const useAuth = (options: { enabled?: boolean } = {}) => {
+    const { enabled = true } = options;
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { setUser, clearUser } = useUserStore();
@@ -23,8 +24,8 @@ export const useAuth = () => {
         staleTime: 1000 * 60 * 30, // 30分間はキャッシュを有効にする
         retry: false, // 初回読み込みで失敗（401など）した場合、リトライしない
         refetchOnWindowFocus: false, // ウィンドウフォーカス時の自動再取得を無効化
-        refetchOnMount: true, // マウント時は必ず実行
-        enabled: true, // クエリを有効にする
+        refetchOnMount: enabled, // enabled=falseの場合はマウント時実行を無効化
+        enabled: enabled, // 条件付きでクエリを有効にする
     });
 
     // useQueryのv5の作法。コールバックの代わりにuseEffectで副作用を処理する。
