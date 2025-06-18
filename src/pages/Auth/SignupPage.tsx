@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -34,7 +33,6 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { LANGUAGES, THEME_COLORS, TIMEZONES } from '@/constants';
-import { CreateUserInput } from '@/types';
 
 const formSchema = z.object({
     email: z.string().email({ message: 'Invalid email address.' }),
@@ -62,16 +60,7 @@ const SignupPage = () => {
     });
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
-        const data: CreateUserInput = {
-            ...values,
-            password: values.password, // Ensure password is sent
-        };
-        signup(data, {
-            onError: (error: any) => {
-                const errorMessage = error.response?.data?.error || 'An unexpected error occurred.';
-                toast.error(`Signup failed: ${errorMessage}`);
-            }
-        });
+        signup(values);
     };
 
     return (
