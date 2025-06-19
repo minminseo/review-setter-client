@@ -93,7 +93,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
     // 現在のアイテムの復習パターンと一致するボックスのみをフィルタリング
     const filteredBoxes = React.useMemo(() => {
-        if (!item.pattern_id) return boxes; // パターンが未設定の場合は全ボックス表示
+        if (!item.pattern_id || patterns.length === 0) return boxes; // パターンが未設定またはパターンが存在しない場合は全ボックス表示
         
         const currentPattern = patterns.find(p => p.id === item.pattern_id);
         if (!currentPattern) return boxes;
@@ -311,7 +311,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                             <SelectValue 
                                                 placeholder={isPatternDisabled ? 
                                                     (selectedBox?.pattern_id ? 
-                                                        patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" 
+                                                        (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
                                                         : "未設定") 
                                                     : "パターンを選択 (任意)"
                                                 } 
@@ -319,7 +319,13 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        {patterns.length > 0 ? (
+                                            patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
+                                        ) : (
+                                            <div className="p-2 text-sm text-muted-foreground text-center">
+                                                復習パターンがありません
+                                            </div>
+                                        )}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
