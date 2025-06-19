@@ -2,15 +2,20 @@ import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
-// import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { MoreHorizontal } from 'lucide-react';
 
 // API & Store & Types
-import { fetchTodaysReviews, completeReviewDate, incompleteReviewDate } from '@/api/itemApi';
+import {
+    fetchTodaysReviews, // フィルター機能を持つように変更したと仮定
+    completeReviewDate,
+    incompleteReviewDate
+} from '@/api/itemApi';
 import { fetchCategories } from '@/api/categoryApi';
-import { useItemStore, useCategoryStore } from '@/store';
-import { DailyReviewDate, GetDailyReviewDatesResponse /*GetCategoryOutput*/ } from '@/types';
+import { fetchBoxes } from '@/api/boxApi'; // ボックス取得APIをインポート
+import { useItemStore, useCategoryStore, useBoxStore } from '@/store';
+import { DailyReviewDate, GetDailyReviewDatesResponse, GetCategoryOutput, GetBoxOutput } from '@/types';
 import { UNCLASSIFIED_ID } from '@/constants';
 
 // Shared & UI Components
@@ -18,14 +23,13 @@ import Breadcrumbs from '@/components/shared/Breadcrumbs';
 import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; // TabsListとTabsTriggerをインポート
-import { MoreHorizontal } from 'lucide-react'; // MoreHorizontalアイコンをインポート
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Modals
-import { SelectCategoryModal } from '@/components/modals/SelectCategoryModal'; // SelectCategoryModalをインポート
-import { SelectBoxModal } from '@/components/modals/SelectBoxModal'; // SelectBoxModalをインポート
+import { SelectCategoryModal } from '@/components/modals/SelectCategoryModal';
+import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
 
 /**
  * APIから取得したネストされた今日の復習データを、テーブルで表示しやすいようにフラットな配列に変換するヘルパー関数
@@ -70,85 +74,91 @@ const TodaysReviewPage = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const { categories, setCategories } = useCategoryStore();
-    const { todaysReviews, setTodaysReviews } = useItemStore();
-
+    const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
+    const { todaysReviews: zustandTodaysReviews, setTodaysReviews } = useItemStore();
 
     // フィルターの状態管理
-    const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
-    const [selectedBox, setSelectedBox] = React.useState<string>('all');
-    const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false); //
-    const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false); //
+    const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>('all');
+    const [selectedBoxId, setSelectedBoxId] = React.useState<string>('all');
 
+    // モーダルの状態管理
+    const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
+    const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false);
 
-    // --- データ取得 ---
+    // --- データ取得 (React Query) ---
     // 1. カテゴリー一覧 (フィルタータブ用)
-    const { data: fetchedCategories, isSuccess: catSuccess } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories });
-    // 2. 今日の復習全件
-    const { data: fetchedReviews, isLoading, isSuccess: reviewsSuccess } = useQuery({ queryKey: ['todaysReviews'], queryFn: fetchTodaysReviews });
+    const { data: fetchedCategories, isSuccess: catSuccess } = useQuery({
+        queryKey: ['categories'],
+        queryFn: fetchCategories
+    });
+
+    // 2. 選択されたカテゴリーに属するボックスリスト
+    const { data: fetchedBoxesForCategory } = useQuery({
+        queryKey: ['boxes', selectedCategoryId],
+        queryFn: () => fetchBoxes(selectedCategoryId),
+        enabled: selectedCategoryId !== 'all' && selectedCategoryId !== UNCLASSIFIED_ID,
+    });
+
+    // 3. 今日の復習リスト（フィルター適用）
+    const { data: reviewItems, isLoading } = useQuery({
+        queryKey: ['todaysReviews', selectedCategoryId, selectedBoxId],
+        queryFn: () => fetchTodaysReviews({
+            categoryId: selectedCategoryId === 'all' || selectedCategoryId === UNCLASSIFIED_ID ? null : selectedCategoryId,
+            boxId: selectedBoxId === 'all' || selectedBoxId === UNCLASSIFIED_ID ? null : selectedBoxId,
+        }),
+        placeholderData: (previousData) => previousData, // ローディング中に古いデータを表示
+    });
 
     // --- データ取得後の副作用 (ストアの更新) ---
     React.useEffect(() => {
-        if (catSuccess && fetchedCategories) setCategories(fetchedCategories);
+        if (catSuccess && fetchedCategories) {
+            setCategories(fetchedCategories);
+        }
     }, [catSuccess, fetchedCategories, setCategories]);
+
     React.useEffect(() => {
-        if (reviewsSuccess && fetchedReviews) setTodaysReviews(fetchedReviews);
-    }, [reviewsSuccess, fetchedReviews, setTodaysReviews]);
-
-
-    // --- データ加工とフィルタリング ---
-    const allFlattenedReviews = React.useMemo(() => flattenTodaysReviews(todaysReviews ?? undefined), [todaysReviews]);
-
-    const filteredReviews = React.useMemo(() => {
-        // 指示書通り、クライアントサイドでフィルタリングを行う
-        let items = allFlattenedReviews;
-        if (selectedCategory === UNCLASSIFIED_ID) {
-            items = items.filter(item => item.category_id === null);
-        } else if (selectedCategory !== 'all') {
-            items = items.filter(item => item.category_id === selectedCategory);
+        if (fetchedBoxesForCategory && selectedCategoryId !== 'all' && selectedCategoryId !== UNCLASSIFIED_ID) {
+            setBoxesForCategory(selectedCategoryId, fetchedBoxesForCategory);
         }
+    }, [fetchedBoxesForCategory, selectedCategoryId, setBoxesForCategory]);
 
-        if (selectedBox !== 'all') {
-            items = items.filter(item => item.box_id === selectedBox);
+    React.useEffect(() => {
+        if (reviewItems) {
+            setTodaysReviews(reviewItems);
         }
-        return items;
-    }, [allFlattenedReviews, selectedCategory, selectedBox]);
+    }, [reviewItems, setTodaysReviews]);
+
+    // --- データ加工 ---
+    // APIから取得したデータをフラット化してテーブルに渡す
+    const flattenedAndFilteredReviews = React.useMemo(() => {
+        if (!reviewItems) return [];
+
+        const flattened = flattenTodaysReviews(reviewItems);
+
+        // クライアントサイドでの最終フィルタリング
+        return flattened.filter(item => {
+            const categoryMatch = selectedCategoryId === 'all' ||
+                (selectedCategoryId === UNCLASSIFIED_ID ? item.category_id === null : item.category_id === selectedCategoryId);
+
+            const boxMatch = selectedBoxId === 'all' ||
+                (selectedBoxId === UNCLASSIFIED_ID ? item.box_id === null : item.box_id === selectedBoxId);
+
+            // カテゴリーが 'all' でなく、ボックスが 'all' の場合、未分類ボックスも含む
+            if (selectedCategoryId !== 'all' && selectedBoxId === 'all') {
+                return categoryMatch;
+            }
+
+            return categoryMatch && boxMatch;
+        });
+    }, [reviewItems, selectedCategoryId, selectedBoxId]);
 
 
     // --- データ操作 (Mutation) ---
     const createMutationOptions = (isCompleting: boolean) => ({
         onSuccess: (_: any, variables: any) => {
             toast.success("状態を更新しました。");
-
-            // 楽観的UI更新: 即座にZustandストアを更新
-            if (todaysReviews) {
-                const updatedReviews = { ...todaysReviews };
-
-                // レビュー日の完了状態を即座に更新
-                updatedReviews.categories.forEach(category => {
-                    category.boxes.forEach(box => {
-                        box.review_dates.forEach(reviewDate => {
-                            if (reviewDate.review_date_id === variables.reviewDateId) {
-                                reviewDate.is_completed = isCompleting;
-                            }
-                        });
-                    });
-                    category.unclassified_daily_review_dates_by_category.forEach(reviewDate => {
-                        if (reviewDate.review_date_id === variables.reviewDateId) {
-                            reviewDate.is_completed = isCompleting;
-                        }
-                    });
-                });
-                updatedReviews.daily_review_dates_grouped_by_user.forEach(reviewDate => {
-                    if (reviewDate.review_date_id === variables.reviewDateId) {
-                        reviewDate.is_completed = isCompleting;
-                    }
-                });
-
-                setTodaysReviews(updatedReviews);
-            }
-
-            // バックグラウンドでデータ再取得
-            queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
+            queryClient.invalidateQueries({ queryKey: ['todaysReviews', selectedCategoryId, selectedBoxId] });
+            queryClient.invalidateQueries({ queryKey: ['summary'] });
         },
         onError: (err: any) => toast.error(`更新に失敗しました: ${err.message}`),
     });
@@ -171,149 +181,121 @@ const TodaysReviewPage = () => {
             )
         },
         { accessorKey: 'item_name', header: '復習物名' },
-        // ... (他の列定義: 詳細、重さ、ステップなど)
+        // ... 他の列定義
     ], [completeMutation, incompleteMutation]);
 
-    // --- 動的UIロジック ---
-    const boxesForSelectedCategory = React.useMemo(() => {
-        if (!todaysReviews || selectedCategory === 'all' || selectedCategory === UNCLASSIFIED_ID) return [];
-        const categoryData = todaysReviews.categories.find(c => c.category_id === selectedCategory);
-        return categoryData?.boxes || [];
-    }, [todaysReviews, selectedCategory]);
-
-    const handleNavigate = () => {
-        if (selectedCategory === 'all') navigate('/');
-        else if (selectedBox === 'all') navigate(`/categories/${selectedCategory}`);
-        else navigate(`/categories/${selectedCategory}/boxes/${selectedBox}`);
+    // --- イベントハンドラ ---
+    const handleCategoryChange = (newCategoryId: string) => {
+        setSelectedCategoryId(newCategoryId);
+        setSelectedBoxId('all'); // カテゴリー変更時はボックス選択をリセット
     };
 
-    // 表示するカテゴリータブを制限
-    const displayedCategories = categories.slice(0, 7); // 最大7つまで表示
-    const hasMoreCategories = categories.length > 7; // 8つ以上あれば「その他」を表示
+    const handleBoxChange = (newBoxId: string) => {
+        setSelectedBoxId(newBoxId);
+    };
 
-    // 表示するボックスタブを制限
-    const displayedBoxes = boxesForSelectedCategory.slice(0, 7); // 最大7つまで表示
-    const hasMoreBoxes = boxesForSelectedCategory.length > 7; // 8つ以上あれば「その他」を表示
+    const handleNavigate = () => {
+        if (selectedCategoryId === 'all') navigate('/');
+        else if (selectedBoxId === 'all') navigate(`/categories/${selectedCategoryId}`);
+        else navigate(`/categories/${selectedCategoryId}/boxes/${selectedBoxId}`);
+    };
 
+    // --- 表示用データ ---
+    const boxesForSelectedCategory = React.useMemo(() => {
+        if (!selectedCategoryId || selectedCategoryId === 'all' || selectedCategoryId === UNCLASSIFIED_ID) return [];
+        return boxesByCategoryId[selectedCategoryId] || [];
+    }, [boxesByCategoryId, selectedCategoryId]);
+
+    const displayedCategories = categories.slice(0, 5);
+    const hasMoreCategories = categories.length > 5;
+    const displayedBoxes = boxesForSelectedCategory.slice(0, 5);
+    const hasMoreBoxes = boxesForSelectedCategory.length > 5;
 
     return (
         <div className="h-screen flex flex-col overflow-hidden ">
-            <div className="flex-shrink-0 space-y-4 ">
+            <div className="flex-shrink-0 space-y-4 p-4 border-b">
                 <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: "今日の復習" }]} />
-                <div
-                    className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-4 gap-y-2 items-stretch w-fit"
-                    style={{ minWidth: 'min-content' }}
-                >
-                    {/* カテゴリーラベル */}
-                    <div className="flex items-center">
-                        <span className="text-sm font-semibold shrink-0">カテゴリー:</span>
-                    </div>
-                    {/* カテゴリータブ */}
-                    <div className="flex items-center min-h-[2.5rem]">
-                        <div className="relative flex items-center">
-                            <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <TabsList
-                                    className="flex"
-                                    style={{
-                                        minWidth: `${(2 + displayedCategories.length) * 6}rem`,
-                                        width: 'auto',
-                                    }}
-                                >
-                                    <TabsTrigger value="all">全て</TabsTrigger>
-                                    <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
-                                    {displayedCategories.map(cat => (
-                                        <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
-                                    ))}
-                                </TabsList>
-                            </Tabs>
-                            {hasMoreCategories && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setSelectCategoryModalOpen(true)}
-                                    className="ml-1 shrink-0 h-8 w-8"
-                                >
-                                    <MoreHorizontal className="h-5 w-5" />
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                    {/* ボックスラベル */}
-                    <div className="flex items-center">
-                        <span className="text-sm font-semibold shrink-0">ボックス:</span>
-                    </div>
-                    {/* ボックスタブ */}
-                    <div className="flex items-center min-h-[2.5rem]">
-                        <div className="relative flex items-center">
-                            <Tabs value={selectedBox} onValueChange={setSelectedBox}>
-                                <TabsList
-                                    className="flex"
-                                    style={{
-                                        minWidth: `${(1 + displayedBoxes.length) * 6}rem`,
-                                        width: 'auto',
-                                    }}
-                                >
-                                    <TabsTrigger value="all">全て</TabsTrigger>
-                                    {displayedBoxes.map(box => (
-                                        <TabsTrigger key={box.box_id} value={box.box_id}>{box.box_name}</TabsTrigger>
-                                    ))}
-                                </TabsList>
-                            </Tabs>
-                            {hasMoreBoxes && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setSelectBoxModalOpen(true)}
-                                    className="ml-1 shrink-0 h-8 w-8"
-                                >
-                                    <MoreHorizontal className="h-5 w-5" />
-                                </Button>
-                            )}
-                        </div>
-                    </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">カテゴリー:</span>
+                    <Tabs value={selectedCategoryId} onValueChange={handleCategoryChange}>
+                        <TabsList>
+                            <TabsTrigger value="all">全て</TabsTrigger>
+                            <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                            {displayedCategories.map(cat => (
+                                <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                    {hasMoreCategories && (
+                        <Button variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)}>
+                            <MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">ボックス:</span>
+                    <Tabs value={selectedBoxId} onValueChange={handleBoxChange}>
+                        <TabsList>
+                            <TabsTrigger value="all">全て</TabsTrigger>
+                            {selectedCategoryId !== 'all' && <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>}
+                            {displayedBoxes.map(box => (
+                                <TabsTrigger key={box.id} value={box.id}>{box.name}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                    {hasMoreBoxes && (
+                        <Button variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)}>
+                            <MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                    )}
                 </div>
             </div>
 
             <div className="flex-1 flex flex-col overflow-hidden p-4 pt-0">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end p-3 gap-2">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-                        <Button
-                            onClick={handleNavigate}
-                            className="w-full sm:w-auto"
-                            variant="secondary"
-                            size="lg"
-                        >
-                            <ArrowRightEndOnRectangleIcon className="h-5 w-5" />
-                        </Button>
-                        <Card className="w-full sm:w-10 min-w-[5rem] max-w-xs py-2 bg-green-900">
-                            <CardHeader className="p-0">
-                                <CardTitle className="text-sm whitespace-nowrap text-center flex items-center justify-center gap-1">
-                                    <CheckCircleIcon className="h-6 w-6 " /> {/* 青色に上書き */}
-                                    : {filteredReviews.filter(r => r.is_completed).length}
-                                </CardTitle>
-                            </CardHeader>
-                        </Card>
-                        <Card className="w-full sm:w-10 min-w-[5rem] max-w-xs py-2">
-                            <CardHeader className="p-0">
-                                <CardTitle className="text-sm whitespace-nowrap text-center flex items-center justify-center gap-1">
-                                    <XCircleIcon className="h-6 w-6" />
-                                    : {filteredReviews.filter(r => !r.is_completed).length}
-                                </CardTitle>
-                            </CardHeader>
-                        </Card>
-                    </div>
+                <div className="flex items-center justify-end p-3 gap-2">
+                    <Button onClick={handleNavigate} variant="secondary">
+                        <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-2" />
+                        このレイヤーへ移動
+                    </Button>
+                    <Card className="min-w-[5rem] py-2 bg-green-900">
+                        <CardHeader className="p-0">
+                            <CardTitle className="text-sm text-center flex items-center justify-center gap-1">
+                                <CheckCircleIcon className="h-6 w-6" />
+                                : {flattenedAndFilteredReviews.filter(r => r.is_completed).length}
+                            </CardTitle>
+                        </CardHeader>
+                    </Card>
+                    <Card className="min-w-[5rem] py-2">
+                        <CardHeader className="p-0">
+                            <CardTitle className="text-sm text-center flex items-center justify-center gap-1">
+                                <XCircleIcon className="h-6 w-6" />
+                                : {flattenedAndFilteredReviews.filter(r => !r.is_completed).length}
+                            </CardTitle>
+                        </CardHeader>
+                    </Card>
                 </div>
-                <Card>
-                    <CardContent className="pt-6">
-                        {isLoading ? <TableSkeleton /> : <DataTable columns={columns} data={filteredReviews} />}
+                <Card className="flex-1">
+                    <CardContent className="pt-6 h-full">
+                        {isLoading && !flattenedAndFilteredReviews.length ? (
+                            <TableSkeleton />
+                        ) : (
+                            <DataTable columns={columns} data={flattenedAndFilteredReviews} />
+                        )}
                     </CardContent>
                 </Card>
             </div>
 
-            {/* モーダルコンポーネントを追加 */}
-            <SelectCategoryModal isOpen={isSelectCategoryModalOpen} onClose={() => setSelectCategoryModalOpen(false)} onSelect={(category) => { setSelectedCategory(category.id); setSelectCategoryModalOpen(false); }} /> {/* */}
-            <SelectBoxModal isOpen={isSelectBoxModalOpen} onClose={() => setSelectBoxModalOpen(false)} onSelect={(box) => { setSelectedBox(box.id); setSelectBoxModalOpen(false); }} categoryId={selectedCategory === 'all' ? undefined : selectedCategory} /> {/* */}
-
+            <SelectCategoryModal
+                isOpen={isSelectCategoryModalOpen}
+                onClose={() => setSelectCategoryModalOpen(false)}
+                onSelect={(category) => { handleCategoryChange(category.id); setSelectCategoryModalOpen(false); }}
+            />
+            <SelectBoxModal
+                isOpen={isSelectBoxModalOpen}
+                onClose={() => setSelectBoxModalOpen(false)}
+                onSelect={(box) => { handleBoxChange(box.id); setSelectBoxModalOpen(false); }}
+                categoryId={selectedCategoryId !== 'all' ? selectedCategoryId : undefined}
+            />
         </div>
     );
 };
