@@ -88,8 +88,15 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
     React.useEffect(() => {
         if (isSuccess && fetchedPatterns) {
             setPatterns(fetchedPatterns);
-            const initialPattern = fetchedPatterns.find(p => p.id === box.pattern_id);
-            setSelectedPatternName(initialPattern?.name || '未選択');
+            if (fetchedPatterns.length > 0 && box.pattern_id) {
+                const initialPattern = fetchedPatterns.find(p => p.id === box.pattern_id);
+                setSelectedPatternName(initialPattern?.name || '未選択');
+            } else if (box.pattern_id) {
+                // patterns is empty but box has pattern_id - pattern was deleted
+                setSelectedPatternName('未選択');
+            } else {
+                setSelectedPatternName('未選択');
+            }
         }
     }, [isSuccess, fetchedPatterns, setPatterns, box.pattern_id]);
 

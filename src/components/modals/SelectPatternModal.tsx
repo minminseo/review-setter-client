@@ -74,6 +74,11 @@ export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternM
                 <div className="max-h-[60vh] overflow-y-auto space-y-3 p-1">
                     {isLoading ? (
                         <CardListSkeleton count={6} />
+                    ) : patterns.length === 0 ? (
+                        <div className="text-center py-8">
+                            <p className="text-muted-foreground">復習パターンがありません。</p>
+                            <p className="text-sm text-muted-foreground mt-2">先に復習パターンを作成してください。</p>
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {patterns.map((pattern) => (

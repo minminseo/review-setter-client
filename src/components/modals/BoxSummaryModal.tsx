@@ -36,11 +36,11 @@ export const BoxSummaryModal = ({ isOpen, onClose, box, itemCount }: BoxSummaryM
 
     // パターンIDに紐づくパターン情報を取得するためのクエリ
     // パターン情報は頻繁に変わるものではないため、キャッシュを長めに設定
-    const { data: fetchedPatterns, isSuccess } = useQuery({
+    const { data: fetchedPatterns, isSuccess, isLoading } = useQuery({
         queryKey: ['patterns'],
         queryFn: fetchPatterns,
         staleTime: 1000 * 60 * 5, // 5 minutes
-        enabled: isOpen && !!box?.pattern_id, // モーダルが開いていて、パターンIDが存在する場合のみ実行
+        enabled: isOpen, // モーダルが開いている場合は常に実行（pattern_idの有無に関わらず）
     });
 
     // 取得したパターン情報をZustandストアに同期させる
@@ -59,7 +59,7 @@ export const BoxSummaryModal = ({ isOpen, onClose, box, itemCount }: BoxSummaryM
     const categoryName = categories.find(c => c.id === box.category_id)?.name || 'N/A';
 
     // ストアから該当のパターン情報を検索
-    const pattern = patterns.find(p => p.id === box.pattern_id);
+    const pattern = patterns.length > 0 && box.pattern_id ? patterns.find(p => p.id === box.pattern_id) : null;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -97,7 +97,13 @@ export const BoxSummaryModal = ({ isOpen, onClose, box, itemCount }: BoxSummaryM
                         <h4 className="text-sm font-medium text-muted-foreground">&lt;復習パターン&gt;</h4>
                         <div className="mt-2 rounded-md border bg-muted p-4">
                             {box.pattern_id ? (
-                                pattern ? (
+                                isLoading ? (
+                                    // データ取得中の場合
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-5 w-3/4" />
+                                        <Skeleton className="h-5 w-1/2" />
+                                    </div>
+                                ) : pattern ? (
                                     // パターン情報が見つかった場合
                                     <div className="space-y-2 text-sm">
                                         <p><strong>復習パターン名:</strong> {pattern.name}</p>
@@ -105,11 +111,8 @@ export const BoxSummaryModal = ({ isOpen, onClose, box, itemCount }: BoxSummaryM
                                         <p><strong>復習ステップ:</strong> {pattern.steps.map(s => s.interval_days).join(' | ')}</p>
                                     </div>
                                 ) : (
-                                    // パターンIDはあるが、データ取得中の場合
-                                    <div className="space-y-2">
-                                        <Skeleton className="h-5 w-3/4" />
-                                        <Skeleton className="h-5 w-1/2" />
-                                    </div>
+                                    // パターンIDはあるが、パターンが見つからない場合（削除された等）
+                                    <p className="text-sm text-muted-foreground">復習パターンが見つかりません（削除済みの可能性があります）。</p>
                                 )
                             ) : (
                                 // パターンが設定されていない場合
