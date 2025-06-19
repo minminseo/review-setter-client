@@ -194,8 +194,16 @@ const BoxAndCategoryPage = () => {
     }
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden ">
-            <div className="flex-shrink-0 space-y-4">
+        <div className="min-h-screen flex flex-col overflow-hidden">
+            {/* 上部固定ヘッダー */}
+            <div
+                className="flex-shrink-0 space-y-4 bg-background z-10"
+                style={{
+                    position: 'sticky',
+                    top: 0,
+                    boxShadow: '0 2px 8px -4px rgba(0,0,0,0.08)',
+                }}
+            >
                 <Breadcrumbs items={breadcrumbItems} />
                 <div
                     className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-4 gap-y-2 items-stretch w-full max-w-full"
@@ -208,7 +216,6 @@ const BoxAndCategoryPage = () => {
                     {/* カテゴリータブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
                         <div className="relative flex items-center w-full max-w-full" ref={categoryTabsContainerRef}>
-                            {/* タブ部分とMoreボタン用の空間を分割 */}
                             <div className="flex-1 min-w-0 flex">
                                 <Tabs value={categoryId} onValueChange={(value) => navigate(`/categories/${value}`)}>
                                     <TabsList
@@ -245,7 +252,6 @@ const BoxAndCategoryPage = () => {
                     {/* ボックスタブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
                         <div className="relative flex items-center w-full max-w-full" ref={boxTabsContainerRef}>
-                            {/* タブ部分とMoreボタン用の空間を分割 */}
                             <div className="flex-1 min-w-0 flex">
                                 <Tabs
                                     value={boxId || ''}
@@ -261,8 +267,8 @@ const BoxAndCategoryPage = () => {
                                         className="flex w-full"
                                         style={{
                                             width: '100%',
-                                            // borderRadius: '0.75rem', // rounded-xlと同じ
-                                            // overflow: 'hidden', // ここでタブのroundedを維持しつつ見切れ防止
+                                            borderRadius: '0.75rem',
+                                            overflow: 'hidden',
                                         }}
                                     >
                                         <TabsTrigger value="">全て</TabsTrigger>
@@ -292,24 +298,29 @@ const BoxAndCategoryPage = () => {
                 </div>
             </div>
 
-            {isBoxView ? (
-                <Box
-                    key={boxId}
-                    items={fetchedItems ? fetchedItems.filter(item => !item.is_finished) : []}
-                    isLoading={isItemsLoading}
-                    currentCategory={currentCategory}
-                    currentBox={currentBox}
-                />
-            ) : (
-                <Category
-                    key={categoryId}
-                    boxes={boxesForCurrentCategory}
-                    isLoading={isBoxesLoading}
-                    error={boxesError}
-                    currentCategory={currentCategory}
-                    isUnclassifiedPage={isUnclassifiedCategoryPage}
-                />
-            )}
+            {/* メインコンテンツ */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {isBoxView ? (
+                        <Box
+                            key={boxId}
+                            items={fetchedItems ? fetchedItems.filter(item => !item.is_finished) : []}
+                            isLoading={isItemsLoading}
+                            currentCategory={currentCategory}
+                            currentBox={currentBox}
+                        />
+                    ) : (
+                        <Category
+                            key={categoryId}
+                            boxes={boxesForCurrentCategory}
+                            isLoading={isBoxesLoading}
+                            error={boxesError}
+                            currentCategory={currentCategory}
+                            isUnclassifiedPage={isUnclassifiedCategoryPage}
+                        />
+                    )}
+                </div>
+            </div>
 
             <SelectCategoryModal
                 isOpen={isSelectCategoryModalOpen}

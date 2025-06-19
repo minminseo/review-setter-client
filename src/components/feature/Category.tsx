@@ -53,10 +53,10 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
             <div className="flex items-center justify-end w-full py-2">
                 {!isUnclassifiedPage && currentCategory && (
                     <div className="flex items-center gap-2">
-                        <Button 
-                            onClick={() => openCreateItemModal({ 
-                                categoryId: currentCategory.id, 
-                                boxId: 'unclassified' 
+                        <Button
+                            onClick={() => openCreateItemModal({
+                                categoryId: currentCategory.id,
+                                boxId: 'unclassified'
                             })}
                             variant="outline"
                         >
