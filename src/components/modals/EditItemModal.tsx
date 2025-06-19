@@ -202,12 +202,20 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
     const finishMutation = useMutation({
         mutationFn: () => markItemAsFinished(item.item_id),
-        onSuccess: (updatedItem) => {
+        onSuccess: () => {
             toast.success("アイテムを完了済みにしました。");
-            queryClient.invalidateQueries({ queryKey: ['items', item.box_id] });
+            
+            // 完了済みアイテムは通常のアイテムリストから削除する
             if (item.box_id) {
-                updateItemInBox(item.box_id, updatedItem);
+                removeItemFromBox(item.box_id, item.item_id);
             }
+            
+            // 関連データの無効化
+            queryClient.invalidateQueries({ queryKey: ['items', item.box_id] });
+            queryClient.invalidateQueries({ queryKey: ['finishedItems'] });
+            queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
+            queryClient.invalidateQueries({ queryKey: ['summary'] });
+            
             onClose();
         },
         onError: (err: any) => toast.error(`処理に失敗しました: ${err.message}`),

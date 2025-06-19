@@ -7,8 +7,6 @@ import { toast } from 'sonner';
 // API関数
 import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate } from '@/api/itemApi';
 import { UNCLASSIFIED_ID } from '@/constants';
-// Zustandストア
-import { useItemStore } from '@/store';
 // 型定義
 import { ItemResponse } from '@/types';
 // UIコンポーネント
@@ -31,7 +29,6 @@ type FinishedItemsModalProps = {
  */
 export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: FinishedItemsModalProps) => {
     const queryClient = useQueryClient();
-    const { addItemToBox } = useItemStore();
     // 詳細表示モーダルで表示するアイテムを管理するstate
     const [detailItem, setDetailItem] = React.useState<ItemResponse | null>(null);
 
@@ -72,21 +69,19 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             };
             return markItemAsUnfinished(unfinishData);
         },
-        onSuccess: (updatedItem, variables) => {
+        onSuccess: async (_, variables) => {
             toast.success(`「${variables.name}」の復習を再開しました。`);
             
-            // 楽観的UI更新: 即座にZustandストアに復習アイテムを追加
-            if (variables.box_id) {
-                // is_finishedをfalseに設定して、通常のアイテムとして追加
-                const reactivatedItem = { ...updatedItem, is_finished: false };
-                addItemToBox(variables.box_id, reactivatedItem);
-            }
+            // React Queryのキャッシュ無効化のみを使用（楽観的更新を削除）
+            // これにより、サーバーから最新のデータを確実に取得し、データの競合を回避
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: queryKey }),
+                queryClient.invalidateQueries({ queryKey: ['items', variables.box_id] }),
+                queryClient.invalidateQueries({ queryKey: ['todaysReviews'] }),
+                queryClient.invalidateQueries({ queryKey: ['summary'] })
+            ]);
             
-            // バックグラウンドでデータ再取得
-            queryClient.invalidateQueries({ queryKey: queryKey });
-            queryClient.invalidateQueries({ queryKey: ['items', variables.box_id] });
-            queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
-            
+            // キャッシュ無効化が完了してからモーダルを閉じる
             onClose();
         },
         onError: (err: any) => toast.error(`処理に失敗しました: ${err.message}`),

@@ -108,7 +108,9 @@ const BoxAndCategoryPage = () => {
 
     React.useEffect(() => {
         if (itemsSuccess && fetchedItems && boxId) {
-            setItemsForBox(boxId, fetchedItems);
+            // 完了済みアイテムを除外してストアに保存
+            const activeItems = fetchedItems.filter(item => !item.is_finished);
+            setItemsForBox(boxId, activeItems);
         }
     }, [itemsSuccess, fetchedItems, boxId, setItemsForBox]);
 
