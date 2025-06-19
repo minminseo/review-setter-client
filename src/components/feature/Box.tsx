@@ -1,0 +1,294 @@
+import * as React from 'react';
+import { useParams } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+
+// API & Store
+import { deleteItem, completeReviewDate, incompleteReviewDate } from '@/api/itemApi';
+import { useItemStore, usePatternStore } from '@/store';
+import { useModal } from '@/contexts/ModalContext';
+import { ItemResponse, ReviewDateResponse, GetCategoryOutput, GetBoxOutput } from '@/types';
+import { cn } from '@/lib/utils';
+
+// UI Components
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { CogIcon, InformationCircleIcon, PlusCircleIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { DataTable } from '@/components/shared/DataTable/DataTable';
+import { TableSkeleton } from '@/components/shared/SkeletonLoader';
+import NameCell from '@/components/shared/NameCell';
+
+// Modals
+import { ItemDetailModal } from '@/components/modals/ItemDetailModal';
+import { EditItemModal } from '@/components/modals/EditItemModal';
+import { EditReviewDateModal } from '@/components/modals/EditReviewDateModal';
+import { BoxSummaryModal } from '@/components/modals/BoxSummaryModal';
+import { EditBoxModal } from '@/components/modals/EditBoxModal';
+import { FinishedItemsModal } from '@/components/modals/FinishedItemsModal';
+
+// Boxコンポーネントが受け取るPropsの型定義
+interface BoxProps {
+    items: ItemResponse[];
+    isLoading: boolean;
+    currentCategory: GetCategoryOutput | undefined;
+    currentBox: GetBoxOutput | null | undefined;
+}
+
+/**
+ * ボックス詳細ページのメインコンテンツ。
+ * アイテムの一覧テーブルと、関連する操作を担当する。
+ * @param props - 親コンポーネント(BoxAndCategoryPage)から渡されるデータと状態
+ */
+export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps) => {
+    // --- Hooks ---
+    const { categoryId, boxId } = useParams<{ categoryId: string; boxId: string }>();
+    const queryClient = useQueryClient();
+    const { openCreateItemModal } = useModal();
+
+    // --- Zustandストア ---
+    const { removeItemFromBox } = useItemStore();
+    const { patterns } = usePatternStore();
+
+    // --- State (モーダル管理) ---
+    const [detailItem, setDetailItem] = React.useState<ItemResponse | null>(null);
+    const [editingItem, setEditingItem] = React.useState<ItemResponse | null>(null);
+    const [deletingItem, setDeletingItem] = React.useState<ItemResponse | null>(null);
+    const [editingDate, setEditingDate] = React.useState<{ item: ItemResponse; reviewDate: ReviewDateResponse } | null>(null);
+    const [isSummaryModalOpen, setSummaryModalOpen] = React.useState(false);
+    const [isEditBoxModalOpen, setEditBoxModalOpen] = React.useState(false);
+    const [isFinishedItemsModalOpen, setFinishedItemsModalOpen] = React.useState(false);
+
+    // --- Mutations ---
+    const deleteMutation = useMutation({
+        mutationFn: (itemId: string) => deleteItem(itemId),
+        onSuccess: (_, itemId) => {
+            toast.success('アイテムを削除しました。');
+            if (boxId) removeItemFromBox(boxId, itemId);
+            queryClient.invalidateQueries({ queryKey: ['items', boxId] });
+        },
+        onError: (err: any) => toast.error(`削除に失敗しました: ${err.message}`),
+        onSettled: () => setDeletingItem(null),
+    });
+
+    const completeReviewMutation = useMutation({
+        mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number; }) => completeReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
+        onSuccess: () => {
+            toast.success('復習を完了しました。');
+            queryClient.invalidateQueries({ queryKey: ['items', boxId] });
+        },
+        onError: (err: any) => toast.error(`完了に失敗しました: ${err.message}`),
+    });
+
+    const incompleteReviewMutation = useMutation({
+        mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number; }) => incompleteReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
+        onSuccess: () => {
+            toast.success('復習を未完了に戻しました。');
+            queryClient.invalidateQueries({ queryKey: ['items', boxId] });
+        },
+        onError: (err: any) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
+    });
+
+    // --- テーブル定義 ---
+    // カラム数を動的に計算
+    const maxColumns = React.useMemo(() => {
+        let boxPatternColumns = 0;
+        if (currentBox?.pattern_id) {
+            const boxPattern = patterns.find((p) => p.id === currentBox.pattern_id);
+            if (boxPattern?.steps) boxPatternColumns = boxPattern.steps.length;
+        }
+        const itemColumns = items.length > 0 ? Math.max(...items.map((i) => i.review_dates.length)) : 0;
+        return Math.max(boxPatternColumns, itemColumns, 1);
+    }, [currentBox, patterns, items]);
+
+    // テーブルのカラム定義
+    const columns = React.useMemo<ColumnDef<ItemResponse>[]>(() => [
+        // ... (BoxPage.tsxからそのまま移植) ...
+        {
+            accessorKey: 'is_finished',
+            header: () => (
+                <span className="block w-full text-center">状態</span>
+            ),
+            cell: ({ row }) => {
+                const today = format(new Date(), 'yyyy-MM-dd');
+                const todaysReviewDate = row.original.review_dates.find(
+                    (rd) => format(new Date(rd.scheduled_date), 'yyyy-MM-dd') === today,
+                );
+
+                if (!todaysReviewDate) {
+                    return <span className="text-muted-foreground flex justify-center">-</span>;
+                }
+
+                if (todaysReviewDate.is_completed) {
+                    return (
+                        <Button
+                            variant="ghost" size="sm"
+                            className="bg-gray-800 hover:bg-gray-900 text-white border-white-400 w-full"
+                            onClick={() => incompleteReviewMutation.mutate({ itemId: row.original.item_id, reviewDateId: todaysReviewDate.review_date_id, stepNumber: todaysReviewDate.step_number })}
+                            disabled={incompleteReviewMutation.isPending}
+                        >
+                            取消
+                        </Button>
+                    );
+                } else {
+                    return (
+                        <Button
+                            variant="default" size="sm"
+                            className="bg-green-700 hover:bg-green-800 text-white w-full"
+                            onClick={() => completeReviewMutation.mutate({ itemId: row.original.item_id, reviewDateId: todaysReviewDate.review_date_id, stepNumber: todaysReviewDate.step_number })}
+                            disabled={completeReviewMutation.isPending}
+                        >
+                            完了
+                        </Button>
+                    );
+                }
+            },
+        },
+        {
+            id: 'actions',
+            header: () => (
+                <span className="block w-full text-center">操作</span>
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center flex justify-center">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingItem(row.original)}>
+                        <PencilIcon className="h-4 w-4" />
+                    </Button>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'name',
+            header: () => (
+                <span className="block w-full text-center">復習物名</span>
+            ),
+            cell: ({ row }) => <NameCell name={row.original.name} />,
+        },
+        {
+            id: 'detail',
+            header: () => (
+                <span className="block w-full text-center">詳細</span>
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    <Button variant="ghost" size="icon" onClick={() => setDetailItem(row.original)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                    </Button>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'learned_date',
+            header: () => (
+                <span className="block w-full text-center">学習日</span>
+            ),
+            cell: ({ row }) => (
+                <div className="flex justify-center">
+                    {format(new Date(row.original.learned_date), 'yyyy-MM-dd')}
+                </div>
+            ),
+        },
+        ...Array.from({ length: maxColumns }).map((_, index) => ({
+            id: `review_date_${index + 1}`,
+            header: () => (
+                <span className="block w-full text-center">{index + 1}回目</span>
+            ),
+            cell: ({ row }: { row: { original: ItemResponse } }) => {
+                const reviewDate = row.original.review_dates[index];
+                if (!reviewDate) return <span className="text-muted-foreground">-</span>;
+                const isToday = format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                const isClickable = isToday;
+                return (
+                    <Button
+                        variant={!reviewDate.is_completed && !isToday ? 'outline' : 'default'}
+                        size="sm"
+                        className={cn(
+                            isToday && !reviewDate.is_completed && 'bg-blue-700 hover:bg-blue-800 text-gray-200',
+                            isToday && reviewDate.is_completed && 'bg-blue-900 hover:bg-blue-950 text-gray-400',
+                            !isToday && reviewDate.is_completed && 'bg-green-700 text-white',
+                            !isClickable && 'cursor-not-allowed opacity-50',
+                        )}
+                        onClick={isClickable ? () => setEditingDate({ item: row.original, reviewDate }) : undefined}
+                        disabled={!isClickable}
+                    >
+                        {format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd')}
+                    </Button>
+                );
+            },
+        })),
+    ], [items, maxColumns, completeReviewMutation, incompleteReviewMutation]);
+
+    return (
+        <>
+            <div className="flex-1 flex flex-col overflow-hidden p-4 pt-0">
+                {/* --- ヘッダー部分 --- */}
+                <div className="flex items-center justify-between pb-4">
+                    <h1 className="text-2xl font-bold tracking-tight">{currentBox?.name || "未分類ボックス"}</h1>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={() => openCreateItemModal({ categoryId, boxId })} variant="default">
+                            <PlusCircleIcon className="mr-2 h-5 w-5" />
+                            復習物作成
+                        </Button>
+                        <Button variant="outline" onClick={() => setFinishedItemsModalOpen(true)}>
+                            完了済みを確認
+                        </Button>
+                        {currentBox && (
+                            <>
+                                <Button variant="ghost" size="icon" onClick={() => setSummaryModalOpen(true)}>
+                                    <InformationCircleIcon className="h-5 w-5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => setEditBoxModalOpen(true)}>
+                                    <CogIcon className="h-5 w-5" />
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* --- スクロール可能なテーブル領域 --- */}
+                <Card className="h-full flex-1">
+                    <CardContent className="pt-6 h-full">
+                        {isLoading ? (
+                            <TableSkeleton />
+                        ) : (
+                            <DataTable
+                                columns={columns}
+                                data={items}
+                                enablePagination={false}
+                                maxHeight="100%"
+                                fixedColumns={5}
+                            />
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+
+            {/* --- この画面で使われるモーダル群 --- */}
+            {detailItem && <ItemDetailModal isOpen={!!detailItem} onClose={() => setDetailItem(null)} item={detailItem} />}
+            {editingItem && <EditItemModal isOpen={!!editingItem} onClose={() => setEditingItem(null)} item={editingItem} />}
+            {deletingItem && (
+                <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>本当に「{deletingItem.name}」を削除しますか？</AlertDialogTitle></AlertDialogHeader>
+                        <AlertDialogDescription>この操作は取り消せません。</AlertDialogDescription>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteMutation.mutate(deletingItem.item_id)} disabled={deleteMutation.isPending}>
+                                {deleteMutation.isPending ? '削除中...' : '削除する'}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+            {editingDate && <EditReviewDateModal isOpen={!!editingDate} onClose={() => setEditingDate(null)} data={editingDate} />}
+            {currentBox && <BoxSummaryModal isOpen={isSummaryModalOpen} onClose={() => setSummaryModalOpen(false)} box={currentBox} itemCount={items.length} />}
+            {currentCategory && currentBox && <EditBoxModal isOpen={isEditBoxModalOpen} onClose={() => setEditBoxModalOpen(false)} category={currentCategory} box={currentBox} />}
+            <FinishedItemsModal isOpen={isFinishedItemsModalOpen} onClose={() => setFinishedItemsModalOpen(false)} boxId={boxId} categoryId={categoryId} />
+        </>
+    );
+};

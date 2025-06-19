@@ -15,10 +15,10 @@ import LoginPage from './pages/Auth/LoginPage';
 import SignupPage from './pages/Auth/SignupPage';
 import VerifyPage from './pages/Auth/VerifyPage';
 import HomePage from './pages/App/HomePage';
-import CategoryPage from './pages/App/CategoryPage';
-import BoxPage from './pages/App/BoxPage';
+import BoxAndCategoryPage from './pages/App/BoxAndCategoryPage';
 import TodaysReviewPage from './pages/App/TodaysReviewPage';
 import PatternsPage from './pages/App/PatternsPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 // UIコンポーネント
 import { Toaster } from "@/components/ui/sonner";
@@ -108,13 +108,13 @@ const App = () => {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/patterns" element={<PatternsPage />} />
-          <Route path="/categories/:categoryId" element={<CategoryPage />} />
-          <Route path="/categories/:categoryId/boxes/:boxId" element={<BoxPage />} />
+          <Route path="/categories/:categoryId" element={<BoxAndCategoryPage />} />
+          <Route path="/categories/:categoryId/boxes/:boxId" element={<BoxAndCategoryPage />} />
           <Route path="/today" element={<TodaysReviewPage />} />
         </Route>
 
-        {/* 上記のどのルートにも一致しない場合はログインページにリダイレクト */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* 上記のどのルートにも一致しない場合は404ページを表示 */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
 
       {/* sonnerによる通知（トースト）を表示するためのグローバルコンポーネント */}
