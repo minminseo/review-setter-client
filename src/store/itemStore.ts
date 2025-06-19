@@ -46,26 +46,54 @@ export const useItemStore = create<ItemState>((set, get) => ({
     getItemsForBox: (boxId) => get().itemsByBoxId[boxId],
 
     setItemsForBox: (boxId, items) => set((state) => ({
-        itemsByBoxId: { ...state.itemsByBoxId, [boxId]: items },
+        itemsByBoxId: { 
+            ...state.itemsByBoxId, 
+            [boxId]: items.filter(item => !item.is_finished) // 完了済みアイテムを除外
+        },
     })),
 
     setTodaysReviews: (data) => set({ todaysReviews: data }),
 
-    addItemToBox: (boxId, item) => set((state) => ({
-        itemsByBoxId: {
-            ...state.itemsByBoxId,
-            [boxId]: [...(state.itemsByBoxId[boxId] || []), item],
-        },
-    })),
+    addItemToBox: (boxId, item) => set((state) => {
+        // 完了済みアイテムは追加しない（ただし、サーバーからの正確なデータは信頼）
+        if (item.is_finished) return state;
+        
+        // 重複チェック：同じアイテムIDが既に存在する場合は追加しない
+        const existingItems = state.itemsByBoxId[boxId] || [];
+        const itemExists = existingItems.some(existingItem => existingItem.item_id === item.item_id);
+        if (itemExists) return state;
+        
+        return {
+            itemsByBoxId: {
+                ...state.itemsByBoxId,
+                [boxId]: [...existingItems, item],
+            },
+        };
+    }),
 
-    updateItemInBox: (boxId, updatedItem) => set((state) => ({
-        itemsByBoxId: {
-            ...state.itemsByBoxId,
-            [boxId]: (state.itemsByBoxId[boxId] || []).map((item) =>
-                item.item_id === updatedItem.item_id ? updatedItem : item
-            ),
-        },
-    })),
+    updateItemInBox: (boxId, updatedItem) => set((state) => {
+        // 完了済みアイテムに更新された場合は削除
+        if (updatedItem.is_finished) {
+            return {
+                itemsByBoxId: {
+                    ...state.itemsByBoxId,
+                    [boxId]: (state.itemsByBoxId[boxId] || []).filter((item) => 
+                        item.item_id !== updatedItem.item_id
+                    ),
+                },
+            };
+        }
+        
+        // 通常の更新
+        return {
+            itemsByBoxId: {
+                ...state.itemsByBoxId,
+                [boxId]: (state.itemsByBoxId[boxId] || []).map((item) =>
+                    item.item_id === updatedItem.item_id ? updatedItem : item
+                ),
+            },
+        };
+    }),
 
     removeItemFromBox: (boxId, itemId) => set((state) => ({
         itemsByBoxId: {
