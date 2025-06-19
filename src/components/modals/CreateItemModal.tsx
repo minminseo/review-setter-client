@@ -22,6 +22,9 @@ import { usePatternStore } from '@/store/patternStore';
 import { cn } from '@/lib/utils';
 import { CreateItemRequest } from '@/types';
 
+// 定数
+import { UNCLASSIFIED_ID } from '@/constants';
+
 // UIコンポーネント
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -36,8 +39,14 @@ const itemSchema = z.object({
     name: z.string().min(1, "復習物名は必須です。"),
     detail: z.string().optional(),
     learned_date: z.date({ required_error: "学習日は必須です。" }),
-    category_id: z.string().uuid("正しいカテゴリーを選択してください。").nullable().optional(),
-    box_id: z.string().uuid("正しいボックスを選択してください。").nullable().optional(),
+    category_id: z.union([
+        z.string().uuid("正しいカテゴリーを選択してください。"),
+        z.literal("UNCLASSIFIED")
+    ]).nullable().optional(),
+    box_id: z.union([
+        z.string().uuid("正しいボックスを選択してください。"),
+        z.literal("UNCLASSIFIED")
+    ]).nullable().optional(),
     pattern_id: z.string().uuid("正しいパターンを選択してください。").nullable().optional(),
 });
 
@@ -56,8 +65,8 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
             name: '',
             detail: '',
             learned_date: new Date(),
-            category_id: defaultCategoryId || null,
-            box_id: defaultBoxId || null,
+            category_id: (defaultCategoryId && defaultCategoryId !== UNCLASSIFIED_ID) ? defaultCategoryId : 'UNCLASSIFIED',
+            box_id: (defaultBoxId && defaultBoxId !== UNCLASSIFIED_ID) ? defaultBoxId : 'UNCLASSIFIED',
         },
     });
 
@@ -71,7 +80,8 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     const { patterns, setPatterns } = usePatternStore();
 
     // watchedCategoryIdに紐づくボックスリストをストアから取得
-    const boxes = boxesByCategoryId[watchedCategoryId || ''] || [];
+    // 未分類選択（UNCLASSIFIED）の場合は空配列を返す（未分類ボックスはAPI経由で別途管理）
+    const boxes = (watchedCategoryId && watchedCategoryId !== 'UNCLASSIFIED') ? (boxesByCategoryId[watchedCategoryId] || []) : [];
     
     // 選択されたボックスの情報を取得
     const selectedBox = watchedBoxId ? boxes.find(box => box.id === watchedBoxId) : null;
@@ -81,23 +91,25 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
 
     // --- データ取得とストアへの同期 ---
     // 1. カテゴリー取得
-    const { data: fetchedCategories, isSuccess: categoriesSuccess } = useQuery({
+    const { data: fetchedCategories, isSuccess: categoriesSuccess, isLoading: categoriesLoading } = useQuery({
         queryKey: ['categories'],
         queryFn: fetchCategories,
         staleTime: 1000 * 60 * 5,
     });
     React.useEffect(() => {
-        if (categoriesSuccess) setCategories(fetchedCategories);
+        if (categoriesSuccess && fetchedCategories) {
+            setCategories(fetchedCategories);
+        }
     }, [categoriesSuccess, fetchedCategories, setCategories]);
 
     // 2. ボックス取得（カテゴリー依存）
-    const { data: fetchedBoxes, isSuccess: boxesSuccess } = useQuery({
+    const { data: fetchedBoxes, isSuccess: boxesSuccess, isLoading: boxesLoading } = useQuery({
         queryKey: ['boxes', watchedCategoryId],
         queryFn: () => fetchBoxes(watchedCategoryId!),
-        enabled: !!watchedCategoryId,
+        enabled: !!watchedCategoryId && watchedCategoryId !== 'UNCLASSIFIED',
     });
     React.useEffect(() => {
-        if (boxesSuccess && watchedCategoryId) {
+        if (boxesSuccess && watchedCategoryId && fetchedBoxes) {
             setBoxesForCategory(watchedCategoryId, fetchedBoxes);
         }
     }, [boxesSuccess, fetchedBoxes, watchedCategoryId, setBoxesForCategory]);
@@ -143,6 +155,9 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     const onSubmit = (values: z.infer<typeof itemSchema>) => {
         const data: CreateItemRequest = {
             ...values,
+            // UNCLASSIFIEDをnullに変換（未分類として正しく送信）
+            category_id: values.category_id === 'UNCLASSIFIED' ? null : values.category_id,
+            box_id: values.box_id === 'UNCLASSIFIED' ? null : values.box_id,
             // Dateオブジェクトを "YYYY-MM-DD" 形式の文字列に変換
             learned_date: format(values.learned_date, "yyyy-MM-dd"),
             today: format(new Date(), "yyyy-MM-dd"),
@@ -159,8 +174,8 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                 name: '',
                 detail: '',
                 learned_date: new Date(),
-                category_id: defaultCategoryId || null,
-                box_id: defaultBoxId || null,
+                category_id: (defaultCategoryId && defaultCategoryId !== UNCLASSIFIED_ID) ? defaultCategoryId : 'UNCLASSIFIED',
+                box_id: (defaultBoxId && defaultBoxId !== UNCLASSIFIED_ID) ? defaultBoxId : 'UNCLASSIFIED',
             });
         }
     }, [isOpen, form, defaultCategoryId, defaultBoxId]);
@@ -207,17 +222,44 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                         )} />
                         <FormField name="category_id" control={form.control} render={({ field }) => (
                             <FormItem><FormLabel>カテゴリー</FormLabel>
-                                <Select onValueChange={(value) => { field.onChange(value); form.resetField('box_id'); }} defaultValue={field.value ?? ""}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="カテゴリーを選択 (任意)" /></SelectTrigger></FormControl>
-                                    <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                <Select onValueChange={(value) => { field.onChange(value); form.resetField('box_id'); }} value={field.value ?? "UNCLASSIFIED"} disabled={categoriesLoading}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder={categoriesLoading ? "読み込み中..." : "カテゴリーを選択 (任意)"} /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
+                                        {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                        {categoriesLoading && (
+                                            <div className="p-2 text-sm text-muted-foreground text-center">
+                                                読み込み中...
+                                            </div>
+                                        )}
+                                    </SelectContent>
                                 </Select><FormMessage />
                             </FormItem>
                         )} />
                         <FormField name="box_id" control={form.control} render={({ field }) => (
                             <FormItem><FormLabel>ボックス</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!watchedCategoryId}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="ボックスを選択 (任意)" /></SelectTrigger></FormControl>
-                                    <SelectContent>{boxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
+                                <Select 
+                                    onValueChange={(value) => field.onChange(value)} 
+                                    value={field.value ?? "UNCLASSIFIED"} 
+                                    disabled={boxesLoading}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder={
+                                                boxesLoading ? "読み込み中..." :
+                                                "ボックスを選択 (任意)"
+                                            } />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
+                                        {boxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                                        {boxesLoading && (
+                                            <div className="p-2 text-sm text-muted-foreground text-center">
+                                                読み込み中...
+                                            </div>
+                                        )}
+                                    </SelectContent>
                                 </Select><FormMessage />
                             </FormItem>
                         )} />
