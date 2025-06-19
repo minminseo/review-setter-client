@@ -109,7 +109,9 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
         staleTime: 1000 * 60 * 5,
     });
     React.useEffect(() => {
-        if (patternsSuccess) setPatterns(fetchedPatterns);
+        if (patternsSuccess && fetchedPatterns) {
+            setPatterns(fetchedPatterns);
+        }
     }, [patternsSuccess, fetchedPatterns, setPatterns]);
 
     // ボックス選択時に自動で復習パターンを設定する
@@ -232,7 +234,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                             <SelectValue 
                                                 placeholder={isPatternDisabled ? 
                                                     (selectedBox?.pattern_id ? 
-                                                        patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" 
+                                                        (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
                                                         : "未設定") 
                                                     : "パターンを選択 (任意)"
                                                 } 
@@ -240,7 +242,13 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        {patterns.length > 0 ? (
+                                            patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
+                                        ) : (
+                                            <div className="p-2 text-sm text-muted-foreground text-center">
+                                                復習パターンがありません
+                                            </div>
+                                        )}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
