@@ -23,6 +23,7 @@ import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
 // Feature Components
 import { Category } from '@/components/feature/Category';
 import { Box } from '@/components/feature/Box';
+import { useRef, useEffect, useState } from 'react';
 
 /**
  * カテゴリーページとボックスページを統合したコンポーネント。
@@ -154,11 +155,39 @@ const BoxAndCategoryPage = () => {
         return items;
     }, [currentCategory, categoryId, isUnclassifiedCategoryPage, isBoxView, currentBox, boxId]);
 
-    const displayedCategories = categories.slice(0, 7);
-    const hasMoreCategories = categories.length > 7;
+    // --- タブのレスポンシブ表示制御 ---
+    const categoryTabsContainerRef = useRef<HTMLDivElement>(null);
+    const boxTabsContainerRef = useRef<HTMLDivElement>(null);
 
-    const displayedBoxes = boxesForCurrentCategory.slice(0, 7);
-    const hasMoreBoxes = boxesForCurrentCategory.length > 7;
+    const [maxCategoryTabs, setMaxCategoryTabs] = useState<number>(7);
+    const [maxBoxTabs, setMaxBoxTabs] = useState<number>(7);
+
+    // タブの最大表示数を計算（レスポンシブ）
+    useEffect(() => {
+        const calcTabs = () => {
+            // タブ1つの最小幅（rem単位→px換算、1rem=16px想定）
+            const tabMinWidth = 96; // 6rem * 16px
+            const padding = 32; // 余白やボタン分
+            if (categoryTabsContainerRef.current) {
+                const width = categoryTabsContainerRef.current.offsetWidth - padding;
+                setMaxCategoryTabs(Math.max(1, Math.floor(width / tabMinWidth) - 1)); // -1は「未分類」分
+            }
+            if (boxTabsContainerRef.current) {
+                const width = boxTabsContainerRef.current.offsetWidth - padding;
+                setMaxBoxTabs(Math.max(1, Math.floor(width / tabMinWidth) - 1)); // -1は「全て」分
+            }
+        };
+        calcTabs();
+        window.addEventListener('resize', calcTabs);
+        return () => window.removeEventListener('resize', calcTabs);
+    }, []);
+
+    // 表示するカテゴリー・ボックス
+    const displayedCategories = categories.slice(0, maxCategoryTabs);
+    const hasMoreCategories = categories.length > maxCategoryTabs;
+
+    const displayedBoxes = boxesForCurrentCategory.slice(0, maxBoxTabs);
+    const hasMoreBoxes = boxesForCurrentCategory.length > maxBoxTabs;
 
     if (!categoryId) {
         return <div>カテゴリーIDが見つかりません</div>;
@@ -166,65 +195,98 @@ const BoxAndCategoryPage = () => {
 
     return (
         <div className="h-screen flex flex-col overflow-hidden ">
-            <div className="flex-shrink-0 space-y-4 p-4 ">
+            <div className="flex-shrink-0 space-y-4">
                 <Breadcrumbs items={breadcrumbItems} />
-                <div className="space-y-2 ">
-                    <div className="flex items-center gap-1 ">
+                <div
+                    className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-4 gap-y-2 items-stretch w-full max-w-full"
+                    style={{ minWidth: 'min-content' }}
+                >
+                    {/* カテゴリーラベル */}
+                    <div className="flex items-center">
                         <span className="text-sm font-semibold shrink-0">カテゴリー:</span>
-                        <div className="relative flex-grow ">
-                            <Tabs value={categoryId} onValueChange={(value) => navigate(`/categories/${value}`)}>
-                                <TabsList className="w-full ">
-                                    <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
-                                    {displayedCategories.map((cat) => (
-                                        <TabsTrigger key={cat.id} value={cat.id}>
-                                            {cat.name}
-                                        </TabsTrigger>
-                                    ))}
-                                </TabsList>
-                            </Tabs>
-                            {hasMoreCategories && (
-                                <Button
-                                    variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)}
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0 h-8 w-8"
-                                >
-                                    <MoreHorizontal className="h-5 w-5" />
-                                </Button>
-                            )}
+                    </div>
+                    {/* カテゴリータブ */}
+                    <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
+                        <div className="relative flex items-center w-full max-w-full" ref={categoryTabsContainerRef}>
+                            {/* タブ部分とMoreボタン用の空間を分割 */}
+                            <div className="flex-1 min-w-0 flex">
+                                <Tabs value={categoryId} onValueChange={(value) => navigate(`/categories/${value}`)}>
+                                    <TabsList
+                                        className="flex w-full"
+                                        style={{
+                                            width: '100%',
+                                        }}
+                                    >
+                                        <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                        {displayedCategories.map((cat) => (
+                                            <TabsTrigger key={cat.id} value={cat.id} className="flex-1 min-w-0">
+                                                {cat.name}
+                                            </TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                </Tabs>
+                            </div>
+                            <div className="flex-shrink-0 flex items-center" style={{ width: 40 }}>
+                                {hasMoreCategories && (
+                                    <Button
+                                        variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)}
+                                        className="ml-1 shrink-0 h-8 w-8"
+                                    >
+                                        <MoreHorizontal className="h-5 w-5" />
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    {/* ボックスラベル */}
+                    <div className="flex items-center">
                         <span className="text-sm font-semibold shrink-0">ボックス:</span>
-                        <div className="relative flex-grow">
-                            <Tabs
-                                value={boxId || ''}
-                                onValueChange={(value) => {
-                                    if (value) {
-                                        navigate(`/categories/${categoryId}/boxes/${value}`)
-                                    } else {
-                                        navigate(`/categories/${categoryId}`)
-                                    }
-                                }}
-                            >
-                                <TabsList className="w-full">
-                                    <TabsTrigger value="">全て</TabsTrigger>
-                                    {!isUnclassifiedCategoryPage && (
-                                        <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
-                                    )}
-                                    {displayedBoxes.map((box) => (
-                                        <TabsTrigger key={box.id} value={box.id}>
-                                            {box.name}
-                                        </TabsTrigger>
-                                    ))}
-                                </TabsList>
-                            </Tabs>
-                            {hasMoreBoxes && (
-                                <Button
-                                    variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)}
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0 h-8 w-8"
+                    </div>
+                    {/* ボックスタブ */}
+                    <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
+                        <div className="relative flex items-center w-full max-w-full" ref={boxTabsContainerRef}>
+                            {/* タブ部分とMoreボタン用の空間を分割 */}
+                            <div className="flex-1 min-w-0 flex">
+                                <Tabs
+                                    value={boxId || ''}
+                                    onValueChange={(value) => {
+                                        if (value) {
+                                            navigate(`/categories/${categoryId}/boxes/${value}`)
+                                        } else {
+                                            navigate(`/categories/${categoryId}`)
+                                        }
+                                    }}
                                 >
-                                    <MoreHorizontal className="h-5 w-5" />
-                                </Button>
-                            )}
+                                    <TabsList
+                                        className="flex w-full"
+                                        style={{
+                                            width: '100%',
+                                            // borderRadius: '0.75rem', // rounded-xlと同じ
+                                            // overflow: 'hidden', // ここでタブのroundedを維持しつつ見切れ防止
+                                        }}
+                                    >
+                                        <TabsTrigger value="">全て</TabsTrigger>
+                                        {!isUnclassifiedCategoryPage && (
+                                            <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                        )}
+                                        {displayedBoxes.map((box) => (
+                                            <TabsTrigger key={box.id} value={box.id} className="flex-1 min-w-0">
+                                                {box.name}
+                                            </TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                </Tabs>
+                            </div>
+                            <div className="flex-shrink-0 flex items-center" style={{ width: 40 }}>
+                                {hasMoreBoxes && (
+                                    <Button
+                                        variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)}
+                                        className="ml-1 shrink-0 h-8 w-8"
+                                    >
+                                        <MoreHorizontal className="h-5 w-5" />
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
