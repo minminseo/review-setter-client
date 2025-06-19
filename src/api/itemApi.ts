@@ -37,7 +37,7 @@ export const fetchUnclassifiedItemsByCategory = async (categoryId: string): Prom
 /**
  * 今日の日付でスケジュールされている全ての復習アイテムを取得する
  */
-export const fetchTodaysReviews = async (): Promise<GetDailyReviewDatesResponse> => {
+export const fetchTodaysReviews = async (p0: { categoryId: string | null; boxId: string | null; }): Promise<GetDailyReviewDatesResponse> => {
     const today = format(new Date(), 'yyyy-MM-dd');
     const response = await api.get<GetDailyReviewDatesResponse>(`/items/today?today=${today}`);
     return response.data;
