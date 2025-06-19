@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 // import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
 // API & Store & Types
 import { fetchTodaysReviews, completeReviewDate, incompleteReviewDate } from '@/api/itemApi';
@@ -117,11 +118,11 @@ const TodaysReviewPage = () => {
     const createMutationOptions = (isCompleting: boolean) => ({
         onSuccess: (_: any, variables: any) => {
             toast.success("状態を更新しました。");
-            
+
             // 楽観的UI更新: 即座にZustandストアを更新
             if (todaysReviews) {
                 const updatedReviews = { ...todaysReviews };
-                
+
                 // レビュー日の完了状態を即座に更新
                 updatedReviews.categories.forEach(category => {
                     category.boxes.forEach(box => {
@@ -142,16 +143,16 @@ const TodaysReviewPage = () => {
                         reviewDate.is_completed = isCompleting;
                     }
                 });
-                
+
                 setTodaysReviews(updatedReviews);
             }
-            
+
             // バックグラウンドでデータ再取得
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
         },
         onError: (err: any) => toast.error(`更新に失敗しました: ${err.message}`),
     });
-    
+
     const completeMutation = useMutation({ mutationFn: completeReviewDate, ...createMutationOptions(true) });
     const incompleteMutation = useMutation({ mutationFn: incompleteReviewDate, ...createMutationOptions(false) });
 
@@ -196,67 +197,123 @@ const TodaysReviewPage = () => {
 
 
     return (
-        <div className="space-y-4">
-            <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: "今日の復習" }]} />
-            <div className="flex justify-between items-start">
-                <div className='space-y-2'>
-                    <div className="flex items-center gap-1"> {/* 新しいdivでラップ */}
-                        <span className="text-sm font-semibold shrink-0">カテゴリー:</span> {/* 追加 */}
-                        <div className="relative flex-grow"> {/* overflow-hiddenとflex-grow、relativeを追加 */}
+        <div className="h-screen flex flex-col overflow-hidden ">
+            <div className="flex-shrink-0 space-y-4 ">
+                <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: "今日の復習" }]} />
+                <div
+                    className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-4 gap-y-2 items-stretch w-fit"
+                    style={{ minWidth: 'min-content' }}
+                >
+                    {/* カテゴリーラベル */}
+                    <div className="flex items-center">
+                        <span className="text-sm font-semibold shrink-0">カテゴリー:</span>
+                    </div>
+                    {/* カテゴリータブ */}
+                    <div className="flex items-center min-h-[2.5rem]">
+                        <div className="relative flex items-center">
                             <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <TabsList className="w-full"> {/* w-fullを追加 */}
+                                <TabsList
+                                    className="flex"
+                                    style={{
+                                        minWidth: `${(2 + displayedCategories.length) * 6}rem`,
+                                        width: 'auto',
+                                    }}
+                                >
                                     <TabsTrigger value="all">全て</TabsTrigger>
                                     <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
-                                    {displayedCategories.map(cat => <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>)} {/* displayedCategoriesを使用 */}
+                                    {displayedCategories.map(cat => (
+                                        <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
+                                    ))}
                                 </TabsList>
                             </Tabs>
+                            {hasMoreCategories && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setSelectCategoryModalOpen(true)}
+                                    className="ml-1 shrink-0 h-8 w-8"
+                                >
+                                    <MoreHorizontal className="h-5 w-5" />
+                                </Button>
+                            )}
                         </div>
-                        {hasMoreCategories && (
-                            <Button variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)} className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0 h-8 w-8">
-                                <MoreHorizontal className="h-5 w-5" />
-                            </Button>
-                        )}
                     </div>
-
-                    <div className="flex items-center gap-1"> {/* 新しいdivでラップ */}
-                        <span className="text-sm font-semibold shrink-0">ボックス:</span> {/* 追加 */}
-                        <div className="relative flex-grow"> {/* overflow-hiddenとflex-grow、relativeを追加 */}
+                    {/* ボックスラベル */}
+                    <div className="flex items-center">
+                        <span className="text-sm font-semibold shrink-0">ボックス:</span>
+                    </div>
+                    {/* ボックスタブ */}
+                    <div className="flex items-center min-h-[2.5rem]">
+                        <div className="relative flex items-center">
                             <Tabs value={selectedBox} onValueChange={setSelectedBox}>
-                                <TabsList className="w-full"> {/* w-fullを追加 */}
+                                <TabsList
+                                    className="flex"
+                                    style={{
+                                        minWidth: `${(1 + displayedBoxes.length) * 6}rem`,
+                                        width: 'auto',
+                                    }}
+                                >
                                     <TabsTrigger value="all">全て</TabsTrigger>
-                                    {displayedBoxes.map(box => <TabsTrigger key={box.box_id} value={box.box_id}>{box.box_name}</TabsTrigger>)} {/* displayedBoxesを使用 */}
+                                    {displayedBoxes.map(box => (
+                                        <TabsTrigger key={box.box_id} value={box.box_id}>{box.box_name}</TabsTrigger>
+                                    ))}
                                 </TabsList>
                             </Tabs>
+                            {hasMoreBoxes && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setSelectBoxModalOpen(true)}
+                                    className="ml-1 shrink-0 h-8 w-8"
+                                >
+                                    <MoreHorizontal className="h-5 w-5" />
+                                </Button>
+                            )}
                         </div>
-                        {hasMoreBoxes && (
-                            <Button variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)} className="absolute right-0 top-1/2 -translate-y-1/2 shrink-0 h-8 w-8">
-                                <MoreHorizontal className="h-5 w-5" />
-                            </Button>
-                        )}
-                    </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex flex-col gap-2">
-                        <Button onClick={handleNavigate}>このレイヤーへ移動</Button>
-                        <Card>
-                            <CardHeader className="p-3">
-                                <CardDescription>このレイヤーの完了状況</CardDescription>
-                                <CardTitle className="text-lg">✔: {filteredReviews.filter(r => r.is_completed).length} / 残: {filteredReviews.filter(r => !r.is_completed).length}</CardTitle>
-                            </CardHeader>
-                        </Card>
                     </div>
                 </div>
             </div>
 
-            <Card>
-                <CardContent className="pt-6">
-                    {isLoading ? <TableSkeleton /> : <DataTable columns={columns} data={filteredReviews} />}
-                </CardContent>
-            </Card>
+            <div className="flex-1 flex flex-col overflow-hidden p-4 pt-0">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end p-3 gap-2">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                        <Button
+                            onClick={handleNavigate}
+                            className="w-full sm:w-auto"
+                            variant="secondary"
+                            size="lg"
+                        >
+                            <ArrowRightEndOnRectangleIcon className="h-5 w-5" />
+                        </Button>
+                        <Card className="w-full sm:w-10 min-w-[5rem] max-w-xs py-2 bg-green-900">
+                            <CardHeader className="p-0">
+                                <CardTitle className="text-sm whitespace-nowrap text-center flex items-center justify-center gap-1">
+                                    <CheckCircleIcon className="h-6 w-6 " /> {/* 青色に上書き */}
+                                    : {filteredReviews.filter(r => r.is_completed).length}
+                                </CardTitle>
+                            </CardHeader>
+                        </Card>
+                        <Card className="w-full sm:w-10 min-w-[5rem] max-w-xs py-2">
+                            <CardHeader className="p-0">
+                                <CardTitle className="text-sm whitespace-nowrap text-center flex items-center justify-center gap-1">
+                                    <XCircleIcon className="h-6 w-6" />
+                                    : {filteredReviews.filter(r => !r.is_completed).length}
+                                </CardTitle>
+                            </CardHeader>
+                        </Card>
+                    </div>
+                </div>
+                <Card>
+                    <CardContent className="pt-6">
+                        {isLoading ? <TableSkeleton /> : <DataTable columns={columns} data={filteredReviews} />}
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* モーダルコンポーネントを追加 */}
             <SelectCategoryModal isOpen={isSelectCategoryModalOpen} onClose={() => setSelectCategoryModalOpen(false)} onSelect={(category) => { setSelectedCategory(category.id); setSelectCategoryModalOpen(false); }} /> {/* */}
             <SelectBoxModal isOpen={isSelectBoxModalOpen} onClose={() => setSelectBoxModalOpen(false)} onSelect={(box) => { setSelectedBox(box.id); setSelectBoxModalOpen(false); }} categoryId={selectedCategory === 'all' ? undefined : selectedCategory} /> {/* */}
+
         </div>
     );
 };
