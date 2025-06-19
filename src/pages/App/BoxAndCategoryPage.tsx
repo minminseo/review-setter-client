@@ -38,7 +38,7 @@ const BoxAndCategoryPage = () => {
     // --- Zustandストア ---
     const { categories, setCategories } = useCategoryStore();
     const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
-    const { itemsByBoxId, setItemsForBox } = useItemStore();
+    const { setItemsForBox } = useItemStore();
     const { setPatterns } = usePatternStore();
 
 
@@ -53,7 +53,7 @@ const BoxAndCategoryPage = () => {
     const currentCategory = categories.find(c => c.id === categoryId);
     const boxesForCurrentCategory = boxesByCategoryId[categoryId || ''] || [];
     const currentBox = isBoxView ? boxesForCurrentCategory.find(b => b.id === boxId) : null;
-    const items = isBoxView && boxId ? (itemsByBoxId[boxId] || []) : [];
+    // items は Box コンポーネントに直接 fetchedItems から渡すため、ここでは不要
 
     // --- データ取得 (React Query) ---
 
@@ -233,7 +233,7 @@ const BoxAndCategoryPage = () => {
             {isBoxView ? (
                 <Box
                     key={boxId}
-                    items={items}
+                    items={fetchedItems ? fetchedItems.filter(item => !item.is_finished) : []}
                     isLoading={isItemsLoading}
                     currentCategory={currentCategory}
                     currentBox={currentBox}

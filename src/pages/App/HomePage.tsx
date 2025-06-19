@@ -76,14 +76,16 @@ const HomePage = () => {
 
     // 取得したデータを基に、UI表示用にカテゴリーごとの統計情報を計算する
     const categoriesWithStats = React.useMemo(() => {
-        if (!categoriesQuery.data || !itemCountByBoxQuery.data || !dailyReviewCountByBoxQuery.data) {
+        // カテゴリーデータが必須。他のデータは失敗しても基本表示は維持
+        if (!categoriesQuery.data) {
             return [];
         }
 
-        const itemCountByBox = itemCountByBoxQuery.data as ItemCountGroupedByBoxResponse[];
-        const dailyCountByBox = dailyReviewCountByBoxQuery.data as DailyCountGroupedByBoxResponse[];
-        const unclassifiedItemCount = unclassifiedItemCountByCategoryQuery.data as UnclassifiedItemCountGroupedByCategoryResponse[];
-        const unclassifiedDailyCount = dailyUnclassifiedReviewCountByCategoryQuery.data as UnclassifiedDailyDatesCountGroupedByCategoryResponse[];
+        // 各データを安全に取得（失敗した場合は空配列として扱う）
+        const itemCountByBox = (itemCountByBoxQuery.data || []) as ItemCountGroupedByBoxResponse[];
+        const dailyCountByBox = (dailyReviewCountByBoxQuery.data || []) as DailyCountGroupedByBoxResponse[];
+        const unclassifiedItemCount = (unclassifiedItemCountByCategoryQuery.data || []) as UnclassifiedItemCountGroupedByCategoryResponse[];
+        const unclassifiedDailyCount = (dailyUnclassifiedReviewCountByCategoryQuery.data || []) as UnclassifiedDailyDatesCountGroupedByCategoryResponse[];
 
         return categoriesQuery.data.map(category => {
             // カテゴリーに属するボックスの総アイテム数を計算
