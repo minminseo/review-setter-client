@@ -76,15 +76,21 @@ const BoxAndCategoryPage = () => {
     const { data: fetchedItems, isLoading: isItemsLoading, isSuccess: itemsSuccess } = useQuery({
         queryKey: ['items', boxId, categoryId],
         queryFn: () => {
-            if (!boxId) return Promise.resolve([]);
-            if (boxId === UNCLASSIFIED_ID) {
-                return categoryId === UNCLASSIFIED_ID
-                    ? fetchUnclassifiedItems()
-                    : fetchUnclassifiedItemsByCategory(categoryId!);
+            // 1. category_idもbox_idもNULL（完全未分類）
+            if (!categoryId && !boxId) {
+                return fetchUnclassifiedItems();
             }
-            return fetchItemsByBox(boxId);
+            // 2. category_idが非NULLでbox_idがNULL（カテゴリー未分類ボックス）
+            if (categoryId && !boxId) {
+                return fetchUnclassifiedItemsByCategory(categoryId);
+            }
+            // 3. 通常のボックス
+            if (boxId) {
+                return fetchItemsByBox(boxId);
+            }
+            return [];
         },
-        enabled: isBoxView,
+        enabled: isBoxView || !boxId, // ボックス画面 or 未分類ボックス画面
     });
 
     // 4. 全復習パターン
