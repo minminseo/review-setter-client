@@ -22,7 +22,13 @@ const AppLayout = () => {
     const [isSettingsModalOpen, setSettingsModalOpen] = React.useState(false);
 
     const openCreateItemModal = React.useCallback((context: { categoryId?: string; boxId?: string } = {}) => {
-        setModalContext(context);
+        // 文脈が明示的に渡されていない場合は未分類をデフォルトに設定
+        // UNCLASSIFIED_IDとして'unclassified'を使用
+        const defaultContext = {
+            categoryId: context.categoryId || 'unclassified',
+            boxId: context.boxId || 'unclassified'
+        };
+        setModalContext(defaultContext);
         setCreateItemModalOpen(true);
     }, []);
 

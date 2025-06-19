@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { GetBoxOutput, GetCategoryOutput } from '@/types';
+import { useModal } from '@/contexts/ModalContext';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,8 @@ interface CategoryProps {
  */
 export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassifiedPage }: CategoryProps) => {
 
+    const { openCreateItemModal } = useModal();
+
     // モーダルの開閉状態を管理
     const [isCreateBoxModalOpen, setCreateBoxModalOpen] = React.useState(false);
     const [editingBox, setEditingBox] = React.useState<GetBoxOutput | null>(null);
@@ -50,6 +53,16 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
             <div className="flex items-center justify-end w-full py-2">
                 {!isUnclassifiedPage && currentCategory && (
                     <div className="flex items-center gap-2">
+                        <Button 
+                            onClick={() => openCreateItemModal({ 
+                                categoryId: currentCategory.id, 
+                                boxId: 'unclassified' 
+                            })}
+                            variant="outline"
+                        >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            復習物作成
+                        </Button>
                         <Button onClick={() => setCreateBoxModalOpen(true)}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             ボックス作成
