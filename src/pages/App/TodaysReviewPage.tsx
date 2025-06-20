@@ -24,7 +24,6 @@ import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Modals
@@ -46,7 +45,8 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
         category.boxes.forEach(box => {
             allReviews.push(
                 ...box.review_dates.map(rd => ({
-                    ...rd, item_id: rd.review_date_id,
+                    ...rd,
+                    item_id: rd.item_id, // ← review_date_idではなく本来のitem_idをセット
                     target_weight: box.target_weight
                 }))
             );
@@ -54,7 +54,7 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
         allReviews.push(
             ...category.unclassified_daily_review_dates_by_category.map(rd => ({
                 ...rd,
-                item_id: rd.review_date_id,
+                item_id: rd.item_id, // ← ここも修正
                 box_id: null,
             }))
         );
@@ -62,7 +62,7 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
     allReviews.push(
         ...data.daily_review_dates_grouped_by_user.map(rd => ({
             ...rd,
-            item_id: rd.review_date_id,
+            item_id: rd.item_id ?? rd.review_date_id, // item_idがなければreview_date_idを暫定的にセット
             category_id: null,
             box_id: null,
         }))
@@ -162,8 +162,8 @@ const TodaysReviewPage = () => {
 
 
     // --- データ操作 (Mutation) ---
-    const createMutationOptions = (isCompleting: boolean) => ({
-        onSuccess: (_: any, variables: any) => {
+    const createMutationOptions = (_: boolean) => ({
+        onSuccess: (_: any, _vars: any) => {
             toast.success("状態を更新しました。");
             queryClient.invalidateQueries({ queryKey: ['todaysReviews', selectedCategoryId, selectedBoxId] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
@@ -180,16 +180,38 @@ const TodaysReviewPage = () => {
         {
             id: 'is_completed',
             header: '状態',
-            cell: ({ row }) => (
-                <Checkbox
-                    checked={row.original.is_completed}
-                    onCheckedChange={(checked) => {
-                        const { item_id, review_date_id, step_number } = row.original;
-                        const mutationData = { itemId: item_id, reviewDateId: review_date_id, data: { step_number } };
-                        checked ? completeMutation.mutate(mutationData) : incompleteMutation.mutate(mutationData);
-                    }}
-                />
-            ),
+            cell: ({ row }) => {
+                const isCompleted = row.original.is_completed;
+                return isCompleted ? (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="bg-gray-800 hover:bg-gray-900 text-white border-white-400 w-full"
+                        onClick={() => {
+                            const { item_id, review_date_id, step_number } = row.original;
+                            const mutationData = { itemId: item_id, reviewDateId: review_date_id, data: { step_number } };
+                            incompleteMutation.mutate(mutationData);
+                        }}
+                        disabled={incompleteMutation.isPending}
+                    >
+                        取消
+                    </Button>
+                ) : (
+                    <Button
+                        variant="default"
+                        size="sm"
+                        className="bg-green-700 hover:bg-green-800 text-white w-full"
+                        onClick={() => {
+                            const { item_id, review_date_id, step_number } = row.original;
+                            const mutationData = { itemId: item_id, reviewDateId: review_date_id, data: { step_number } };
+                            completeMutation.mutate(mutationData);
+                        }}
+                        disabled={completeMutation.isPending}
+                    >
+                        完了
+                    </Button>
+                );
+            },
             size: 60,
         },
         // 操作カラム（歯車アイコン）
