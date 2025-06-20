@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
-import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { MoreHorizontal } from 'lucide-react';
 
 // API & Store & Types
@@ -14,7 +14,7 @@ import {
 } from '@/api/itemApi';
 import { fetchCategories } from '@/api/categoryApi';
 import { fetchBoxes } from '@/api/boxApi'; // ボックス取得APIをインポート
-import { useItemStore, useCategoryStore, useBoxStore } from '@/store';
+import { useItemStore, useCategoryStore, useBoxStore, usePatternStore } from '@/store';
 import { DailyReviewDate, GetDailyReviewDatesResponse, GetCategoryOutput, GetBoxOutput } from '@/types';
 import { UNCLASSIFIED_ID } from '@/constants';
 
@@ -30,6 +30,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // Modals
 import { SelectCategoryModal } from '@/components/modals/SelectCategoryModal';
 import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
+import { ItemDetailModal } from '@/components/modals/ItemDetailModal';
+import { EditReviewDateModal } from '@/components/modals/EditReviewDateModal';
+import NameCell from '@/components/shared/NameCell';
 
 /**
  * APIから取得したネストされた今日の復習データを、テーブルで表示しやすいようにフラットな配列に変換するヘルパー関数
@@ -76,6 +79,7 @@ const TodaysReviewPage = () => {
     const { categories, setCategories } = useCategoryStore();
     const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
     const { todaysReviews: zustandTodaysReviews, setTodaysReviews } = useItemStore();
+    const { patterns } = usePatternStore();
 
     // フィルターの状態管理
     const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>('all');
@@ -84,6 +88,10 @@ const TodaysReviewPage = () => {
     // モーダルの状態管理
     const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
     const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false);
+
+    // 詳細・編集用の状態
+    const [detailItem, setDetailItem] = React.useState<DailyReviewDate | null>(null);
+    const [editingReviewDate, setEditingReviewDate] = React.useState<DailyReviewDate | null>(null);
 
     // --- データ取得 (React Query) ---
     // 1. カテゴリー一覧 (フィルタータブ用)
@@ -102,7 +110,7 @@ const TodaysReviewPage = () => {
     // 3. 今日の復習リスト（フィルター適用）
     const { data: reviewItems, isLoading } = useQuery({
         queryKey: ['todaysReviews', selectedCategoryId, selectedBoxId],
-        queryFn: () => fetchTodaysReviews({
+        queryFn: () => fetchTodaysReviews({ // バックエンドがフィルタリングをサポートすると仮定
             categoryId: selectedCategoryId === 'all' || selectedCategoryId === UNCLASSIFIED_ID ? null : selectedCategoryId,
             boxId: selectedBoxId === 'all' || selectedBoxId === UNCLASSIFIED_ID ? null : selectedBoxId,
         }),
@@ -168,8 +176,11 @@ const TodaysReviewPage = () => {
 
     // --- テーブルの列定義 ---
     const columns = React.useMemo<ColumnDef<DailyReviewDate>[]>(() => [
+        // 状態カラム（完了/未完了）
         {
-            id: 'is_completed', header: '完/未', cell: ({ row }) => (
+            id: 'is_completed',
+            header: '状態',
+            cell: ({ row }) => (
                 <Checkbox
                     checked={row.original.is_completed}
                     onCheckedChange={(checked) => {
@@ -178,11 +189,81 @@ const TodaysReviewPage = () => {
                         checked ? completeMutation.mutate(mutationData) : incompleteMutation.mutate(mutationData);
                     }}
                 />
-            )
+            ),
+            size: 60,
         },
-        { accessorKey: 'item_name', header: '復習物名' },
-        // ... 他の列定義
-    ], [completeMutation, incompleteMutation]);
+        // 操作カラム（歯車アイコン）
+        {
+            id: 'actions',
+            header: '操作',
+            cell: ({ row }) => (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingReviewDate(row.original)}>
+                    <PencilIcon className="h-5 w-5" />
+                </Button>
+            ),
+            size: 60,
+        },
+        // item_name（復習物名）
+        {
+            accessorKey: 'item_name',
+            header: '復習物名',
+            cell: ({ row }) => <NameCell name={row.original.item_name} />, // 省略表示＋ツールチップ
+        },
+        // 詳細カラム（情報アイコン）
+        {
+            id: 'detail',
+            header: '詳細',
+            cell: ({ row }) => (
+                <Button variant="ghost" size="icon" onClick={() => setDetailItem(row.original)}>
+                    <DocumentTextIcon className="h-5 w-5" />
+                </Button>
+            ),
+            size: 60,
+        },
+        // 重さカラム（target_weight）
+        {
+            id: 'target_weight',
+            header: '重さ',
+            cell: ({ row }) => {
+                // box_idがあればboxのpattern_idから、なければcategory_idやitem_idから推測
+                const tw = row.original.target_weight;
+                if (tw) return tw;
+                // fallback: patternsからitem_idやbox_idで探す場合はここで拡張
+                return '-';
+            },
+        },
+        // ステップカラム
+        {
+            accessorKey: 'step_number',
+            header: 'ステップ',
+            cell: ({ row }) => row.original.step_number,
+        },
+        // 学習日カラム
+        {
+            id: 'learned_date',
+            header: '学習日',
+            cell: ({ row }) => row.original.learned_date || '-',
+
+        },
+        // prevカラム
+        {
+            id: 'prev',
+            header: 'prev',
+            cell: ({ row }) => row.original.prev_scheduled_date || '-',
+        },
+        // currentカラム
+        {
+            id: 'current',
+            header: 'current',
+            cell: ({ row }) => row.original.scheduled_date || '-',
+        },
+        // nextカラム
+        {
+            id: 'next',
+            header: 'next',
+            cell: ({ row }) => row.original.next_scheduled_date || '-',
+        },
+    ], [completeMutation, incompleteMutation, patterns]);
 
     // --- イベントハンドラ ---
     const handleCategoryChange = (newCategoryId: string) => {
@@ -213,41 +294,97 @@ const TodaysReviewPage = () => {
 
     return (
         <div className="h-screen flex flex-col overflow-hidden ">
-            <div className="flex-shrink-0 space-y-4 p-4 border-b">
+            {/* 上部固定ヘッダー */}
+            <div
+                className="flex-shrink-0 space-y-4 bg-background z-10"
+                style={{
+                    position: 'sticky',
+                    top: 0,
+                    boxShadow: '0 2px 8px -4px rgba(0,0,0,0.08)',
+                }}
+            >
                 <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: "今日の復習" }]} />
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">カテゴリー:</span>
-                    <Tabs value={selectedCategoryId} onValueChange={handleCategoryChange}>
-                        <TabsList>
-                            <TabsTrigger value="all">全て</TabsTrigger>
-                            <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
-                            {displayedCategories.map(cat => (
-                                <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
-                    {hasMoreCategories && (
-                        <Button variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)}>
-                            <MoreHorizontal className="h-5 w-5" />
-                        </Button>
-                    )}
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">ボックス:</span>
-                    <Tabs value={selectedBoxId} onValueChange={handleBoxChange}>
-                        <TabsList>
-                            <TabsTrigger value="all">全て</TabsTrigger>
-                            {selectedCategoryId !== 'all' && <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>}
-                            {displayedBoxes.map(box => (
-                                <TabsTrigger key={box.id} value={box.id}>{box.name}</TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
-                    {hasMoreBoxes && (
-                        <Button variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)}>
-                            <MoreHorizontal className="h-5 w-5" />
-                        </Button>
-                    )}
+                <div
+                    className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-4 gap-y-2 items-stretch w-full max-w-full"
+                    style={{ minWidth: 'min-content' }}
+                >
+                    {/* カテゴリーラベル */}
+                    <div className="flex items-center">
+                        <span className="text-sm font-semibold shrink-0">カテゴリー:</span>
+                    </div>
+                    {/* カテゴリータブ */}
+                    <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
+                        <div className="relative flex items-center w-full max-w-full">
+                            <div className="flex-1 min-w-0 flex">
+                                <Tabs value={selectedCategoryId} onValueChange={handleCategoryChange}>
+                                    <TabsList className="flex w-full">
+                                        <TabsTrigger value="all">全て</TabsTrigger>
+                                        <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                        {displayedCategories.map((cat) => (
+                                            <TabsTrigger key={cat.id} value={cat.id} className="flex-1 min-w-0">
+                                                {cat.name}
+                                            </TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                </Tabs>
+                            </div>
+                            <div className="flex-shrink-0 flex items-center" style={{ width: 40 }}>
+                                {hasMoreCategories && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setSelectCategoryModalOpen(true)}
+                                        className="ml-1 shrink-0 h-8 w-8"
+                                    >
+                                        <MoreHorizontal className="h-5 w-5" />
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    {/* ボックスラベル */}
+                    <div className="flex items-center">
+                        <span className="text-sm font-semibold shrink-0">ボックス:</span>
+                    </div>
+                    {/* ボックスタブ */}
+                    <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
+                        <div className="relative flex items-center w-full max-w-full">
+                            <div className="flex-1 min-w-0 flex">
+                                <Tabs value={selectedBoxId} onValueChange={handleBoxChange}>
+                                    <TabsList
+                                        className="flex w-full"
+                                        style={{
+                                            width: '100%',
+                                            borderRadius: '0.75rem',
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        <TabsTrigger value="all">全て</TabsTrigger>
+                                        {selectedCategoryId !== 'all' && (
+                                            <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                        )}
+                                        {displayedBoxes.map((box) => (
+                                            <TabsTrigger key={box.id} value={box.id} className="flex-1 min-w-0">
+                                                {box.name}
+                                            </TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                </Tabs>
+                            </div>
+                            <div className="flex-shrink-0 flex items-center" style={{ width: 40 }}>
+                                {hasMoreBoxes && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setSelectBoxModalOpen(true)}
+                                        className="ml-1 shrink-0 h-8 w-8"
+                                    >
+                                        <MoreHorizontal className="h-5 w-5" />
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -283,19 +420,129 @@ const TodaysReviewPage = () => {
                         )}
                     </CardContent>
                 </Card>
-            </div>
 
-            <SelectCategoryModal
-                isOpen={isSelectCategoryModalOpen}
-                onClose={() => setSelectCategoryModalOpen(false)}
-                onSelect={(category) => { handleCategoryChange(category.id); setSelectCategoryModalOpen(false); }}
-            />
-            <SelectBoxModal
-                isOpen={isSelectBoxModalOpen}
-                onClose={() => setSelectBoxModalOpen(false)}
-                onSelect={(box) => { handleBoxChange(box.id); setSelectBoxModalOpen(false); }}
-                categoryId={selectedCategoryId !== 'all' ? selectedCategoryId : undefined}
-            />
+                {/* 詳細モーダル・編集モーダル */}
+                {detailItem && (
+                    <ItemDetailModal
+                        isOpen={!!detailItem}
+                        onClose={() => setDetailItem(null)}
+                        item={{
+                            item_id: detailItem.item_id,
+                            name: detailItem.item_name,
+                            detail: detailItem.detail,
+                            // 必須フィールドはダミー値で埋める（詳細表示のみなのでOK）
+                            user_id: '',
+                            category_id: detailItem.category_id,
+                            box_id: detailItem.box_id,
+                            pattern_id: null,
+                            learned_date: '',
+                            is_finished: false,
+                            registered_at: '',
+                            edited_at: '',
+                            review_dates: [],
+                        }}
+                    />
+                )}
+                {editingReviewDate && (() => {
+                    // zustandTodaysReviewsから該当itemを検索
+                    let item: any = null;
+                    let reviewDate: any = null;
+                    if (zustandTodaysReviews) {
+                        // 1. カテゴリー・ボックス内
+                        for (const category of zustandTodaysReviews.categories) {
+                            for (const box of category.boxes) {
+                                for (const rd of box.review_dates) {
+                                    if (rd.review_date_id === editingReviewDate.review_date_id) {
+                                        const safeLearned = '1970-01-01';
+                                        const safeScheduled = rd.scheduled_date || '1970-01-01';
+                                        const safeInitial = rd.scheduled_date || '1970-01-01';
+                                        item = {
+                                            item_id: rd.item_id,
+                                            name: rd.item_name,
+                                            detail: rd.detail,
+                                            user_id: '',
+                                            category_id: rd.category_id,
+                                            box_id: rd.box_id,
+                                            pattern_id: null,
+                                            learned_date: safeLearned,
+                                            is_finished: false,
+                                            registered_at: '',
+                                            edited_at: '',
+                                            review_dates: [{ ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial }],
+                                        };
+                                        reviewDate = { ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial };
+                                    }
+                                }
+                            }
+                            // 2. 未分類ボックス
+                            for (const rd of category.unclassified_daily_review_dates_by_category) {
+                                const safeLearned = '1970-01-01';
+                                const safeScheduled = rd.scheduled_date || '1970-01-01';
+                                const safeInitial = rd.scheduled_date || '1970-01-01';
+                                if (rd.review_date_id === editingReviewDate.review_date_id) {
+                                    item = {
+                                        item_id: rd.item_id,
+                                        name: rd.item_name,
+                                        detail: rd.detail,
+                                        user_id: '',
+                                        category_id: rd.category_id,
+                                        box_id: null,
+                                        pattern_id: null,
+                                        learned_date: safeLearned,
+                                        is_finished: false,
+                                        registered_at: '',
+                                        edited_at: '',
+                                        review_dates: [{ ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial }],
+                                    };
+                                    reviewDate = { ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial };
+                                }
+                            }
+                        }
+                        // 3. ユーザー直下
+                        for (const rd of zustandTodaysReviews.daily_review_dates_grouped_by_user) {
+                            const safeLearned = '1970-01-01';
+                            const safeScheduled = rd.scheduled_date || '1970-01-01';
+                            const safeInitial = rd.scheduled_date || '1970-01-01';
+                            if (rd.review_date_id === editingReviewDate.review_date_id) {
+                                item = {
+                                    item_id: rd.item_id,
+                                    name: rd.item_name,
+                                    detail: rd.detail,
+                                    user_id: '',
+                                    category_id: null,
+                                    box_id: null,
+                                    pattern_id: null,
+                                    learned_date: safeLearned,
+                                    is_finished: false,
+                                    registered_at: '',
+                                    edited_at: '',
+                                    review_dates: [{ ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial }],
+                                };
+                                reviewDate = { ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial };
+                            }
+                        }
+                    }
+                    return (
+                        <EditReviewDateModal
+                            isOpen={!!editingReviewDate}
+                            onClose={() => setEditingReviewDate(null)}
+                            data={item && reviewDate ? { item, reviewDate } : null}
+                        />
+                    );
+                })()}
+
+                <SelectCategoryModal
+                    isOpen={isSelectCategoryModalOpen}
+                    onClose={() => setSelectCategoryModalOpen(false)}
+                    onSelect={(category) => { handleCategoryChange(category.id); setSelectCategoryModalOpen(false); }}
+                />
+                <SelectBoxModal
+                    isOpen={isSelectBoxModalOpen}
+                    onClose={() => setSelectBoxModalOpen(false)}
+                    onSelect={(box) => { handleBoxChange(box.id); setSelectBoxModalOpen(false); }}
+                    categoryId={selectedCategoryId !== 'all' ? selectedCategoryId : undefined}
+                />
+            </div>
         </div>
     );
 };
