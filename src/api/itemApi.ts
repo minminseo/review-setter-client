@@ -5,12 +5,37 @@ import { format } from 'date-fns';
 
 // --- アイテムのCRUD ---
 export const createItem = async (data: CreateItemRequest) => {
+    console.log('=== createItem API Call Debug ===');
+    console.log('Request data:', data);
+    
     const response = await api.post<ItemResponse>('/items', data);
+    
+    console.log('=== createItem API Response Debug ===');
+    console.log('Response data:', response.data);
+    console.log('review_dates in create response:', response.data.review_dates);
+    console.log('review_dates length in create:', response.data.review_dates?.length);
+    console.log('=====================================');
+    
     return response.data;
 }
 
 export const updateItem = async ({ itemId, data }: { itemId: string, data: UpdateItemRequest }) => {
+    console.log('=== updateItem API Call Debug ===');
+    console.log('ItemId:', itemId);
+    console.log('Request data:', data);
+    
     const response = await api.put<ItemResponse>(`/items/${itemId}`, data);
+    
+    console.log('=== updateItem API Response Debug ===');
+    console.log('Full response object:', response);
+    console.log('Response data:', response.data);
+    console.log('Response data type:', typeof response.data);
+    console.log('Response data keys:', Object.keys(response.data));
+    console.log('review_dates in response:', response.data.review_dates);
+    console.log('review_dates type:', typeof response.data.review_dates);
+    console.log('review_dates length:', response.data.review_dates?.length);
+    console.log('=====================================');
+    
     return response.data;
 }
 
@@ -37,7 +62,7 @@ export const fetchUnclassifiedItemsByCategory = async (categoryId: string): Prom
 /**
  * 今日の日付でスケジュールされている全ての復習アイテムを取得する
  */
-export const fetchTodaysReviews = async (p0: { categoryId: string | null; boxId: string | null; }): Promise<GetDailyReviewDatesResponse> => {
+export const fetchTodaysReviews = async (): Promise<GetDailyReviewDatesResponse> => {
     const today = format(new Date(), 'yyyy-MM-dd');
     const response = await api.get<GetDailyReviewDatesResponse>(`/items/today?today=${today}`);
     return response.data;

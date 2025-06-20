@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 // API関数
 import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate } from '@/api/itemApi';
 import { UNCLASSIFIED_ID } from '@/constants';
+import { useItemStore } from '@/store';
+import { fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory } from '@/api/itemApi';
 // 型定義
 import { ItemResponse } from '@/types';
 // UIコンポーネント
@@ -24,11 +26,19 @@ type FinishedItemsModalProps = {
     categoryId?: string;
 };
 
-/**
- * 完了済みの復習アイテムを一覧表示し、「復習の再開」などの操作を行うモーダル。
- */
+// storeBoxId生成ロジックをBoxAndCategoryPageと統一
+const getStoreBoxId = (boxId: string | undefined, categoryId: string | undefined) => {
+    if ((boxId === UNCLASSIFIED_ID || !boxId) && categoryId && categoryId !== UNCLASSIFIED_ID) {
+        return `unclassified-${categoryId}`;
+    } else if (!boxId || boxId === UNCLASSIFIED_ID) {
+        return 'unclassified';
+    }
+    return boxId;
+};
+
 export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: FinishedItemsModalProps) => {
     const queryClient = useQueryClient();
+    const setItemsForBox = useItemStore(state => state.setItemsForBox);
     // 詳細表示モーダルで表示するアイテムを管理するstate
     const [detailItem, setDetailItem] = React.useState<ItemResponse | null>(null);
 
@@ -69,33 +79,56 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             };
             return markItemAsUnfinished(unfinishData);
         },
-        onSuccess: async (_, variables) => {
-            toast.success(`「${variables.name}」の復習を再開しました。`);
-            
-            // React Queryのキャッシュ無効化のみを使用（楽観的更新を削除）
-            // これにより、サーバーから最新のデータを確実に取得し、データの競合を回避
+        onSuccess: async () => {
+            toast.success(`復習を再開しました。`);
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: queryKey }),
-                queryClient.invalidateQueries({ queryKey: ['items', variables.box_id] }),
+                queryClient.invalidateQueries({ queryKey: ['items', boxId] }),
                 queryClient.invalidateQueries({ queryKey: ['todaysReviews'] }),
                 queryClient.invalidateQueries({ queryKey: ['summary'] })
             ]);
-            
-            // キャッシュ無効化が完了してからモーダルを閉じる
-            onClose();
+            // --- zustandストアも即時更新 ---
+            if (
+                (boxId === undefined && categoryId === undefined) ||
+                (boxId === UNCLASSIFIED_ID && (!categoryId || categoryId === UNCLASSIFIED_ID)) ||
+                (categoryId && categoryId !== UNCLASSIFIED_ID && (boxId === undefined || boxId === UNCLASSIFIED_ID))
+            ) {
+                const storeBoxId = getStoreBoxId(boxId, categoryId);
+                let items: ItemResponse[] = [];
+                if (categoryId === UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
+                    items = await fetchUnclassifiedItems();
+                } else if (categoryId && categoryId !== UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
+                    items = await fetchUnclassifiedItemsByCategory(categoryId);
+                }
+                setItemsForBox(storeBoxId || '', items.filter((item: ItemResponse) => !item.is_finished));
+            }
         },
         onError: (err: any) => toast.error(`処理に失敗しました: ${err.message}`),
     });
 
     const incompleteReviewMutation = useMutation({
-        mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number }) => 
+        mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number }) =>
             incompleteReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
-        onSuccess: () => {
+        onSuccess: async () => {
             toast.success("復習を未完了に戻しました。");
             queryClient.invalidateQueries({ queryKey: queryKey });
             queryClient.invalidateQueries({ queryKey: ['items', boxId] });
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
-            onClose();
+            // --- zustandストアも即時更新 ---
+            if (
+                (boxId === undefined && categoryId === undefined) ||
+                (boxId === UNCLASSIFIED_ID && (!categoryId || categoryId === UNCLASSIFIED_ID)) ||
+                (categoryId && categoryId !== UNCLASSIFIED_ID && (boxId === undefined || boxId === UNCLASSIFIED_ID))
+            ) {
+                const storeBoxId = getStoreBoxId(boxId, categoryId);
+                let items: ItemResponse[] = [];
+                if (categoryId === UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
+                    items = await fetchUnclassifiedItems();
+                } else if (categoryId && categoryId !== UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
+                    items = await fetchUnclassifiedItemsByCategory(categoryId);
+                }
+                setItemsForBox(storeBoxId || '', items.filter((item: ItemResponse) => !item.is_finished));
+            }
         },
         onError: (err) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
     });
@@ -107,22 +140,22 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             cell: ({ row }) => {
                 const today = format(new Date(), 'yyyy-MM-dd');
                 const item = row.original;
-                
+
                 // 最後の復習日を取得
                 const lastReviewDate = item.review_dates[item.review_dates.length - 1];
-                const isLastReviewDateToday = lastReviewDate && 
+                const isLastReviewDateToday = lastReviewDate &&
                     format(new Date(lastReviewDate.scheduled_date), 'yyyy-MM-dd') === today;
-                
+
                 // すべての復習日が完了しているかチェック
                 const hasIncompleteReviewDate = item.review_dates.some(rd => !rd.is_completed);
-                
+
                 return (
                     <div className='flex gap-2'>
                         {/* 最後の復習日が今日の場合は「取消」ボタンを表示 */}
                         {isLastReviewDateToday && (
-                            <Button 
-                                size="sm" 
-                                variant="outline" 
+                            <Button
+                                size="sm"
+                                variant="outline"
                                 className="text-gray-600 border-gray-400"
                                 onClick={() => incompleteReviewMutation.mutate({
                                     itemId: item.item_id,
@@ -134,12 +167,12 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                                 取消
                             </Button>
                         )}
-                        
+
                         {/* 未完了の復習日がある場合は「再開」ボタンを表示 */}
                         {hasIncompleteReviewDate && (
-                            <Button 
-                                size="sm" 
-                                variant="outline" 
+                            <Button
+                                size="sm"
+                                variant="outline"
                                 onClick={() => unfinishMutation.mutate(item)}
                                 disabled={unfinishMutation.isPending}
                             >

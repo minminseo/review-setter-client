@@ -124,10 +124,45 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     const updateMutation = useMutation({
         mutationFn: (data: UpdateItemRequest) => updateItem({ itemId: item.item_id, data }),
         onSuccess: (updatedItem, variables) => {
+            // Debug logs to analyze the API response structure
+            console.log('=== EditItemModal updateItem API Response Debug ===');
+            console.log('Original item:', item);
+            console.log('Updated item from API:', updatedItem);
+            console.log('Update variables sent:', variables);
+            console.log('updatedItem.review_dates:', updatedItem.review_dates);
+            console.log('Original item.review_dates:', item.review_dates);
+            console.log('Are review_dates included in response?', !!updatedItem.review_dates);
+            console.log('Review dates count in response:', updatedItem.review_dates?.length || 0);
+            console.log('=====================================================');
+            
             toast.success("アイテムを更新しました！");
+            
+            // 重要：APIレスポンスにreview_datesが不完全な場合、元のデータで補完
+            const enrichedUpdatedItem = {
+                ...updatedItem,
+                review_dates: updatedItem.review_dates && updatedItem.review_dates.length > 0 
+                    ? updatedItem.review_dates 
+                    : item.review_dates // 元のreview_datesを保持
+            };
+            
+            console.log('=== Enriched Updated Item Debug ===');
+            console.log('Original API response review_dates:', updatedItem.review_dates);
+            console.log('Original item review_dates:', item.review_dates);
+            console.log('Final enriched review_dates:', enrichedUpdatedItem.review_dates);
+            console.log('===================================');
             
             const oldBoxId = item.box_id;
             const newBoxId = variables.box_id;
+            const oldCategoryId = item.category_id;
+            const newCategoryId = variables.category_id;
+            
+            // キャッシュキーを正しく生成する関数
+            const getQueryKey = (boxId: string | null | undefined, categoryId: string | null | undefined) => {
+                if (!boxId || boxId === 'unclassified') {
+                    return ['items', 'unclassified', categoryId || 'unclassified'];
+                }
+                return ['items', boxId, categoryId];
+            };
             
             // 1. Zustandストアを即座にサーバーレスポンスで更新
             if (oldBoxId !== newBoxId) {
@@ -136,46 +171,46 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     removeItemFromBox(oldBoxId, item.item_id);
                 }
                 if (newBoxId) {
-                    addItemToBox(newBoxId, updatedItem);
+                    addItemToBox(newBoxId, enrichedUpdatedItem);
                 }
             } else {
                 // 同じボックス内での更新
                 if (oldBoxId) {
-                    updateItemInBox(oldBoxId, updatedItem);
+                    console.log('=== Zustand updateItemInBox Debug ===');
+                    console.log('oldBoxId:', oldBoxId);
+                    console.log('enrichedUpdatedItem being stored:', enrichedUpdatedItem);
+                    console.log('enrichedUpdatedItem.review_dates being stored:', enrichedUpdatedItem.review_dates);
+                    console.log('====================================');
+                    updateItemInBox(oldBoxId, enrichedUpdatedItem);
                 }
             }
             
             // 2. TanStack Queryのキャッシュも直接更新
-            if (oldBoxId) {
-                // 元のボックスのキャッシュからアイテムを削除
-                queryClient.setQueryData(['items', oldBoxId, item.category_id], (oldData: any) => {
+            const oldQueryKey = getQueryKey(oldBoxId, oldCategoryId);
+            const newQueryKey = getQueryKey(newBoxId, newCategoryId);
+            
+            // 元のクエリキーからアイテムを削除（移動またはカテゴリ変更の場合）
+            if (oldBoxId !== newBoxId || oldCategoryId !== newCategoryId) {
+                queryClient.setQueryData(oldQueryKey, (oldData: any) => {
                     if (!oldData) return oldData;
-                    return oldData.filter((item: any) => item.item_id !== updatedItem.item_id);
+                    return oldData.filter((i: any) => i.item_id !== enrichedUpdatedItem.item_id);
                 });
             }
             
-            if (newBoxId && newBoxId !== oldBoxId) {
-                // 新しいボックスのキャッシュにアイテムを追加
-                queryClient.setQueryData(['items', newBoxId, variables.category_id], (oldData: any) => {
-                    if (!oldData) return [updatedItem];
-                    // 既存アイテムに追加、または既存アイテムを更新
-                    const existingIndex = oldData.findIndex((item: any) => item.item_id === updatedItem.item_id);
-                    if (existingIndex >= 0) {
-                        const newData = [...oldData];
-                        newData[existingIndex] = updatedItem;
-                        return newData;
-                    }
-                    return [...oldData, updatedItem];
-                });
-            } else if (oldBoxId) {
-                // 同じボックス内での更新
-                queryClient.setQueryData(['items', oldBoxId, item.category_id], (oldData: any) => {
-                    if (!oldData) return [updatedItem];
-                    return oldData.map((item: any) => 
-                        item.item_id === updatedItem.item_id ? updatedItem : item
-                    );
-                });
-            }
+            // 新しいクエリキーにアイテムを追加または更新
+            queryClient.setQueryData(newQueryKey, (oldData: any) => {
+                if (!oldData) return [enrichedUpdatedItem];
+                
+                const existingIndex = oldData.findIndex((i: any) => i.item_id === enrichedUpdatedItem.item_id);
+                if (existingIndex >= 0) {
+                    // 既存アイテムを更新
+                    const newData = [...oldData];
+                    newData[existingIndex] = enrichedUpdatedItem;
+                    return newData;
+                }
+                // 新しいアイテムを追加
+                return [...oldData, enrichedUpdatedItem];
+            });
             
             // 3. 関連データの無効化
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
@@ -210,8 +245,28 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                 removeItemFromBox(item.box_id, item.item_id);
             }
             
+            // React Queryのキャッシュから直接削除
+            if (item.box_id && item.box_id !== 'unclassified') {
+                // 通常のボックス
+                queryClient.setQueryData(['items', item.box_id, item.category_id], (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return oldData.filter((i: any) => i.item_id !== item.item_id);
+                });
+            } else if (item.category_id && item.category_id !== 'unclassified') {
+                // カテゴリー内の未分類ボックス
+                queryClient.setQueryData(['items', 'unclassified', item.category_id], (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return oldData.filter((i: any) => i.item_id !== item.item_id);
+                });
+            } else {
+                // 完全未分類
+                queryClient.setQueryData(['items', 'unclassified', 'unclassified'], (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return oldData.filter((i: any) => i.item_id !== item.item_id);
+                });
+            }
+            
             // 関連データの無効化
-            queryClient.invalidateQueries({ queryKey: ['items', item.box_id] });
             queryClient.invalidateQueries({ queryKey: ['finishedItems'] });
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
