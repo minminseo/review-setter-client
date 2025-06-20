@@ -15,7 +15,7 @@ import {
 import { fetchCategories } from '@/api/categoryApi';
 import { fetchBoxes } from '@/api/boxApi'; // ボックス取得APIをインポート
 import { useItemStore, useCategoryStore, useBoxStore, usePatternStore } from '@/store';
-import { DailyReviewDate, GetDailyReviewDatesResponse, GetCategoryOutput, GetBoxOutput } from '@/types';
+import { DailyReviewDate, GetDailyReviewDatesResponse } from '@/types';
 import { UNCLASSIFIED_ID } from '@/constants';
 
 // Shared & UI Components
@@ -110,10 +110,7 @@ const TodaysReviewPage = () => {
     // 3. 今日の復習リスト（フィルター適用）
     const { data: reviewItems, isLoading } = useQuery({
         queryKey: ['todaysReviews', selectedCategoryId, selectedBoxId],
-        queryFn: () => fetchTodaysReviews({ // バックエンドがフィルタリングをサポートすると仮定
-            categoryId: selectedCategoryId === 'all' || selectedCategoryId === UNCLASSIFIED_ID ? null : selectedCategoryId,
-            boxId: selectedBoxId === 'all' || selectedBoxId === UNCLASSIFIED_ID ? null : selectedBoxId,
-        }),
+        queryFn: fetchTodaysReviews,
         placeholderData: (previousData) => previousData, // ローディング中に古いデータを表示
     });
 
