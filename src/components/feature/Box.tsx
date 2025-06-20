@@ -49,7 +49,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     const { openCreateItemModal } = useModal();
 
     // --- Zustandストア ---
-    const { removeItemFromBox } = useItemStore();
+    const { getItemsForBox, removeItemFromBox } = useItemStore();
     const { patterns } = usePatternStore();
 
     // --- State (モーダル管理) ---
@@ -90,6 +90,40 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         },
         onError: (err: any) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
     });
+
+    // --- アイテムリストの取得ロジック ---
+    let storeBoxId = boxId;
+    if ((boxId === 'unclassified' || !boxId) && categoryId && categoryId !== 'unclassified') {
+        storeBoxId = `unclassified-${categoryId}`;
+    } else if (!boxId) {
+        storeBoxId = 'unclassified';
+    }
+    const zustandItems = getItemsForBox(storeBoxId || '');
+
+    // デバッグ用ログ
+    React.useEffect(() => {
+        // どのキーでzustandから取得しているか
+        console.log('[Box] storeBoxId:', storeBoxId);
+        // zustandストアの中身
+        console.log('[Box] zustandItems:', zustandItems);
+        // propsで渡されたitems
+        console.log('[Box] props.items:', items);
+        // categoryId, boxId
+        console.log('[Box] categoryId:', categoryId, 'boxId:', boxId);
+    }, [storeBoxId, zustandItems, items, categoryId, boxId]);
+
+    // --- スケルトン表示制御 ---
+    const showSkeleton = isLoading && (!zustandItems || zustandItems.length === 0);
+    const displayItems = zustandItems && zustandItems.length > 0 ? zustandItems : items;
+
+    // displayItemsが空の場合の追加デバッグ
+    React.useEffect(() => {
+        if (!displayItems || displayItems.length === 0) {
+            console.log('[Box] displayItems is empty');
+            console.log('[Box] zustandItems:', zustandItems);
+            console.log('[Box] props.items:', items);
+        }
+    }, [displayItems, zustandItems, items]);
 
     // --- テーブル定義 ---
     // カラム数を動的に計算
@@ -250,12 +284,12 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 {/* --- スクロール可能なテーブル領域 --- */}
                 <Card className="h-full flex-1">
                     <CardContent className="pt-6 h-full">
-                        {isLoading ? (
+                        {showSkeleton ? (
                             <TableSkeleton />
                         ) : (
                             <DataTable
                                 columns={columns}
-                                data={items}
+                                data={displayItems}
                                 enablePagination={false}
                                 maxHeight="100%"
                                 fixedColumns={5}
