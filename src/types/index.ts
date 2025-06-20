@@ -228,6 +228,7 @@ export interface DailyReviewDate {
     is_completed: boolean;
     item_name: string;
     detail: string;
+    learned_date: string;
     target_weight?: TargetWeight; // Added from parent
 }
 
@@ -250,6 +251,7 @@ export interface UnclassifiedDailyReviewDate {
     is_completed: boolean;
     item_name: string;
     detail: string;
+    learned_date: string;
 }
 
 export interface DailyReviewCategory {
@@ -269,6 +271,7 @@ export interface UnclassifiedUserDailyReview {
     is_completed: boolean;
     item_name: string;
     detail: string;
+    learned_date: string;
 }
 
 export interface GetDailyReviewDatesResponse {
