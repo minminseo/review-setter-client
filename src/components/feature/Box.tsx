@@ -115,6 +115,21 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     // --- スケルトン表示制御 ---
     const showSkeleton = isLoading && (!zustandItems || zustandItems.length === 0);
     const displayItems = zustandItems && zustandItems.length > 0 ? zustandItems : items;
+    
+    // デバッグ用：displayItemsのreview_datesをチェック
+    React.useEffect(() => {
+        if (displayItems && displayItems.length > 0) {
+            console.log('=== Box displayItems Debug ===');
+            console.log('displayItems source:', zustandItems && zustandItems.length > 0 ? 'zustand' : 'props');
+            console.log('displayItems count:', displayItems.length);
+            displayItems.forEach((item, index) => {
+                console.log(`Item ${index + 1} (${item.name}):`);
+                console.log('  - review_dates:', item.review_dates);
+                console.log('  - review_dates length:', item.review_dates?.length || 0);
+            });
+            console.log('==============================');
+        }
+    }, [displayItems, zustandItems]);
 
     // displayItemsが空の場合の追加デバッグ
     React.useEffect(() => {
@@ -126,16 +141,19 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     }, [displayItems, zustandItems, items]);
 
     // --- テーブル定義 ---
-    // カラム数を動的に計算
+    // カラム数を動的に計算（両方のデータソースを統合して使用）
     const maxColumns = React.useMemo(() => {
         let boxPatternColumns = 0;
         if (currentBox?.pattern_id) {
             const boxPattern = patterns.find((p) => p.id === currentBox.pattern_id);
             if (boxPattern?.steps) boxPatternColumns = boxPattern.steps.length;
         }
-        const itemColumns = items.length > 0 ? Math.max(...items.map((i) => i.review_dates.length)) : 0;
+        // 両方のデータソースから最大カラム数を計算
+        const zustandItemColumns = (zustandItems && zustandItems.length > 0) ? Math.max(...zustandItems.map((i) => i.review_dates.length)) : 0;
+        const propsItemColumns = items.length > 0 ? Math.max(...items.map((i) => i.review_dates.length)) : 0;
+        const itemColumns = Math.max(zustandItemColumns, propsItemColumns);
         return Math.max(boxPatternColumns, itemColumns, 1);
-    }, [currentBox, patterns, items]);
+    }, [currentBox, patterns, zustandItems, items]);
 
     // テーブルのカラム定義
     const columns = React.useMemo<ColumnDef<ItemResponse>[]>(() => [
@@ -252,7 +270,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 );
             },
         })),
-    ], [items, maxColumns, completeReviewMutation, incompleteReviewMutation]);
+    ], [zustandItems, items, maxColumns, completeReviewMutation, incompleteReviewMutation]);
 
     return (
         <>
