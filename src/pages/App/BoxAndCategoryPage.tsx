@@ -46,6 +46,31 @@ const BoxAndCategoryPage = () => {
     // --- State ---
     const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
     const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false);
+    // カテゴリー・ボックスの選択状態をuseStateで管理
+    const [selectedCategoryId, setSelectedCategoryId] = React.useState(categoryId || UNCLASSIFIED_ID);
+    const [selectedBoxId, setSelectedBoxId] = React.useState(boxId || UNCLASSIFIED_ID);
+
+    // カテゴリータブ変更時のハンドラ
+    const handleCategoryTabChange = (value: string) => {
+        setSelectedCategoryId(value);
+        if (value === UNCLASSIFIED_ID) {
+            setSelectedBoxId(UNCLASSIFIED_ID); // 未分類カテゴリー選択時はボックスも未分類に
+            navigate(`/categories/${UNCLASSIFIED_ID}/boxes/${UNCLASSIFIED_ID}`);
+        } else {
+            setSelectedBoxId(''); // 通常カテゴリー時は全て
+            navigate(`/categories/${value}`);
+        }
+    };
+    // ボックスタブ変更時のハンドラ
+    const handleBoxTabChange = (value: string) => {
+        setSelectedBoxId(value);
+        if (value) {
+            navigate(`/categories/${selectedCategoryId}/boxes/${value}`);
+        } else {
+            navigate(`/categories/${selectedCategoryId}`);
+        }
+    };
+
 
     // --- Derived State (計算済み変数) ---
     const isBoxView = !!boxId;
@@ -72,25 +97,36 @@ const BoxAndCategoryPage = () => {
         retry: false,
     });
 
+    // --- 追加デバッグ ---
+    const enabledItemsQuery = isBoxView || !boxId;
+    console.log('[useQuery-items] boxId:', boxId, 'categoryId:', categoryId, 'isBoxView:', isBoxView, 'enabled:', enabledItemsQuery, 'queryKey:', ['items', boxId, categoryId]);
+
     // 3. (ボックス表示時のみ) 現在のボックスに属するアイテムリスト
     const { data: fetchedItems, isLoading: isItemsLoading, isSuccess: itemsSuccess } = useQuery({
         queryKey: ['items', boxId, categoryId],
-        queryFn: () => {
-            // 1. category_idもbox_idもNULL（完全未分類）
-            if (!categoryId && !boxId) {
-                return fetchUnclassifiedItems();
+        queryFn: async () => {
+            console.log('[useQuery-items] params:', { boxId, categoryId });
+            // 1. 完全未分類（カテゴリーもボックスも未分類）
+            if (categoryId === UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
+                const res = await fetchUnclassifiedItems();
+                console.log('[useQuery-items] fetchUnclassifiedItems result:', res);
+                return res;
             }
-            // 2. category_idが非NULLでbox_idがNULL（カテゴリー未分類ボックス）
-            if (categoryId && !boxId) {
-                return fetchUnclassifiedItemsByCategory(categoryId);
+            // 2. カテゴリー未分類以外＋ボックス未分類
+            if (categoryId && categoryId !== UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
+                const res = await fetchUnclassifiedItemsByCategory(categoryId);
+                console.log('[useQuery-items] fetchUnclassifiedItemsByCategory result:', res);
+                return res;
             }
             // 3. 通常のボックス
-            if (boxId) {
-                return fetchItemsByBox(boxId);
+            if (boxId && boxId !== UNCLASSIFIED_ID) {
+                const res = await fetchItemsByBox(boxId);
+                console.log('[useQuery-items] fetchItemsByBox result:', res);
+                return res;
             }
             return [];
         },
-        enabled: isBoxView || !boxId, // ボックス画面 or 未分類ボックス画面
+        enabled: enabledItemsQuery, // ボックス画面 or 未分類ボックス画面
     });
 
     // 4. 全復習パターン
@@ -114,12 +150,21 @@ const BoxAndCategoryPage = () => {
     }, [boxesSuccess, fetchedBoxes, categoryId, setBoxesForCategory]);
 
     React.useEffect(() => {
-        if (itemsSuccess && fetchedItems && boxId) {
+        if (itemsSuccess && fetchedItems) {
             // 完了済みアイテムを除外してストアに保存
             const activeItems = fetchedItems.filter(item => !item.is_finished);
-            setItemsForBox(boxId, activeItems);
+            let storeBoxId = boxId;
+            if ((boxId === 'unclassified' || !boxId) && categoryId && categoryId !== UNCLASSIFIED_ID) {
+                storeBoxId = `unclassified-${categoryId}`;
+            } else if (!boxId) {
+                storeBoxId = 'unclassified';
+            }
+            // デバッグ用ログ
+            console.log('[BoxAndCategoryPage] storeBoxId:', storeBoxId);
+            console.log('[BoxAndCategoryPage] activeItems:', activeItems);
+            setItemsForBox(storeBoxId || '', activeItems);
         }
-    }, [itemsSuccess, fetchedItems, boxId, setItemsForBox]);
+    }, [itemsSuccess, fetchedItems, boxId, categoryId, setItemsForBox]);
 
     // ★修正点: パターン取得後の副作用を useEffect に分離
     React.useEffect(() => {
@@ -199,6 +244,10 @@ const BoxAndCategoryPage = () => {
         return <div>カテゴリーIDが見つかりません</div>;
     }
 
+    // --- メインコンテンツ ---
+    const storeBoxId = boxId || (categoryId && categoryId !== UNCLASSIFIED_ID ? `unclassified-${categoryId}` : 'unclassified');
+    const zustandItems = useItemStore.getState().getItemsForBox(storeBoxId || '');
+
     return (
         <div className="min-h-screen flex flex-col overflow-hidden">
             {/* 上部固定ヘッダー */}
@@ -223,7 +272,7 @@ const BoxAndCategoryPage = () => {
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
                         <div className="relative flex items-center w-full max-w-full" ref={categoryTabsContainerRef}>
                             <div className="flex-1 min-w-0 flex">
-                                <Tabs value={categoryId} onValueChange={(value) => navigate(`/categories/${value}`)}>
+                                <Tabs value={selectedCategoryId} onValueChange={handleCategoryTabChange}>
                                     <TabsList
                                         className="flex w-full"
                                         style={{
@@ -260,14 +309,8 @@ const BoxAndCategoryPage = () => {
                         <div className="relative flex items-center w-full max-w-full" ref={boxTabsContainerRef}>
                             <div className="flex-1 min-w-0 flex">
                                 <Tabs
-                                    value={boxId || ''}
-                                    onValueChange={(value) => {
-                                        if (value) {
-                                            navigate(`/categories/${categoryId}/boxes/${value}`)
-                                        } else {
-                                            navigate(`/categories/${categoryId}`)
-                                        }
-                                    }}
+                                    value={selectedBoxId}
+                                    onValueChange={handleBoxTabChange}
                                 >
                                     <TabsList
                                         className="flex w-full"
@@ -277,20 +320,24 @@ const BoxAndCategoryPage = () => {
                                             overflow: 'hidden',
                                         }}
                                     >
-                                        <TabsTrigger value="">全て</TabsTrigger>
-                                        {!isUnclassifiedCategoryPage && (
+                                        {selectedCategoryId === UNCLASSIFIED_ID ? (
                                             <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                        ) : (
+                                            <>
+                                                <TabsTrigger value="">全て</TabsTrigger>
+                                                <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                                {displayedBoxes.map((box) => (
+                                                    <TabsTrigger key={box.id} value={box.id} className="flex-1 min-w-0">
+                                                        {box.name}
+                                                    </TabsTrigger>
+                                                ))}
+                                            </>
                                         )}
-                                        {displayedBoxes.map((box) => (
-                                            <TabsTrigger key={box.id} value={box.id} className="flex-1 min-w-0">
-                                                {box.name}
-                                            </TabsTrigger>
-                                        ))}
                                     </TabsList>
                                 </Tabs>
                             </div>
                             <div className="flex-shrink-0 flex items-center" style={{ width: 40 }}>
-                                {hasMoreBoxes && (
+                                {hasMoreBoxes && selectedCategoryId !== UNCLASSIFIED_ID && (
                                     <Button
                                         variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)}
                                         className="ml-1 shrink-0 h-8 w-8"
@@ -310,7 +357,9 @@ const BoxAndCategoryPage = () => {
                     {isBoxView ? (
                         <Box
                             key={boxId}
-                            items={fetchedItems ? fetchedItems.filter(item => !item.is_finished) : []}
+                            items={zustandItems && zustandItems.length > 0
+                                ? zustandItems
+                                : (fetchedItems ? fetchedItems.filter(item => !item.is_finished) : [])}
                             isLoading={isItemsLoading}
                             currentCategory={currentCategory}
                             currentBox={currentBox}

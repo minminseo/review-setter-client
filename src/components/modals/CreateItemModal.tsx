@@ -17,6 +17,7 @@ import { fetchPatterns } from '@/api/patternApi';
 import { useCategoryStore } from '@/store/categoryStore';
 import { useBoxStore } from '@/store/boxStore';
 import { usePatternStore } from '@/store/patternStore';
+import { useItemStore } from '@/store/itemStore';
 
 // 型定義とユーティリティ
 import { cn } from '@/lib/utils';
@@ -82,10 +83,10 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     // watchedCategoryIdに紐づくボックスリストをストアから取得
     // 未分類選択（UNCLASSIFIED）の場合は空配列を返す（未分類ボックスはAPI経由で別途管理）
     const boxes = (watchedCategoryId && watchedCategoryId !== 'UNCLASSIFIED') ? (boxesByCategoryId[watchedCategoryId] || []) : [];
-    
+
     // 選択されたボックスの情報を取得
     const selectedBox = watchedBoxId ? boxes.find(box => box.id === watchedBoxId) : null;
-    
+
     // ボックスが選択されている場合は復習パターン選択を無効化
     const isPatternDisabled = !!selectedBox;
 
@@ -140,12 +141,35 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     const mutation = useMutation({
         mutationFn: (data: CreateItemRequest) => createItem(data),
 
-        onSuccess: (_, variables) => {
+        onSuccess: (createdItem, variables) => {
             toast.success("アイテムを作成しました！");
-            // 関連する全てのクエリを無効化し、UIを最新の状態に保つ
-            queryClient.invalidateQueries({ queryKey: ['items', variables.box_id] });
+            // --- invalidate & zustand即時反映 ---
+            // 通常ボックス
+            if (variables.box_id && variables.box_id !== 'UNCLASSIFIED' && variables.box_id !== null) {
+                queryClient.invalidateQueries({ queryKey: ['items', variables.box_id] });
+            }
+            // 完全未分類（category_id, box_idともに未分類）
+            else if (
+                (!variables.category_id || variables.category_id === 'UNCLASSIFIED' || variables.category_id === null) &&
+                (!variables.box_id || variables.box_id === 'UNCLASSIFIED' || variables.box_id === null)
+            ) {
+                queryClient.invalidateQueries({ queryKey: ['items', 'unclassified', 'UNCLASSIFIED'] });
+                queryClient.invalidateQueries({ queryKey: ['items', 'unclassified'] });
+                // zustand即時反映
+                if (useItemStore.getState().addItemToBox) {
+                    useItemStore.getState().addItemToBox('unclassified', createdItem);
+                }
+            }
+            // カテゴリー未分類以外＋ボックス未分類
+            else if (variables.category_id && variables.category_id !== 'UNCLASSIFIED' && (!variables.box_id || variables.box_id === 'UNCLASSIFIED' || variables.box_id === null)) {
+                queryClient.invalidateQueries({ queryKey: ['items', 'unclassified', variables.category_id] });
+                // zustand即時反映
+                if (useItemStore.getState().addItemToBox) {
+                    useItemStore.getState().addItemToBox(`unclassified-${variables.category_id}`, createdItem);
+                }
+            }
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
-            queryClient.invalidateQueries({ queryKey: ['summary'] }); // サマリーデータも更新
+            queryClient.invalidateQueries({ queryKey: ['summary'] });
             onClose();
         },
         onError: (err) => toast.error(`作成に失敗しました: ${err.message}`),
@@ -238,16 +262,16 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                         )} />
                         <FormField name="box_id" control={form.control} render={({ field }) => (
                             <FormItem><FormLabel>ボックス</FormLabel>
-                                <Select 
-                                    onValueChange={(value) => field.onChange(value)} 
-                                    value={field.value ?? "UNCLASSIFIED"} 
+                                <Select
+                                    onValueChange={(value) => field.onChange(value)}
+                                    value={field.value ?? "UNCLASSIFIED"}
                                     disabled={boxesLoading}
                                 >
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder={
                                                 boxesLoading ? "読み込み中..." :
-                                                "ボックスを選択 (任意)"
+                                                    "ボックスを選択 (任意)"
                                             } />
                                         </SelectTrigger>
                                     </FormControl>
@@ -266,20 +290,20 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                         <FormField name="pattern_id" control={form.control} render={({ field }) => (
                             <FormItem>
                                 <FormLabel>復習パターン{isPatternDisabled && " (ボックスの設定を使用)"}</FormLabel>
-                                <Select 
-                                    onValueChange={field.onChange} 
-                                    value={field.value ?? ""} 
+                                <Select
+                                    onValueChange={field.onChange}
+                                    value={field.value ?? ""}
                                     disabled={isPatternDisabled}
                                 >
                                     <FormControl>
                                         <SelectTrigger className={isPatternDisabled ? "bg-muted text-muted-foreground" : ""}>
-                                            <SelectValue 
-                                                placeholder={isPatternDisabled ? 
-                                                    (selectedBox?.pattern_id ? 
+                                            <SelectValue
+                                                placeholder={isPatternDisabled ?
+                                                    (selectedBox?.pattern_id ?
                                                         (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
-                                                        : "未設定") 
+                                                        : "未設定")
                                                     : "パターンを選択 (任意)"
-                                                } 
+                                                }
                                             />
                                         </SelectTrigger>
                                     </FormControl>
