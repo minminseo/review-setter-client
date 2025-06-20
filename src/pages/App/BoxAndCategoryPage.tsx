@@ -72,6 +72,17 @@ const BoxAndCategoryPage = () => {
     };
 
 
+    // --- Utility Functions ---
+    // storeBoxIdの計算ロジックを統一
+    const getStoreBoxId = React.useCallback((boxId: string | undefined, categoryId: string | undefined) => {
+        if ((boxId === 'unclassified' || !boxId) && categoryId && categoryId !== UNCLASSIFIED_ID) {
+            return `unclassified-${categoryId}`;
+        } else if (!boxId || boxId === 'unclassified') {
+            return 'unclassified';
+        }
+        return boxId;
+    }, []);
+
     // --- Derived State (計算済み変数) ---
     const isBoxView = !!boxId;
     const isUnclassifiedCategoryPage = categoryId === UNCLASSIFIED_ID;
@@ -153,18 +164,13 @@ const BoxAndCategoryPage = () => {
         if (itemsSuccess && fetchedItems) {
             // 完了済みアイテムを除外してストアに保存
             const activeItems = fetchedItems.filter(item => !item.is_finished);
-            let storeBoxId = boxId;
-            if ((boxId === 'unclassified' || !boxId) && categoryId && categoryId !== UNCLASSIFIED_ID) {
-                storeBoxId = `unclassified-${categoryId}`;
-            } else if (!boxId) {
-                storeBoxId = 'unclassified';
-            }
+            const storeBoxId = getStoreBoxId(boxId, categoryId);
             // デバッグ用ログ
             console.log('[BoxAndCategoryPage] storeBoxId:', storeBoxId);
             console.log('[BoxAndCategoryPage] activeItems:', activeItems);
             setItemsForBox(storeBoxId || '', activeItems);
         }
-    }, [itemsSuccess, fetchedItems, boxId, categoryId, setItemsForBox]);
+    }, [itemsSuccess, fetchedItems, boxId, categoryId, setItemsForBox, getStoreBoxId]);
 
     // ★修正点: パターン取得後の副作用を useEffect に分離
     React.useEffect(() => {
@@ -245,7 +251,7 @@ const BoxAndCategoryPage = () => {
     }
 
     // --- メインコンテンツ ---
-    const storeBoxId = boxId || (categoryId && categoryId !== UNCLASSIFIED_ID ? `unclassified-${categoryId}` : 'unclassified');
+    const storeBoxId = getStoreBoxId(boxId, categoryId);
     const zustandItems = useItemStore.getState().getItemsForBox(storeBoxId || '');
 
     return (
