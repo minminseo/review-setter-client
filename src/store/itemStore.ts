@@ -72,6 +72,18 @@ export const useItemStore = create<ItemState>((set, get) => ({
     }),
 
     updateItemInBox: (boxId, updatedItem) => set((state) => {
+        console.log('=== Zustand updateItemInBox Method Debug ===');
+        console.log('boxId:', boxId);
+        console.log('updatedItem.item_id:', updatedItem.item_id);
+        console.log('updatedItem.review_dates:', updatedItem.review_dates);
+        console.log('updatedItem.review_dates length:', updatedItem.review_dates?.length);
+        console.log('is_finished:', updatedItem.is_finished);
+        
+        const existingItems = state.itemsByBoxId[boxId] || [];
+        const existingItem = existingItems.find(item => item.item_id === updatedItem.item_id);
+        console.log('existing item review_dates:', existingItem?.review_dates);
+        console.log('============================================');
+        
         // 完了済みアイテムに更新された場合は削除
         if (updatedItem.is_finished) {
             return {
@@ -85,14 +97,23 @@ export const useItemStore = create<ItemState>((set, get) => ({
         }
         
         // 通常の更新
-        return {
+        const newState = {
             itemsByBoxId: {
                 ...state.itemsByBoxId,
-                [boxId]: (state.itemsByBoxId[boxId] || []).map((item) =>
-                    item.item_id === updatedItem.item_id ? updatedItem : item
-                ),
+                [boxId]: (state.itemsByBoxId[boxId] || []).map((item) => {
+                    if (item.item_id === updatedItem.item_id) {
+                        console.log('=== Replacing item in Zustand ===');
+                        console.log('old item review_dates:', item.review_dates);
+                        console.log('new item review_dates:', updatedItem.review_dates);
+                        console.log('==============================');
+                        return updatedItem;
+                    }
+                    return item;
+                })
             },
         };
+        
+        return newState;
     }),
 
     removeItemFromBox: (boxId, itemId) => set((state) => ({
