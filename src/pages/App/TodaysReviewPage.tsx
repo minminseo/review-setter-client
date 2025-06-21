@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon, PencilIcon } from '@heroicons/react/24/outline';
@@ -77,14 +77,19 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
 const TodaysReviewPage = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { categories, setCategories } = useCategoryStore();
     const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
     const { todaysReviews: zustandTodaysReviews, setTodaysReviews } = useItemStore();
     const { patterns } = usePatternStore();
 
+    // URLパラメータから初期値を取得
+    const categoryParam = searchParams.get('category') || 'all';
+    const boxParam = searchParams.get('box') || 'all';
+
     // フィルターの状態管理
-    const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>('all');
-    const [selectedBoxId, setSelectedBoxId] = React.useState<string>('all');
+    const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>(categoryParam);
+    const [selectedBoxId, setSelectedBoxId] = React.useState<string>(boxParam);
 
     // モーダルの状態管理
     const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
@@ -291,14 +296,45 @@ const TodaysReviewPage = () => {
         },
     ], [completeMutation, incompleteMutation, patterns]);
 
+    // URLパラメータが変更された際の同期処理
+    React.useEffect(() => {
+        const categoryParam = searchParams.get('category') || 'all';
+        const boxParam = searchParams.get('box') || 'all';
+        
+        if (categoryParam !== selectedCategoryId) {
+            setSelectedCategoryId(categoryParam);
+        }
+        if (boxParam !== selectedBoxId) {
+            setSelectedBoxId(boxParam);
+        }
+    }, [searchParams, selectedCategoryId, selectedBoxId]);
+
     // --- イベントハンドラ ---
     const handleCategoryChange = (newCategoryId: string) => {
         setSelectedCategoryId(newCategoryId);
         setSelectedBoxId('all'); // カテゴリー変更時はボックス選択をリセット
+        
+        // URLパラメータを更新
+        const newParams = new URLSearchParams();
+        if (newCategoryId !== 'all') {
+            newParams.set('category', newCategoryId);
+        }
+        newParams.set('box', 'all');
+        setSearchParams(newParams);
     };
 
     const handleBoxChange = (newBoxId: string) => {
         setSelectedBoxId(newBoxId);
+        
+        // URLパラメータを更新
+        const newParams = new URLSearchParams();
+        if (selectedCategoryId !== 'all') {
+            newParams.set('category', selectedCategoryId);
+        }
+        if (newBoxId !== 'all') {
+            newParams.set('box', newBoxId);
+        }
+        setSearchParams(newParams);
     };
 
     const handleNavigate = () => {
