@@ -5,6 +5,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { MoreHorizontal } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
 
 // API & Store & Types
 import {
@@ -88,6 +89,12 @@ const TodaysReviewPage = () => {
     // モーダルの状態管理
     const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
     const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false);
+
+    // タブのレスポンシブ表示制御
+    const categoryTabsContainerRef = useRef<HTMLDivElement>(null);
+    const boxTabsContainerRef = useRef<HTMLDivElement>(null);
+    const [maxCategoryTabs, setMaxCategoryTabs] = useState<number>(7);
+    const [maxBoxTabs, setMaxBoxTabs] = useState<number>(7);
 
     // 詳細・編集用の状態
     const [detailItem, setDetailItem] = React.useState<DailyReviewDate | null>(null);
@@ -300,16 +307,48 @@ const TodaysReviewPage = () => {
         else navigate(`/categories/${selectedCategoryId}/boxes/${selectedBoxId}`);
     };
 
+    // タブの最大表示数を計算（レスポンシブ）
+    useEffect(() => {
+        const calcTabs = () => {
+            // タブ1つの最小幅（rem単位→px換算、1rem=16px想定）
+            const tabMinWidth = 112; // 7rem * 16px
+            const moreButtonWidth = 40; // MoreHorizontalボタンの幅
+
+            if (categoryTabsContainerRef.current) {
+                const containerWidth = categoryTabsContainerRef.current.offsetWidth;
+                const availableWidth = containerWidth * 0.95 - moreButtonWidth; // 95%の領域からMoreボタン幅を除く
+                const fixedTabsWidth = 2 * tabMinWidth; // 「全て」「未分類」の固定タブ幅
+                const remainingWidth = availableWidth - fixedTabsWidth;
+                const maxDynamicTabs = Math.max(0, Math.floor(remainingWidth / tabMinWidth));
+                setMaxCategoryTabs(maxDynamicTabs);
+            }
+
+            if (boxTabsContainerRef.current) {
+                const containerWidth = boxTabsContainerRef.current.offsetWidth;
+                const availableWidth = containerWidth * 0.95 - moreButtonWidth;
+                const fixedTabsCount = selectedCategoryId === 'all' ? 1 : 2; // 「全て」のみ or 「全て」「未分類」
+                const fixedTabsWidth = fixedTabsCount * tabMinWidth;
+                const remainingWidth = availableWidth - fixedTabsWidth;
+                const maxDynamicTabs = Math.max(0, Math.floor(remainingWidth / tabMinWidth));
+                setMaxBoxTabs(maxDynamicTabs);
+            }
+        };
+
+        calcTabs();
+        window.addEventListener('resize', calcTabs);
+        return () => window.removeEventListener('resize', calcTabs);
+    }, [selectedCategoryId]);
+
     // --- 表示用データ ---
     const boxesForSelectedCategory = React.useMemo(() => {
         if (!selectedCategoryId || selectedCategoryId === 'all' || selectedCategoryId === UNCLASSIFIED_ID) return [];
         return boxesByCategoryId[selectedCategoryId] || [];
     }, [boxesByCategoryId, selectedCategoryId]);
 
-    const displayedCategories = categories.slice(0, 5);
-    const hasMoreCategories = categories.length > 5;
-    const displayedBoxes = boxesForSelectedCategory.slice(0, 5);
-    const hasMoreBoxes = boxesForSelectedCategory.length > 5;
+    const displayedCategories = categories.slice(0, maxCategoryTabs);
+    const hasMoreCategories = categories.length > maxCategoryTabs;
+    const displayedBoxes = boxesForSelectedCategory.slice(0, maxBoxTabs);
+    const hasMoreBoxes = boxesForSelectedCategory.length > maxBoxTabs;
 
     return (
         <div className="h-screen flex flex-col overflow-hidden ">
@@ -333,32 +372,32 @@ const TodaysReviewPage = () => {
                     </div>
                     {/* カテゴリータブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
-                        <div className="relative flex items-center w-full max-w-full">
-                            <div className="flex-1 min-w-0 flex">
+                        <div className="relative flex items-center w-full max-w-full" ref={categoryTabsContainerRef}>
+                            <div className="flex overflow-hidden" style={{ width: hasMoreCategories ? 'calc(100% - 48px)' : '100%' }}>
                                 <Tabs value={selectedCategoryId} onValueChange={handleCategoryChange}>
-                                    <TabsList className="flex w-full">
-                                        <TabsTrigger value="all" className="justify-start text-left min-w-[7rem]">全て</TabsTrigger>
-                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem]">未分類</TabsTrigger>
+                                    <TabsList className="flex gap-0.5 bg-neutral-200 dark:bg-neutral-800" style={{ width: 'fit-content', maxWidth: '100%' }}>
+                                        <TabsTrigger value="all" className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
+                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                         {displayedCategories.map((cat) => (
-                                            <TabsTrigger key={cat.id} value={cat.id} className="flex-1 min-w-[7rem] justify-start text-left">
+                                            <TabsTrigger key={cat.id} value={cat.id} className="min-w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                 {cat.name}
                                             </TabsTrigger>
                                         ))}
                                     </TabsList>
                                 </Tabs>
                             </div>
-                            <div className="flex-shrink-0 flex items-center" style={{ width: 40 }}>
-                                {hasMoreCategories && (
+                            {hasMoreCategories && (
+                                <div className="absolute right-0 flex items-center justify-center bg-background" style={{ width: 48, height: '100%' }}>
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => setSelectCategoryModalOpen(true)}
-                                        className="ml-1 shrink-0 h-8 w-8"
+                                        className="shrink-0 h-8 w-8"
                                     >
                                         <MoreHorizontal className="h-5 w-5" />
                                     </Button>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                     {/* ボックスラベル */}
@@ -367,41 +406,42 @@ const TodaysReviewPage = () => {
                     </div>
                     {/* ボックスタブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
-                        <div className="relative flex items-center w-full max-w-full">
-                            <div className="flex-1 min-w-0 flex">
+                        <div className="relative flex items-center w-full max-w-full" ref={boxTabsContainerRef}>
+                            <div className="flex overflow-hidden" style={{ width: hasMoreBoxes ? 'calc(100% - 48px)' : '100%' }}>
                                 <Tabs value={selectedBoxId} onValueChange={handleBoxChange}>
                                     <TabsList
-                                        className="flex w-full"
+                                        className="flex gap-0.5 bg-neutral-200 dark:bg-neutral-800"
                                         style={{
-                                            width: '100%',
+                                            width: 'fit-content',
+                                            maxWidth: '100%',
                                             borderRadius: '0.75rem',
                                             overflow: 'hidden',
                                         }}
                                     >
-                                        <TabsTrigger value="all" className="justify-start text-left min-w-[7rem]">全て</TabsTrigger>
+                                        <TabsTrigger value="all" className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
                                         {selectedCategoryId !== 'all' && (
-                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem]">未分類</TabsTrigger>
+                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                         )}
                                         {displayedBoxes.map((box) => (
-                                            <TabsTrigger key={box.id} value={box.id} className="flex-1 min-w-[7rem] justify-start text-left">
+                                            <TabsTrigger key={box.id} value={box.id} className="min-w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                 {box.name}
                                             </TabsTrigger>
                                         ))}
                                     </TabsList>
                                 </Tabs>
                             </div>
-                            <div className="flex-shrink-0 flex items-center" style={{ width: 40 }}>
-                                {hasMoreBoxes && (
+                            {hasMoreBoxes && (
+                                <div className="absolute right-0 flex items-center justify-center bg-background" style={{ width: 48, height: '100%' }}>
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => setSelectBoxModalOpen(true)}
-                                        className="ml-1 shrink-0 h-8 w-8"
+                                        className="shrink-0 h-8 w-8"
                                     >
                                         <MoreHorizontal className="h-5 w-5" />
                                     </Button>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
