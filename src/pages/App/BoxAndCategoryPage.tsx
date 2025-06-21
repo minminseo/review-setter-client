@@ -50,6 +50,13 @@ const BoxAndCategoryPage = () => {
     const [selectedCategoryId, setSelectedCategoryId] = React.useState(categoryId || UNCLASSIFIED_ID);
     const [selectedBoxId, setSelectedBoxId] = React.useState(boxId || UNCLASSIFIED_ID);
 
+    // サイドバーやURLのcategoryId/boxId変更時にタブ選択も同期
+    React.useEffect(() => {
+        setSelectedCategoryId(categoryId || UNCLASSIFIED_ID);
+        setSelectedBoxId(boxId || (categoryId === UNCLASSIFIED_ID ? UNCLASSIFIED_ID : ''));
+    }, [categoryId, boxId]);
+
+
     // カテゴリータブ変更時のハンドラ
     const handleCategoryTabChange = (value: string) => {
         setSelectedCategoryId(value);
