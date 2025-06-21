@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import * as React from 'react';
+import { useState } from 'react';
 import Sidebar from './Sidebar';
 
 // AppLayoutは、サイドバーから開かれるモーダルの状態を一元管理するため、
@@ -20,6 +21,7 @@ const AppLayout = () => {
     const [modalContext, setModalContext] = React.useState<{ categoryId?: string; boxId?: string }>({});
     const [isCreatePatternModalOpen, setCreatePatternModalOpen] = React.useState(false);
     const [isSettingsModalOpen, setSettingsModalOpen] = React.useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const openCreateItemModal = React.useCallback((context: { categoryId?: string; boxId?: string } = {}) => {
         // 文脈が明示的に渡されていない場合は未分類をデフォルトに設定
@@ -39,9 +41,11 @@ const AppLayout = () => {
                 onOpenCreateItem={openCreateItemModal}
                 onOpenCreatePattern={() => setCreatePatternModalOpen(true)}
                 onOpenSettings={() => setSettingsModalOpen(true)}
+                open={sidebarOpen}
+                setOpen={setSidebarOpen}
             />
-            {/* メインコンテンツエリア。sm:pl-14でサイドバーの幅分だけ左に余白を作る */}
-            <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+            {/* メインコンテンツエリア。サイドバーの幅に応じて左paddingを調整 */}
+            <div className={`flex flex-col sm:gap-4 sm:py-4 transition-all duration-200 ${sidebarOpen ? 'sm:pl-48' : 'sm:pl-14'}`}>
                 <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                     {/* ここにHomePageやCategoryPageなどの、各ページコンポーネントが描画される */}
                     <ModalProvider openCreateItemModal={openCreateItemModal}>
