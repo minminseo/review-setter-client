@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { HomeIcon, PlusCircleIcon, DocumentPlusIcon, UserCircleIcon, ArrowRightOnRectangleIcon, InboxStackIcon, InboxIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, PlusCircleIcon, DocumentPlusIcon, UserCircleIcon, ArrowRightOnRectangleIcon, InboxStackIcon, InboxIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from '@/hooks/useAuth';
@@ -36,13 +36,26 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
     const [isSidebarPinned, setIsSidebarPinned] = useState(false);
     // Editセクションのトグル状態
     const [editOpen, setEditOpen] = useState(true);
+    // Todayセクションのトグル状態
+    const [todayOpen, setTodayOpen] = useState(true);
+    // Todayセクション用の展開カテゴリー
+    const [todayExpandedCategoryIds, setTodayExpandedCategoryIds] = useState<string[]>([]);
     // カテゴリーボタンのホバー状態
     const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
+    // Todayセクション用のカテゴリーホバー状態
+    const [todayHoveredCategoryId, setTodayHoveredCategoryId] = useState<string | null>(null);
 
     // 現在のcategoryId, boxIdをパスから抽出（正規表現を使わず分割で）
     const pathParts = location.pathname.split('/');
     let currentCategoryId: string | null = null;
     let currentBoxId: string | null = null;
+    
+    // URLパラメータから今日の復習ページの選択状態を取得
+    const urlParams = new URLSearchParams(location.search);
+    const todayCategoryParam = urlParams.get('category');
+    const todayBoxParam = urlParams.get('box');
+    
+    // 通常のカテゴリー・ボックスページの場合
     const catIdx = pathParts.indexOf('categories');
     if (catIdx !== -1 && pathParts.length > catIdx + 1) {
         currentCategoryId = pathParts[catIdx + 1];
@@ -50,21 +63,25 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
             currentBoxId = pathParts[catIdx + 3];
         }
     }
+    
 
     const handleLogout = () => {
         logout();
     };
 
     const handleCategoryClick = (categoryId: string) => {
-        setExpandedCategoryIds(prev =>
-            prev.includes(categoryId)
-                ? prev.filter(id => id !== categoryId)
-                : [...prev, categoryId]
-        );
         navigate(`/categories/${categoryId}`);
     };
     const handleBoxClick = (categoryId: string, boxId: string) => {
         navigate(`/categories/${categoryId}/boxes/${boxId}`);
+    };
+
+    const handleTodayCategoryClick = (categoryId: string) => {
+        navigate(`/today?category=${categoryId}`);
+    };
+
+    const handleTodayBoxClick = (categoryId: string, boxId: string) => {
+        navigate(`/today?category=${categoryId}&box=${boxId}`);
     };
 
     return (
@@ -189,7 +206,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <div key={category.id}>
                                             {/* カテゴリボタン */}
                                             <button
-                                                className={`flex items-center w-full gap-1 mb-1 px-2 py-1 rounded transition-colors text-sm ${((currentCategoryId === category.id) && (!currentBoxId || currentBoxId === undefined))
+                                                className={`flex items-center w-full gap-1 mb-1 px-2 py-1 rounded transition-colors text-sm justify-start ${((currentCategoryId === category.id) && (!currentBoxId || currentBoxId === undefined))
                                                     ? 'text-accent-foreground bg-accent'
                                                     : 'text-muted-foreground hover:bg-accent/50'
                                                     }`}
@@ -198,39 +215,34 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                 onMouseLeave={() => setHoveredCategoryId(null)}
                                             >
                                                 <span
-                                                    className="flex items-center flex-1 truncate cursor-pointer text-sm"
-                                                    onClick={() => handleCategoryClick(category.id)}
+                                                    className="flex items-center"
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        setExpandedCategoryIds(prev =>
+                                                            prev.includes(category.id)
+                                                                ? prev.filter(id => id !== category.id)
+                                                                : [...prev, category.id]
+                                                        );
+                                                    }}
+                                                    style={{ minWidth: 24 }}
                                                 >
-                                                    <span
-                                                        className="flex items-center"
-                                                        onClick={e => {
-                                                            e.stopPropagation();
-                                                            setExpandedCategoryIds(prev =>
-                                                                prev.includes(category.id)
-                                                                    ? prev.filter(id => id !== category.id)
-                                                                    : [...prev, category.id]
-                                                            );
-                                                        }}
-                                                        style={{ minWidth: 24 }}
-                                                    >
-                                                        {hoveredCategoryId === category.id ? (
-                                                            expandedCategoryIds.includes(category.id) ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />
-                                                        ) : (
-                                                            <InboxStackIcon className="w-4 h-4 mr-1" />
-                                                        )}
-                                                    </span>
-                                                    <span
-                                                        className="truncate text-sm absolute left-7 top-1/2 -translate-y-1/2 pointer-events-none select-none transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
-                                                        style={{
-                                                            maxWidth: open ? 144 : 0,
-                                                            opacity: open ? 1 : 0,
-                                                            transition: 'max-width 0.25s, opacity 0.25s',
-                                                            zIndex: 1,
-                                                            display: 'inline-block',
-                                                        }}
-                                                    >
-                                                        {category.name}
-                                                    </span>
+                                                    {hoveredCategoryId === category.id ? (
+                                                        expandedCategoryIds.includes(category.id) ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />
+                                                    ) : (
+                                                        <InboxStackIcon className="w-4 h-4 mr-1" />
+                                                    )}
+                                                </span>
+                                                <span
+                                                    className="flex-1 truncate cursor-pointer text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-left"
+                                                    onClick={() => handleCategoryClick(category.id)}
+                                                    style={{
+                                                        maxWidth: open ? 144 : 0,
+                                                        opacity: open ? 1 : 0,
+                                                        transition: 'max-width 0.25s, opacity 0.25s',
+                                                        display: 'inline-block',
+                                                    }}
+                                                >
+                                                    {category.name}
                                                 </span>
                                             </button>
                                             <div
@@ -239,7 +251,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             >
                                                 {/* 未分類ボックス */}
                                                 <button
-                                                    className={`text-sm px-2 py-1 rounded transition-colors text-left relative flex items-center ${currentCategoryId === category.id && currentBoxId === 'unclassified'
+                                                    className={`text-sm px-2 py-1 rounded transition-colors text-left relative flex items-center justify-start ${currentCategoryId === category.id && currentBoxId === 'unclassified'
                                                         ? 'text-accent-foreground bg-accent'
                                                         : 'text-muted-foreground hover:bg-accent/50'
                                                         }`}
@@ -263,11 +275,188 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                 {(boxesByCategoryId[category.id] || []).map(box => (
                                                     <button
                                                         key={box.id}
-                                                        className={`text-sm px-2 py-1 rounded transition-colors text-left relative flex items-center ${currentCategoryId === category.id && currentBoxId === box.id
+                                                        className={`text-sm px-2 py-1 rounded transition-colors text-left relative flex items-center justify-start ${currentCategoryId === category.id && currentBoxId === box.id
                                                             ? 'text-accent-foreground bg-accent'
                                                             : 'text-muted-foreground hover:bg-accent/50'
                                                             }`}
                                                         onClick={() => handleBoxClick(category.id, box.id)}
+                                                        style={{ minHeight: 28 }}
+                                                    >
+                                                        <InboxIcon className="w-4 h-4 mr-1 flex-shrink-0" />
+                                                        <span
+                                                            className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                                            style={{
+                                                                maxWidth: open ? 144 : 0,
+                                                                opacity: open ? 1 : 0,
+                                                                transition: 'max-width 0.25s, opacity 0.25s',
+                                                                display: 'inline-block',
+                                                            }}
+                                                        >
+                                                            {box.name}
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* Todayセクション: サイドバーが開いているときのみ表示 */}
+                {open && (
+                    <div className="w-full px-2">
+                        <button
+                            className="flex items-center w-full rounded hover:bg-accent/50 transition-colors"
+                            style={{ minHeight: 28 }}
+                            onClick={() => setTodayOpen((prev) => !prev)}
+                        >
+                            {todayOpen ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />}
+                            <span className="text-sm font-bold text-muted-foreground ml-1 transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                style={{
+                                    maxWidth: open ? 120 : 0,
+                                    opacity: open ? 1 : 0,
+                                    transition: 'max-width 0.25s, opacity 0.2s',
+                                    display: 'inline-block',
+                                }}
+                            >
+                                Today
+                            </span>
+                        </button>
+                        <div
+                            className="transition-all duration-300 overflow-hidden"
+                            style={{
+                                maxHeight: open && todayOpen ? 600 : 0
+                            }}
+                        >
+                            <div className="flex flex-col gap-1 pl-2">
+                                {/* 全体の今日の復習 */}
+                                <NavLink
+                                    to="/today"
+                                    className={({ isActive }) =>
+                                        [
+                                            "flex items-center text-sm px-2 mt-1 rounded transition-colors text-left relative",
+                                            isActive && !todayCategoryParam && !todayBoxParam ? "text-accent-foreground bg-accent" : "text-muted-foreground hover:bg-accent/50"
+                                        ].join(" ")
+                                    }
+                                    style={{ minHeight: 28 }}
+                                >
+                                    <CalendarIcon className="w-4 h-4 mr-1 flex-shrink-0" />
+                                    <span
+                                        className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                        style={{
+                                            maxWidth: open ? 144 : 0,
+                                            opacity: open ? 1 : 0,
+                                            transition: 'max-width 0.25s, opacity 0.25s',
+                                            display: 'inline-block',
+                                        }}
+                                    >
+                                        全て
+                                    </span>
+                                </NavLink>
+                                {/* 未分類ボックスの今日の復習 */}
+                                <button
+                                    className={`text-sm px-2 mt-1 rounded transition-colors text-left relative flex items-center ${location.pathname === '/today' && todayCategoryParam === 'unclassified' && todayBoxParam === 'unclassified'
+                                        ? 'text-accent-foreground bg-accent'
+                                        : 'text-muted-foreground hover:bg-accent/50'
+                                        }`}
+                                    onClick={() => handleTodayBoxClick('unclassified', 'unclassified')}
+                                    style={{ minHeight: 28, position: 'relative' }}
+                                >
+                                    <InboxIcon className="w-4 h-4 mr-1 flex-shrink-0" />
+                                    <span
+                                        className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                        style={{
+                                            maxWidth: open ? 144 : 0,
+                                            opacity: open ? 1 : 0,
+                                            transition: 'max-width 0.25s, opacity 0.25s',
+                                            display: 'inline-block',
+                                        }}
+                                    >
+                                        未分類-未分類
+                                    </span>
+                                </button>
+                                {categories.map(category => {
+                                    const boxCount = (boxesByCategoryId[category.id]?.length || 0) + 1; // +1 for '未分類'
+                                    return (
+                                        <div key={category.id}>
+                                            {/* カテゴリボタン */}
+                                            <button
+                                                className={`flex items-center w-full gap-1 mb-1 px-2 py-1 rounded transition-colors text-sm justify-start ${location.pathname === '/today' && todayCategoryParam === category.id && !todayBoxParam
+                                                    ? 'text-accent-foreground bg-accent'
+                                                    : 'text-muted-foreground hover:bg-accent/50'
+                                                    }`}
+                                                style={{ minHeight: 28, position: 'relative' }}
+                                                onMouseEnter={() => setTodayHoveredCategoryId(category.id)}
+                                                onMouseLeave={() => setTodayHoveredCategoryId(null)}
+                                            >
+                                                <span
+                                                    className="flex items-center"
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        setTodayExpandedCategoryIds(prev =>
+                                                            prev.includes(category.id)
+                                                                ? prev.filter(id => id !== category.id)
+                                                                : [...prev, category.id]
+                                                        );
+                                                    }}
+                                                    style={{ minWidth: 24 }}
+                                                >
+                                                    {todayHoveredCategoryId === category.id ? (
+                                                        todayExpandedCategoryIds.includes(category.id) ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />
+                                                    ) : (
+                                                        <InboxStackIcon className="w-4 h-4 mr-1" />
+                                                    )}
+                                                </span>
+                                                <span
+                                                    className="flex-1 truncate cursor-pointer text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-left"
+                                                    onClick={() => handleTodayCategoryClick(category.id)}
+                                                    style={{
+                                                        maxWidth: open ? 144 : 0,
+                                                        opacity: open ? 1 : 0,
+                                                        transition: 'max-width 0.25s, opacity 0.25s',
+                                                        display: 'inline-block',
+                                                    }}
+                                                >
+                                                    {category.name}
+                                                </span>
+                                            </button>
+                                            <div
+                                                className="ml-6 flex flex-col gap-1 transition-all duration-300 overflow-hidden"
+                                                style={{ maxHeight: todayExpandedCategoryIds.includes(category.id) ? (boxCount * 28 + 16) : 0 }}
+                                            >
+                                                {/* 未分類ボックス */}
+                                                <button
+                                                    className={`text-sm px-2 py-1 rounded transition-colors text-left relative flex items-center justify-start ${location.pathname === '/today' && todayCategoryParam === category.id && todayBoxParam === 'unclassified'
+                                                        ? 'text-accent-foreground bg-accent'
+                                                        : 'text-muted-foreground hover:bg-accent/50'
+                                                        }`}
+                                                    onClick={() => handleTodayBoxClick(category.id, 'unclassified')}
+                                                    style={{ minHeight: 28 }}
+                                                >
+                                                    <InboxIcon className="w-4 h-4 mr-1 flex-shrink-0" />
+                                                    <span
+                                                        className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                                        style={{
+                                                            maxWidth: open ? 144 : 0,
+                                                            opacity: open ? 1 : 0,
+                                                            transition: 'max-width 0.25s, opacity 0.25s',
+                                                            display: 'inline-block',
+                                                        }}
+                                                    >
+                                                        未分類
+                                                    </span>
+                                                </button>
+                                                {/* 通常ボックス */}
+                                                {(boxesByCategoryId[category.id] || []).map(box => (
+                                                    <button
+                                                        key={box.id}
+                                                        className={`text-sm px-2 py-1 rounded transition-colors text-left relative flex items-center justify-start ${location.pathname === '/today' && todayCategoryParam === category.id && todayBoxParam === box.id
+                                                            ? 'text-accent-foreground bg-accent'
+                                                            : 'text-muted-foreground hover:bg-accent/50'
+                                                            }`}
+                                                        onClick={() => handleTodayBoxClick(category.id, box.id)}
                                                         style={{ minHeight: 28 }}
                                                     >
                                                         <InboxIcon className="w-4 h-4 mr-1 flex-shrink-0" />
