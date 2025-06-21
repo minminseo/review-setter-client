@@ -67,7 +67,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         onSuccess: (_, itemId) => {
             toast.success('アイテムを削除しました。');
             if (boxId) removeItemFromBox(boxId, itemId);
-            queryClient.invalidateQueries({ queryKey: ['items', boxId] });
+            queryClient.invalidateQueries({ queryKey: ['items', boxId, categoryId] });
         },
         onError: (err: any) => toast.error(`削除に失敗しました: ${err.message}`),
         onSettled: () => setDeletingItem(null),
@@ -75,9 +75,11 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
 
     const completeReviewMutation = useMutation({
         mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number; }) => completeReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
-        onSuccess: () => {
+        onSuccess: (_, variables) => {
             toast.success('復習を完了しました。');
-            queryClient.invalidateQueries({ queryKey: ['items', boxId] });
+            queryClient.invalidateQueries({ queryKey: ['items', boxId, categoryId] });
+            // --- zustandストアからも即時削除 ---
+            if (storeBoxId) removeItemFromBox(storeBoxId, variables.itemId);
         },
         onError: (err: any) => toast.error(`完了に失敗しました: ${err.message}`),
     });
@@ -86,7 +88,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number; }) => incompleteReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
         onSuccess: () => {
             toast.success('復習を未完了に戻しました。');
-            queryClient.invalidateQueries({ queryKey: ['items', boxId] });
+            queryClient.invalidateQueries({ queryKey: ['items', boxId, categoryId] });
         },
         onError: (err: any) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
     });
@@ -115,7 +117,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     // --- スケルトン表示制御 ---
     const showSkeleton = isLoading && (!zustandItems || zustandItems.length === 0);
     const displayItems = zustandItems && zustandItems.length > 0 ? zustandItems : items;
-    
+
     // デバッグ用：displayItemsのreview_datesをチェック
     React.useEffect(() => {
         if (displayItems && displayItems.length > 0) {
