@@ -230,21 +230,33 @@ const BoxAndCategoryPage = () => {
     useEffect(() => {
         const calcTabs = () => {
             // タブ1つの最小幅（rem単位→px換算、1rem=16px想定）
-            const tabMinWidth = 96; // 6rem * 16px
-            const padding = 32; // 余白やボタン分
+            const tabMinWidth = 112; // 7rem * 16px
+            const moreButtonWidth = 40; // MoreHorizontalボタンの幅
+
             if (categoryTabsContainerRef.current) {
-                const width = categoryTabsContainerRef.current.offsetWidth - padding;
-                setMaxCategoryTabs(Math.max(1, Math.floor(width / tabMinWidth) - 1)); // -1は「未分類」分
+                const containerWidth = categoryTabsContainerRef.current.offsetWidth;
+                const availableWidth = containerWidth * 0.95 - moreButtonWidth; // 95%の領域からMoreボタン幅を除く
+                const fixedTabsWidth = 1 * tabMinWidth; // 「未分類」の固定タブ幅
+                const remainingWidth = availableWidth - fixedTabsWidth;
+                const maxDynamicTabs = Math.max(0, Math.floor(remainingWidth / tabMinWidth));
+                setMaxCategoryTabs(maxDynamicTabs);
             }
+
             if (boxTabsContainerRef.current) {
-                const width = boxTabsContainerRef.current.offsetWidth - padding;
-                setMaxBoxTabs(Math.max(1, Math.floor(width / tabMinWidth) - 1)); // -1は「全て」分
+                const containerWidth = boxTabsContainerRef.current.offsetWidth;
+                const availableWidth = containerWidth * 0.95 - moreButtonWidth;
+                const fixedTabsCount = selectedCategoryId === UNCLASSIFIED_ID ? 1 : 2; // 「未分類」のみ or 「全て」「未分類」
+                const fixedTabsWidth = fixedTabsCount * tabMinWidth;
+                const remainingWidth = availableWidth - fixedTabsWidth;
+                const maxDynamicTabs = Math.max(0, Math.floor(remainingWidth / tabMinWidth));
+                setMaxBoxTabs(maxDynamicTabs);
             }
         };
+
         calcTabs();
         window.addEventListener('resize', calcTabs);
         return () => window.removeEventListener('resize', calcTabs);
-    }, []);
+    }, [selectedCategoryId]);
 
     // 表示するカテゴリー・ボックス
     const displayedCategories = categories.slice(0, maxCategoryTabs);
@@ -284,33 +296,34 @@ const BoxAndCategoryPage = () => {
                     {/* カテゴリータブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
                         <div className="relative flex items-center w-full max-w-full" ref={categoryTabsContainerRef}>
-                            <div className="flex-1 min-w-0 flex">
+                            <div className="flex overflow-hidden" style={{ width: hasMoreCategories ? 'calc(100% - 48px)' : '100%' }}>
                                 <Tabs value={selectedCategoryId} onValueChange={handleCategoryTabChange}>
                                     <TabsList
-                                        className="flex w-full"
+                                        className="flex gap-0.5 bg-neutral-200 dark:bg-neutral-800"
                                         style={{
-                                            width: '100%',
+                                            width: 'fit-content',
+                                            maxWidth: '100%',
                                         }}
                                     >
-                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem]">未分類</TabsTrigger>
+                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                         {displayedCategories.map((cat) => (
-                                            <TabsTrigger key={cat.id} value={cat.id} className="flex-1 min-w-[7rem] justify-start text-left">
+                                            <TabsTrigger key={cat.id} value={cat.id} className="min-w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                 {cat.name}
                                             </TabsTrigger>
                                         ))}
                                     </TabsList>
                                 </Tabs>
                             </div>
-                            <div className="flex-shrink-0 flex items-center" style={{ width: 40 }}>
-                                {hasMoreCategories && (
+                            {hasMoreCategories && (
+                                <div className="absolute right-0 flex items-center justify-center bg-background" style={{ width: 48, height: '100%' }}>
                                     <Button
                                         variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)}
-                                        className="ml-1 shrink-0 h-8 w-8"
+                                        className="shrink-0 h-8 w-8"
                                     >
                                         <MoreHorizontal className="h-5 w-5" />
                                     </Button>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                     {/* ボックスラベル */}
@@ -320,27 +333,28 @@ const BoxAndCategoryPage = () => {
                     {/* ボックスタブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
                         <div className="relative flex items-center w-full max-w-full" ref={boxTabsContainerRef}>
-                            <div className="flex-1 min-w-0 flex">
+                            <div className="flex overflow-hidden" style={{ width: (hasMoreBoxes && selectedCategoryId !== UNCLASSIFIED_ID) ? 'calc(100% - 48px)' : '100%' }}>
                                 <Tabs
                                     value={selectedBoxId}
                                     onValueChange={handleBoxTabChange}
                                 >
                                     <TabsList
-                                        className="flex w-full"
+                                        className="flex gap-0.5 bg-neutral-200 dark:bg-neutral-800"
                                         style={{
-                                            width: '100%',
+                                            width: 'fit-content',
+                                            maxWidth: '100%',
                                             borderRadius: '0.75rem',
                                             overflow: 'hidden',
                                         }}
                                     >
                                         {selectedCategoryId === UNCLASSIFIED_ID ? (
-                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem]">未分類</TabsTrigger>
+                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                         ) : (
                                             <>
-                                                <TabsTrigger value="" className="justify-start text-left min-w-[7rem]">全て</TabsTrigger>
-                                                <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem]">未分類</TabsTrigger>
+                                                <TabsTrigger value="" className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
+                                                <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                                 {displayedBoxes.map((box) => (
-                                                    <TabsTrigger key={box.id} value={box.id} className="flex-1 min-w-[7rem] justify-start text-left">
+                                                    <TabsTrigger key={box.id} value={box.id} className="min-w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                         {box.name}
                                                     </TabsTrigger>
                                                 ))}
@@ -349,16 +363,16 @@ const BoxAndCategoryPage = () => {
                                     </TabsList>
                                 </Tabs>
                             </div>
-                            <div className="flex-shrink-0 flex items-center" style={{ width: 40 }}>
-                                {hasMoreBoxes && selectedCategoryId !== UNCLASSIFIED_ID && (
+                            {hasMoreBoxes && selectedCategoryId !== UNCLASSIFIED_ID && (
+                                <div className="absolute right-0 flex items-center justify-center bg-background" style={{ width: 48, height: '100%' }}>
                                     <Button
                                         variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)}
-                                        className="ml-1 shrink-0 h-8 w-8"
+                                        className="shrink-0 h-8 w-8"
                                     >
                                         <MoreHorizontal className="h-5 w-5" />
                                     </Button>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
