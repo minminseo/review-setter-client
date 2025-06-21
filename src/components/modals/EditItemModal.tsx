@@ -91,8 +91,18 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         return intervals1.every((interval: number, index: number) => interval === intervals2[index]);
     };
 
+    // 復習物が完了済みの復習日を持っているかどうかをチェックする関数
+    const hasCompletedReviews = (): boolean => {
+        return item.review_dates?.some(reviewDate => reviewDate.is_completed) ?? false;
+    };
+
     // 現在のアイテムの復習パターンと一致するボックスのみをフィルタリング
     const filteredBoxes = React.useMemo(() => {
+        // 完了済みの復習日がない場合は、復習パターンに関係なく全てのボックスを表示
+        if (!hasCompletedReviews()) {
+            return boxes;
+        }
+        
         if (!item.pattern_id || patterns.length === 0) return boxes; // パターンが未設定またはパターンが存在しない場合は全ボックス表示
         
         const currentPattern = patterns.find(p => p.id === item.pattern_id);
@@ -103,7 +113,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
             const boxPattern = patterns.find(p => p.id === box.pattern_id);
             return arePatternIntervalsEqual(currentPattern, boxPattern);
         });
-    }, [boxes, patterns, item.pattern_id]);
+    }, [boxes, patterns, item.pattern_id, item.review_dates, hasCompletedReviews]);
 
     // 選択されたボックスの情報を取得（フィルタリング後のリストから）
     const selectedBox = watchedBoxId ? filteredBoxes.find(box => box.id === watchedBoxId) : null;
@@ -341,7 +351,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                             <FormItem>
                                 <FormLabel>
                                     ボックス
-                                    {item.pattern_id && filteredBoxes.length < boxes.length && (
+                                    {item.pattern_id && filteredBoxes.length < boxes.length && hasCompletedReviews() && (
                                         <span className="text-xs text-muted-foreground ml-1">
                                             (同じ復習パターンのボックスのみ)
                                         </span>
@@ -354,7 +364,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
-                                {item.pattern_id && filteredBoxes.length === 0 && (
+                                {item.pattern_id && filteredBoxes.length === 0 && hasCompletedReviews() && (
                                     <p className="text-xs text-orange-600">
                                         この復習パターンと一致するボックスがありません
                                     </p>
