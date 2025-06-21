@@ -337,10 +337,10 @@ const TodaysReviewPage = () => {
                             <div className="flex-1 min-w-0 flex">
                                 <Tabs value={selectedCategoryId} onValueChange={handleCategoryChange}>
                                     <TabsList className="flex w-full">
-                                        <TabsTrigger value="all">全て</TabsTrigger>
-                                        <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                        <TabsTrigger value="all" className="justify-start text-left min-w-[7rem]">全て</TabsTrigger>
+                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem]">未分類</TabsTrigger>
                                         {displayedCategories.map((cat) => (
-                                            <TabsTrigger key={cat.id} value={cat.id} className="flex-1 min-w-0">
+                                            <TabsTrigger key={cat.id} value={cat.id} className="flex-1 min-w-[7rem] justify-start text-left">
                                                 {cat.name}
                                             </TabsTrigger>
                                         ))}
@@ -378,12 +378,12 @@ const TodaysReviewPage = () => {
                                             overflow: 'hidden',
                                         }}
                                     >
-                                        <TabsTrigger value="all">全て</TabsTrigger>
+                                        <TabsTrigger value="all" className="justify-start text-left min-w-[7rem]">全て</TabsTrigger>
                                         {selectedCategoryId !== 'all' && (
-                                            <TabsTrigger value={UNCLASSIFIED_ID}>未分類</TabsTrigger>
+                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem]">未分類</TabsTrigger>
                                         )}
                                         {displayedBoxes.map((box) => (
-                                            <TabsTrigger key={box.id} value={box.id} className="flex-1 min-w-0">
+                                            <TabsTrigger key={box.id} value={box.id} className="flex-1 min-w-[7rem] justify-start text-left">
                                                 {box.name}
                                             </TabsTrigger>
                                         ))}
