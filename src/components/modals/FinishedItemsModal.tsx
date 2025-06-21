@@ -5,10 +5,9 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 // API関数
-import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate } from '@/api/itemApi';
+import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate, fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory, fetchItemsByBox } from '@/api/itemApi';
 import { UNCLASSIFIED_ID } from '@/constants';
 import { useItemStore } from '@/store';
-import { fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory } from '@/api/itemApi';
 // 型定義
 import { ItemResponse } from '@/types';
 // UIコンポーネント
@@ -82,25 +81,31 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         onSuccess: async () => {
             toast.success(`復習を再開しました。`);
             await Promise.all([
-                queryClient.invalidateQueries({ queryKey: queryKey }),
-                queryClient.invalidateQueries({ queryKey: ['items', boxId] }),
-                queryClient.invalidateQueries({ queryKey: ['todaysReviews'] }),
-                queryClient.invalidateQueries({ queryKey: ['summary'] })
+                queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
+                queryClient.invalidateQueries({ queryKey: ['items', boxId], exact: true }),
+                queryClient.invalidateQueries({ queryKey: ['todaysReviews'], exact: true }),
+                queryClient.invalidateQueries({ queryKey: ['summary'], exact: true })
             ]);
+            await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
             // --- zustandストアも即時更新 ---
+            const storeBoxId = getStoreBoxId(boxId, categoryId);
+            let items: ItemResponse[] = [];
             if (
                 (boxId === undefined && categoryId === undefined) ||
                 (boxId === UNCLASSIFIED_ID && (!categoryId || categoryId === UNCLASSIFIED_ID)) ||
                 (categoryId && categoryId !== UNCLASSIFIED_ID && (boxId === undefined || boxId === UNCLASSIFIED_ID))
             ) {
-                const storeBoxId = getStoreBoxId(boxId, categoryId);
-                let items: ItemResponse[] = [];
                 if (categoryId === UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
                     items = await fetchUnclassifiedItems();
                 } else if (categoryId && categoryId !== UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
                     items = await fetchUnclassifiedItemsByCategory(categoryId);
                 }
-                setItemsForBox(storeBoxId || '', items.filter((item: ItemResponse) => !item.is_finished));
+            } else if (boxId && boxId !== UNCLASSIFIED_ID) {
+                // 通常のボックスの場合
+                items = await fetchItemsByBox(boxId);
+            }
+            if (storeBoxId) {
+                setItemsForBox(storeBoxId, items.filter((item: ItemResponse) => !item.is_finished));
             }
         },
         onError: (err: any) => toast.error(`処理に失敗しました: ${err.message}`),
@@ -111,23 +116,31 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             incompleteReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
         onSuccess: async () => {
             toast.success("復習を未完了に戻しました。");
-            queryClient.invalidateQueries({ queryKey: queryKey });
-            queryClient.invalidateQueries({ queryKey: ['items', boxId] });
-            queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
+                queryClient.invalidateQueries({ queryKey: ['items', boxId], exact: true }),
+                queryClient.invalidateQueries({ queryKey: ['todaysReviews'], exact: true })
+            ]);
+            await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
             // --- zustandストアも即時更新 ---
+            const storeBoxId = getStoreBoxId(boxId, categoryId);
+            let items: ItemResponse[] = [];
             if (
                 (boxId === undefined && categoryId === undefined) ||
                 (boxId === UNCLASSIFIED_ID && (!categoryId || categoryId === UNCLASSIFIED_ID)) ||
                 (categoryId && categoryId !== UNCLASSIFIED_ID && (boxId === undefined || boxId === UNCLASSIFIED_ID))
             ) {
-                const storeBoxId = getStoreBoxId(boxId, categoryId);
-                let items: ItemResponse[] = [];
                 if (categoryId === UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
                     items = await fetchUnclassifiedItems();
                 } else if (categoryId && categoryId !== UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
                     items = await fetchUnclassifiedItemsByCategory(categoryId);
                 }
-                setItemsForBox(storeBoxId || '', items.filter((item: ItemResponse) => !item.is_finished));
+            } else if (boxId && boxId !== UNCLASSIFIED_ID) {
+                // 通常のボックスの場合
+                items = await fetchItemsByBox(boxId);
+            }
+            if (storeBoxId && items.length > 0) {
+                setItemsForBox(storeBoxId, items.filter((item: ItemResponse) => !item.is_finished));
             }
         },
         onError: (err) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
