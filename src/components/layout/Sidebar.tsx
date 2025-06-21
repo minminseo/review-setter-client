@@ -1,9 +1,13 @@
-import { NavLink } from 'react-router-dom';
-import { HomeIcon, PlusCircleIcon, DocumentPlusIcon, UserCircleIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { NavLink, useLocation } from 'react-router-dom';
+import { HomeIcon, PlusCircleIcon, DocumentPlusIcon, UserCircleIcon, ArrowRightOnRectangleIcon, InboxStackIcon, InboxIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from '@/hooks/useAuth';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useCategoryStore, useBoxStore } from '@/store';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import React, { useState } from 'react';
 
 // 親コンポーネントから受け取るPropsの型を定義
 type SidebarProps = {
@@ -23,16 +27,55 @@ type SidebarProps = {
  */
 const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, setOpen }: SidebarProps) => {
     const { logout, isLoggingOut } = useAuth();
+    const { categories } = useCategoryStore();
+    const { boxesByCategoryId } = useBoxStore();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [expandedCategoryIds, setExpandedCategoryIds] = useState<string[]>([]);
+    // サイドバーのピン留め状態
+    const [isSidebarPinned, setIsSidebarPinned] = useState(false);
+    // Editセクションのトグル状態
+    const [editOpen, setEditOpen] = useState(true);
+    // カテゴリーボタンのホバー状態
+    const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
+
+    // 現在のcategoryId, boxIdをパスから抽出（正規表現を使わず分割で）
+    const pathParts = location.pathname.split('/');
+    let currentCategoryId: string | null = null;
+    let currentBoxId: string | null = null;
+    const catIdx = pathParts.indexOf('categories');
+    if (catIdx !== -1 && pathParts.length > catIdx + 1) {
+        currentCategoryId = pathParts[catIdx + 1];
+        if (pathParts[catIdx + 2] === 'boxes' && pathParts.length > catIdx + 3) {
+            currentBoxId = pathParts[catIdx + 3];
+        }
+    }
 
     const handleLogout = () => {
         logout();
     };
 
+    const handleCategoryClick = (categoryId: string) => {
+        setExpandedCategoryIds(prev =>
+            prev.includes(categoryId)
+                ? prev.filter(id => id !== categoryId)
+                : [...prev, categoryId]
+        );
+        navigate(`/categories/${categoryId}`);
+    };
+    const handleBoxClick = (categoryId: string, boxId: string) => {
+        navigate(`/categories/${categoryId}/boxes/${boxId}`);
+    };
+
     return (
         <aside
             className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex transition-all duration-200 ${open ? 'w-48' : 'w-14'}`}
-            onMouseEnter={() => { if (!open) setOpen(true); }}
-            onMouseLeave={() => { if (open) setOpen(false); }}
+            onMouseEnter={() => {
+                if (!open && !isSidebarPinned) setOpen(true);
+            }}
+            onMouseLeave={() => {
+                if (open && !isSidebarPinned) setOpen(false);
+            }}
         >
             <TooltipProvider>
                 {/* 開閉トグルボタン（左側に固定） */}
@@ -41,7 +84,17 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                         variant="ghost"
                         size="icon"
                         className="rounded-lg"
-                        onClick={() => setOpen((prev) => !prev)}
+                        onClick={() => {
+                            if (open) {
+                                // 開いてる状態でクリック→閉じる＆ピン留め解除
+                                setOpen(false);
+                                setIsSidebarPinned(false);
+                            } else {
+                                // 閉じてる状態でクリック→開く＆ピン留めON
+                                setOpen(true);
+                                setIsSidebarPinned(true);
+                            }
+                        }}
                         aria-label={open ? 'サイドバーを閉じる' : 'サイドバーを開く'}
                         tabIndex={0}
                     >
@@ -70,7 +123,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <HomeIcon className="h-5 w-5" />
                                     </span>
                                     <span
-                                        className={`ml-2 text-xs transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                                        className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[144px]' : 'max-w-0 opacity-0'} pl-0`}
                                         style={{ height: '20px', display: 'flex', alignItems: 'center' }}
                                     >
                                         ホーム
@@ -81,6 +134,164 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                         <TooltipContent side="right">ホーム</TooltipContent>
                     </Tooltip>
                 </nav>
+                {/* Editセクション: サイドバーが開いているときのみ表示 */}
+                {open && (
+                    <div className="w-full px-2">
+                        <button
+                            className="flex items-center w-full rounded hover:bg-accent/50 transition-colors"
+                            style={{ minHeight: 28 }}
+                            onClick={() => setEditOpen((prev) => !prev)}
+                        >
+                            {editOpen ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />}
+                            <span className="text-sm font-bold text-muted-foreground ml-1 transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                style={{
+                                    maxWidth: open ? 120 : 0,
+                                    opacity: open ? 1 : 0,
+                                    transition: 'max-width 0.25s, opacity 0.2s',
+                                    display: 'inline-block',
+                                }}
+                            >
+                                Edit
+                            </span>
+                        </button>
+                        <div
+                            className="transition-all duration-300 overflow-hidden"
+                            style={{
+                                maxHeight: open && editOpen ? 600 : 0 // 600pxで十分な高さ（多くのカテゴリでも）
+                            }}
+                        >
+                            <div className="flex flex-col gap-1 pl-2">
+                                {/* 未分類ボックス */}
+                                <button
+                                    className={`text-sm px-2 mt-1 rounded transition-colors text-left relative flex items-center ${currentCategoryId === 'unclassified' && currentBoxId === 'unclassified'
+                                        ? 'text-accent-foreground bg-accent'
+                                        : 'text-muted-foreground hover:bg-accent/50'
+                                        }`}
+                                    onClick={() => handleBoxClick('unclassified', 'unclassified')}
+                                    style={{ minHeight: 28, position: 'relative' }}
+                                >
+                                    <InboxIcon className="w-4 h-4 mr-1 flex-shrink-0" />
+                                    <span
+                                        className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                        style={{
+                                            maxWidth: open ? 144 : 0,
+                                            opacity: open ? 1 : 0,
+                                            transition: 'max-width 0.25s, opacity 0.25s',
+                                            display: 'inline-block',
+                                        }}
+                                    >
+                                        未分類-未分類
+                                    </span>
+                                </button>
+                                {categories.map(category => {
+                                    const boxCount = (boxesByCategoryId[category.id]?.length || 0) + 1; // +1 for '未分類'
+                                    return (
+                                        <div key={category.id}>
+                                            {/* カテゴリボタン */}
+                                            <button
+                                                className={`flex items-center w-full gap-1 mb-1 px-2 py-1 rounded transition-colors text-sm ${((currentCategoryId === category.id) && (!currentBoxId || currentBoxId === undefined))
+                                                    ? 'text-accent-foreground bg-accent'
+                                                    : 'text-muted-foreground hover:bg-accent/50'
+                                                    }`}
+                                                style={{ minHeight: 28, position: 'relative' }}
+                                                onMouseEnter={() => setHoveredCategoryId(category.id)}
+                                                onMouseLeave={() => setHoveredCategoryId(null)}
+                                            >
+                                                <span
+                                                    className="flex items-center flex-1 truncate cursor-pointer text-sm"
+                                                    onClick={() => handleCategoryClick(category.id)}
+                                                >
+                                                    <span
+                                                        className="flex items-center"
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            setExpandedCategoryIds(prev =>
+                                                                prev.includes(category.id)
+                                                                    ? prev.filter(id => id !== category.id)
+                                                                    : [...prev, category.id]
+                                                            );
+                                                        }}
+                                                        style={{ minWidth: 24 }}
+                                                    >
+                                                        {hoveredCategoryId === category.id ? (
+                                                            expandedCategoryIds.includes(category.id) ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />
+                                                        ) : (
+                                                            <InboxStackIcon className="w-4 h-4 mr-1" />
+                                                        )}
+                                                    </span>
+                                                    <span
+                                                        className="truncate text-sm absolute left-7 top-1/2 -translate-y-1/2 pointer-events-none select-none transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                                        style={{
+                                                            maxWidth: open ? 144 : 0,
+                                                            opacity: open ? 1 : 0,
+                                                            transition: 'max-width 0.25s, opacity 0.25s',
+                                                            zIndex: 1,
+                                                            display: 'inline-block',
+                                                        }}
+                                                    >
+                                                        {category.name}
+                                                    </span>
+                                                </span>
+                                            </button>
+                                            <div
+                                                className="ml-6 flex flex-col gap-1 transition-all duration-300 overflow-hidden"
+                                                style={{ maxHeight: expandedCategoryIds.includes(category.id) ? (boxCount * 28 + 16) : 0 }}
+                                            >
+                                                {/* 未分類ボックス */}
+                                                <button
+                                                    className={`text-sm px-2 py-1 rounded transition-colors text-left relative flex items-center ${currentCategoryId === category.id && currentBoxId === 'unclassified'
+                                                        ? 'text-accent-foreground bg-accent'
+                                                        : 'text-muted-foreground hover:bg-accent/50'
+                                                        }`}
+                                                    onClick={() => handleBoxClick(category.id, 'unclassified')}
+                                                    style={{ minHeight: 28 }}
+                                                >
+                                                    <InboxIcon className="w-4 h-4 mr-1 flex-shrink-0" />
+                                                    <span
+                                                        className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                                        style={{
+                                                            maxWidth: open ? 144 : 0,
+                                                            opacity: open ? 1 : 0,
+                                                            transition: 'max-width 0.25s, opacity 0.25s',
+                                                            display: 'inline-block',
+                                                        }}
+                                                    >
+                                                        未分類
+                                                    </span>
+                                                </button>
+                                                {/* 通常ボックス */}
+                                                {(boxesByCategoryId[category.id] || []).map(box => (
+                                                    <button
+                                                        key={box.id}
+                                                        className={`text-sm px-2 py-1 rounded transition-colors text-left relative flex items-center ${currentCategoryId === category.id && currentBoxId === box.id
+                                                            ? 'text-accent-foreground bg-accent'
+                                                            : 'text-muted-foreground hover:bg-accent/50'
+                                                            }`}
+                                                        onClick={() => handleBoxClick(category.id, box.id)}
+                                                        style={{ minHeight: 28 }}
+                                                    >
+                                                        <InboxIcon className="w-4 h-4 mr-1 flex-shrink-0" />
+                                                        <span
+                                                            className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                                            style={{
+                                                                maxWidth: open ? 144 : 0,
+                                                                opacity: open ? 1 : 0,
+                                                                transition: 'max-width 0.25s, opacity 0.25s',
+                                                                display: 'inline-block',
+                                                            }}
+                                                        >
+                                                            {box.name}
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* 下部の設定・ログアウト・追加/作成ボタン: mt-autoで要素をコンテナ下部に押しやる */}
                 <nav className={`mt-auto flex flex-col gap-4 px-2 sm:py-5 w-full`} style={{ alignItems: 'center' }}>
                     <Tooltip>
@@ -95,7 +306,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     <span className="flex justify-center items-center min-w-[32px]">
                                         <PlusCircleIcon className="h-6 w-6" />
                                     </span>
-                                    <span className={`ml-2 text-xs transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>復習物追加</span>
+                                    <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        復習物追加
+                                    </span>
                                 </span>
                                 <span className="sr-only">復習物を追加</span>
                             </Button>
@@ -114,7 +327,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     <span className="flex justify-center items-center min-w-[32px]">
                                         <DocumentPlusIcon className="h-6 w-6" />
                                     </span>
-                                    <span className={`ml-2 text-xs transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>パターン作成</span>
+                                    <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        パターン作成
+                                    </span>
                                 </span>
                                 <span className="sr-only">復習パターンを作成</span>
                             </Button>
@@ -134,7 +349,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     <span className="flex justify-center items-center min-w-[32px]">
                                         <ArrowRightOnRectangleIcon className="h-6 w-6" />
                                     </span>
-                                    <span className={`ml-2 text-xs transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>ログアウト</span>
+                                    <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        ログアウト
+                                    </span>
                                 </span>
                                 <span className="sr-only">ログアウト</span>
                             </Button>
@@ -153,7 +370,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     <span className="flex justify-center items-center min-w-[32px]">
                                         <UserCircleIcon className="h-6 w-6" />
                                     </span>
-                                    <span className={`ml-2 text-xs transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>設定</span>
+                                    <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        設定
+                                    </span>
                                 </span>
                                 <span className="sr-only">設定</span>
                             </Button>
