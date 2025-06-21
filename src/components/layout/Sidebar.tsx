@@ -29,7 +29,11 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
     };
 
     return (
-        <aside className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex transition-all duration-200 ${open ? 'w-48' : 'w-14'}`}>
+        <aside
+            className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex transition-all duration-200 ${open ? 'w-48' : 'w-14'}`}
+            onMouseEnter={() => { if (!open) setOpen(true); }}
+            onMouseLeave={() => { if (open) setOpen(false); }}
+        >
             <TooltipProvider>
                 {/* 開閉トグルボタン（左側に固定） */}
                 <div className="flex items-center justify-start h-12 px-2">
