@@ -300,7 +300,7 @@ const TodaysReviewPage = () => {
     React.useEffect(() => {
         const categoryParam = searchParams.get('category') || 'all';
         const boxParam = searchParams.get('box') || 'all';
-        
+
         if (categoryParam !== selectedCategoryId) {
             setSelectedCategoryId(categoryParam);
         }
@@ -313,7 +313,7 @@ const TodaysReviewPage = () => {
     const handleCategoryChange = (newCategoryId: string) => {
         setSelectedCategoryId(newCategoryId);
         setSelectedBoxId('all'); // カテゴリー変更時はボックス選択をリセット
-        
+
         // URLパラメータを更新
         const newParams = new URLSearchParams();
         if (newCategoryId !== 'all') {
@@ -325,7 +325,7 @@ const TodaysReviewPage = () => {
 
     const handleBoxChange = (newBoxId: string) => {
         setSelectedBoxId(newBoxId);
-        
+
         // URLパラメータを更新
         const newParams = new URLSearchParams();
         if (selectedCategoryId !== 'all') {
@@ -411,11 +411,17 @@ const TodaysReviewPage = () => {
                         <div className="relative flex items-center w-full max-w-full" ref={categoryTabsContainerRef}>
                             <div className="flex overflow-hidden" style={{ width: hasMoreCategories ? 'calc(100% - 48px)' : '100%' }}>
                                 <Tabs value={selectedCategoryId} onValueChange={handleCategoryChange}>
-                                    <TabsList className="flex gap-0.5 bg-neutral-200 dark:bg-neutral-800" style={{ width: 'fit-content', maxWidth: '100%' }}>
-                                        <TabsTrigger value="all" className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
-                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                    <TabsList
+                                        className="flex gap-0.5 bg-neutral-200 dark:bg-neutral-800"
+                                        style={{
+                                            width: 'fit-content',
+                                            maxWidth: '100%'
+                                        }}
+                                    >
+                                        <TabsTrigger value="all" className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
+                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                         {displayedCategories.map((cat) => (
-                                            <TabsTrigger key={cat.id} value={cat.id} className="min-w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
+                                            <TabsTrigger key={cat.id} value={cat.id} className="w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                 {cat.name}
                                             </TabsTrigger>
                                         ))}
@@ -450,16 +456,14 @@ const TodaysReviewPage = () => {
                                         style={{
                                             width: 'fit-content',
                                             maxWidth: '100%',
-                                            borderRadius: '0.75rem',
-                                            overflow: 'hidden',
                                         }}
                                     >
-                                        <TabsTrigger value="all" className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
+                                        <TabsTrigger value="all" className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
                                         {selectedCategoryId !== 'all' && (
-                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                         )}
                                         {displayedBoxes.map((box) => (
-                                            <TabsTrigger key={box.id} value={box.id} className="min-w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
+                                            <TabsTrigger key={box.id} value={box.id} className="w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                 {box.name}
                                             </TabsTrigger>
                                         ))}
