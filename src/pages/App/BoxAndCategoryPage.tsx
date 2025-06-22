@@ -305,9 +305,9 @@ const BoxAndCategoryPage = () => {
                                             maxWidth: '100%',
                                         }}
                                     >
-                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                         {displayedCategories.map((cat) => (
-                                            <TabsTrigger key={cat.id} value={cat.id} className="min-w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
+                                            <TabsTrigger key={cat.id} value={cat.id} className="w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                 {cat.name}
                                             </TabsTrigger>
                                         ))}
@@ -348,13 +348,13 @@ const BoxAndCategoryPage = () => {
                                         }}
                                     >
                                         {selectedCategoryId === UNCLASSIFIED_ID ? (
-                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                         ) : (
                                             <>
-                                                <TabsTrigger value="" className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
-                                                <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left min-w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                                <TabsTrigger value="" className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
+                                                <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
                                                 {displayedBoxes.map((box) => (
-                                                    <TabsTrigger key={box.id} value={box.id} className="min-w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
+                                                    <TabsTrigger key={box.id} value={box.id} className="w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                         {box.name}
                                                     </TabsTrigger>
                                                 ))}
