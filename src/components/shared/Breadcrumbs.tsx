@@ -30,24 +30,26 @@ const Breadcrumbs = ({ items }: BreadcrumbsProps) => {
         // md（中画面）以上で表示される
         <Breadcrumb className="hidden md:flex">
             <BreadcrumbList>
-                {items.map((item, index) => (
-                    // ReactのFragmentを使い、余分なDOM要素を生成せずに要素をグループ化
-                    <React.Fragment key={index}>
-                        <BreadcrumbItem>
-                            {item.href ? (
-                                // リンクがある場合は、react-router-domのLinkコンポーネントで画面遷移
-                                <BreadcrumbLink asChild>
-                                    <Link to={item.href}>{item.label}</Link>
-                                </BreadcrumbLink>
-                            ) : (
-                                // リンクがない場合は、現在のページとしてテキスト表示
-                                <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                            )}
-                        </BreadcrumbItem>
-                        {/* 最後の項目でなければ、区切り文字（>）を表示 */}
-                        {index < items.length - 1 && <BreadcrumbSeparator />}
-                    </React.Fragment>
-                ))}
+                {items.map((item, index) => {
+                    const displayLabel =
+                        item.label.length > 20
+                            ? item.label.slice(0, 20) + '...'
+                            : item.label;
+                    return (
+                        <React.Fragment key={index}>
+                            <BreadcrumbItem>
+                                {item.href ? (
+                                    <BreadcrumbLink asChild>
+                                        <Link to={item.href}>{displayLabel}</Link>
+                                    </BreadcrumbLink>
+                                ) : (
+                                    <BreadcrumbPage>{displayLabel}</BreadcrumbPage>
+                                )}
+                            </BreadcrumbItem>
+                            {index < items.length - 1 && <BreadcrumbSeparator />}
+                        </React.Fragment>
+                    );
+                })}
             </BreadcrumbList>
         </Breadcrumb>
     );
