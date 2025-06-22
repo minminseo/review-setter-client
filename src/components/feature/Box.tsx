@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { CogIcon, InformationCircleIcon, PlusCircleIcon, PencilIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { CogIcon, InformationCircleIcon, PencilIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import NameCell from '@/components/shared/NameCell';
@@ -276,15 +276,16 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
 
     return (
         <>
-            <div className="flex-1 flex flex-col overflow-hidden p-4 pt-0">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 {/* --- ヘッダー部分 --- */}
-                <div className="flex items-center justify-between pb-4">
-                    <h1 className="text-2xl font-bold tracking-tight">{currentBox?.name || "未分類ボックス"}</h1>
+                <div className="flex items-center justify-between pb-3 pt-3">
+                    <h1
+                        className="text-2xl font-bold tracking-tight max-w-full truncate flex-1 min-w-0"
+                        title={currentBox?.name || "未分類ボックス"}
+                    >
+                        {currentBox?.name || "未分類ボックス"}
+                    </h1>
                     <div className="flex items-center gap-2">
-                        <Button onClick={() => openCreateItemModal({ categoryId, boxId })} variant="default">
-                            <PlusCircleIcon className="mr-2 h-5 w-5" />
-                            復習物作成
-                        </Button>
                         <Button variant="outline" onClick={() => setFinishedItemsModalOpen(true)}>
                             完了済みを確認
                         </Button>
@@ -303,7 +304,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
 
                 {/* --- スクロール可能なテーブル領域 --- */}
                 <Card className="h-full flex-1">
-                    <CardContent className="pt-6 h-full">
+                    <CardContent className=" h-full">
                         {showSkeleton ? (
                             <TableSkeleton />
                         ) : (

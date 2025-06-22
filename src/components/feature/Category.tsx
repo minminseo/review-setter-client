@@ -1,7 +1,10 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { GetBoxOutput, GetCategoryOutput } from '@/types';
+import { GetBoxOutput, GetCategoryOutput, PatternResponse, ItemCountGroupedByBoxResponse, DailyCountGroupedByBoxResponse } from '@/types';
 import { useModal } from '@/contexts/ModalContext';
+import { useQueries } from '@tanstack/react-query';
+import { fetchPatterns } from '@/api/patternApi';
+import { fetchItemCountByBox, fetchDailyReviewCountByBox } from '@/api/itemApi';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -14,6 +17,7 @@ import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
 import { EditBoxModal } from '@/components/modals/EditBoxModal';
 import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
+import { CogIcon } from '@heroicons/react/24/outline';
 
 // Categoryコンポーネントが受け取るPropsの型定義
 interface CategoryProps {
@@ -33,6 +37,41 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
 
     const { openCreateItemModal } = useModal();
 
+    // 必要なデータを並列で取得
+    const results = useQueries({
+        queries: [
+            { queryKey: ['patterns'], queryFn: fetchPatterns, staleTime: 1000 * 60 * 5 },
+            { queryKey: ['summary', 'itemCountByBox'], queryFn: fetchItemCountByBox },
+            { queryKey: ['summary', 'dailyReviewCountByBox'], queryFn: fetchDailyReviewCountByBox },
+        ],
+    });
+
+    const [patternsQuery, itemCountByBoxQuery, dailyReviewCountByBoxQuery] = results;
+    const patterns = patternsQuery.data;
+
+    // 復習パターン名を取得するヘルパー関数
+    const getPatternName = (patternId: string | null): string => {
+        if (!patternId || !patterns) return '未設定';
+        const pattern = patterns.find(p => p.id === patternId);
+        return pattern?.name || '未設定';
+    };
+
+    // ボックスのアイテム数を取得するヘルパー関数
+    const getItemCount = (boxId: string): number => {
+        if (!itemCountByBoxQuery.data) return 0;
+        const itemCount = (itemCountByBoxQuery.data as ItemCountGroupedByBoxResponse[])
+            .find(item => item.box_id === boxId);
+        return itemCount?.count || 0;
+    };
+
+    // ボックスの今日の復習数を取得するヘルパー関数
+    const getDailyReviewCount = (boxId: string): number => {
+        if (!dailyReviewCountByBoxQuery.data) return 0;
+        const dailyCount = (dailyReviewCountByBoxQuery.data as DailyCountGroupedByBoxResponse[])
+            .find(item => item.box_id === boxId);
+        return dailyCount?.count || 0;
+    };
+
     // モーダルの開閉状態を管理
     const [isCreateBoxModalOpen, setCreateBoxModalOpen] = React.useState(false);
     const [editingBox, setEditingBox] = React.useState<GetBoxOutput | null>(null);
@@ -48,34 +87,25 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
     }
 
     return (
-        <div className="p-4 pt-0">
+        <div>
             {/* --- 右上のアクションボタン群 --- */}
-            <div className="flex items-center justify-end w-full py-2">
+            <div className="flex items-center justify-end w-full pb-3 pt-3">
                 {!isUnclassifiedPage && currentCategory && (
-                    <div className="flex items-center gap-2">
-                        <Button
-                            onClick={() => openCreateItemModal({
-                                categoryId: currentCategory.id,
-                                boxId: 'unclassified'
-                            })}
-                            variant="outline"
-                        >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            復習物作成
-                        </Button>
+                    <div className="flex items-center gap-2 w-full">
+                        <span className="text-2xl font-bold tracking-tight mr-auto">ボックス一覧</span>
                         <Button onClick={() => setCreateBoxModalOpen(true)}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             ボックス作成
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => setEditCategoryModalOpen(true)}>
-                            <MoreHorizontal className="h-5 w-5" />
+                            <CogIcon className="h-5 w-5" />
                         </Button>
                     </div>
                 )}
             </div>
 
             {/* --- メインコンテンツ（ボックス一覧） --- */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="flex flex-col gap-4">
                 {isLoading ? (
                     <CardListSkeleton count={4} />
                 ) : error ? (
@@ -89,29 +119,51 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                     </div>
                 ) : (
                     boxes.map((box) => (
-                        <Card key={box.id} className="flex flex-col">
+                        <Card key={box.id} className="flex flex-col overflow-hidden relative">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 absolute top-2 right-2 z-10">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingBox(box); }}>編集</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                             <CardHeader>
-                                <CardTitle className="flex justify-between items-center">
-                                    <span className="truncate">{box.name}</span>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingBox(box); }}>編集</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                <CardTitle>
+                                    <span
+                                        className="block text-sm truncate overflow-hidden whitespace-nowrap text-ellipsis "
+                                        title={box.name}
+                                    >
+                                        {box.name}
+                                    </span>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="flex-grow">
-                                {/* TODO: ここに各ボックスのサマリー（アイテム数など）を表示 */}
-                                <p className="text-sm text-muted-foreground">アイテム数: ...</p>
+                            <CardContent className="flex-grow px-4">
+                                <div className="flex gap-4">
+                                    <Button asChild>
+                                        <Link to={`/categories/${box.category_id}/boxes/${box.id}`}>開く</Link>
+                                    </Button>
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-xs text-muted-foreground">復習物数</span>
+                                        <span className="text-base font-medium">{getItemCount(box.id)}</span>
+                                    </div>
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-xs text-muted-foreground">復習パターン</span>
+                                        <span
+                                            className="text-base font-medium truncate max-w-[100px]"
+                                            title={getPatternName(box.pattern_id)}
+                                        >
+                                            {getPatternName(box.pattern_id)}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-xs text-muted-foreground">今日の復習数</span>
+                                        <span className="text-base font-medium">{getDailyReviewCount(box.id)}</span>
+                                    </div>
+                                </div>
                             </CardContent>
-                            <div className="p-4 pt-0 mt-auto">
-                                <Button className="w-full" asChild>
-                                    <Link to={`/categories/${box.category_id}/boxes/${box.id}`}>開く</Link>
-                                </Button>
-                            </div>
                         </Card>
                     ))
                 )}
