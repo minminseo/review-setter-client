@@ -119,3 +119,76 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Radix ScrollArea用カスタムスタイル - オーバーレイ表示 */
+[data-slot="scroll-area"] {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+[data-slot="scroll-area-viewport"] {
+  height: 100% !important;
+  width: 100% !important;
+  /* スクロールバー用の右マージンを確保 */
+  padding-right: 12px !important;
+  box-sizing: border-box !important;
+}
+
+[data-slot="scroll-area-scrollbar"] {
+  display: flex !important;
+  user-select: none !important;
+  touch-action: none !important;
+  padding: 1px !important;
+  background: transparent !important;
+  transition: all 160ms ease-out !important;
+  position: absolute !important;
+  right: 2px !important;
+  top: 2px !important;
+  bottom: 2px !important;
+  width: 8px !important;
+  z-index: 100 !important;
+  opacity: 0 !important;
+  pointer-events: auto !important;
+}
+
+/* スクロール時やホバー時にスクロールバーを表示 */
+[data-slot="scroll-area"]:hover [data-slot="scroll-area-scrollbar"],
+[data-slot="scroll-area-scrollbar"]:hover,
+[data-slot="scroll-area-scrollbar"][data-state="visible"] {
+  opacity: 1 !important;
+}
+
+[data-slot="scroll-area-thumb"] {
+  flex: 1 !important;
+  background: hsl(var(--muted-foreground) / 0.5) !important;
+  border-radius: 4px !important;
+  position: relative !important;
+  min-height: 20px !important;
+  transition: background 160ms ease-out !important;
+}
+
+[data-slot="scroll-area-thumb"]:hover {
+  background: hsl(var(--muted-foreground) / 0.7) !important;
+}
+
+[data-slot="scroll-area-thumb"]:active {
+  background: hsl(var(--muted-foreground) / 0.8) !important;
+}
+
+/* サイドバーコンテンツの動的幅制御 */
+.sidebar-content {
+  width: 100%;
+  transition: max-width 0.2s ease-out;
+  overflow: hidden;
+}
+
+.sidebar-content.sidebar-closed {
+  max-width: 44px;
+  /* w-14 (56px) - scrollbar area (12px) */
+}
+
+.sidebar-content.sidebar-open {
+  max-width: 180px;
+  /* w-48 (192px) - scrollbar area (12px) */
+}
