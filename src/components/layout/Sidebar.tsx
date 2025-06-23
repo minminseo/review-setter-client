@@ -87,7 +87,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
 
     return (
         <aside
-            className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background  sm:flex transition-all duration-200 ${open ? 'w-48' : 'w-14'}`}
+            className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex transition-all duration-200`} style={{ width: open ? 280 : 56 }}
             onMouseEnter={() => {
                 if (!open && !isSidebarPinned) setOpen(true);
             }}
@@ -143,7 +143,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <HomeIcon className="h-5 w-5" />
                                         </span>
                                         <span
-                                            className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[144px]' : 'max-w-0 opacity-0'} pl-0`}
+                                            className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px]' : 'max-w-0 opacity-0'} pl-0`}
                                             style={{ height: '20px', display: 'flex', alignItems: 'center' }}
                                         >
                                             ホーム
@@ -156,9 +156,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                     </nav>
                 </div>
                 {/* 中央スクロール可能エリア */}
-                <div className="flex-1 min-h-0">
-                    <ScrollArea className="h-full w-full">
-                        <div className={`flex flex-col gap-2 sidebar-content ${open ? 'sidebar-open' : 'sidebar-closed'}`}>
+                <div className="flex-1 min-h-0" style={{ width: open ? 280 : 56 }}>
+                    <ScrollArea key={`scroll-area-${open}`} className="h-full w-full">
+                        <div className={`flex flex-col gap-2 sidebar-content ${open ? 'sidebar-open' : 'sidebar-closed'}`} style={{ width: open ? 280 : 56, minWidth: open ? 280 : 56 }}>
                             {/* Editセクション */}
                             <div
                                 className="w-full px-2 transition-all duration-300 overflow-hidden "
@@ -175,7 +175,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     {editOpen ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />}
                                     <span className="text-sm font-bold text-muted-foreground ml-1 transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis "
                                         style={{
-                                            maxWidth: open ? 120 : 0,
+                                            maxWidth: open ? 220 : 0,
                                             opacity: open ? 1 : 0,
                                             transition: 'max-width 0.25s, opacity 0.2s',
                                             display: 'inline-block',
@@ -204,7 +204,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <span
                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                 style={{
-                                                    maxWidth: open ? 144 : 0,
+                                                    maxWidth: open ? 220 : 0,
                                                     opacity: open ? 1 : 0,
                                                     transition: 'max-width 0.25s, opacity 0.25s',
                                                     display: 'inline-block',
@@ -249,7 +249,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                             className="flex-1 truncate cursor-pointer text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-left"
                                                             onClick={() => handleCategoryClick(category.id)}
                                                             style={{
-                                                                maxWidth: open ? 144 : 0,
+                                                                maxWidth: open ? 200 : 0,
                                                                 opacity: open ? 1 : 0,
                                                                 transition: 'max-width 0.25s, opacity 0.25s',
                                                                 display: 'inline-block',
@@ -275,7 +275,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                             <span
                                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                                 style={{
-                                                                    maxWidth: open ? 144 : 0,
+                                                                    maxWidth: open ? 200 : 0,
                                                                     opacity: open ? 1 : 0,
                                                                     transition: 'max-width 0.25s, opacity 0.25s',
                                                                     display: 'inline-block',
@@ -299,7 +299,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                                 <span
                                                                     className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                                     style={{
-                                                                        maxWidth: open ? 144 : 0,
+                                                                        maxWidth: open ? 200 : 0,
                                                                         opacity: open ? 1 : 0,
                                                                         transition: 'max-width 0.25s, opacity 0.25s',
                                                                         display: 'inline-block',
@@ -332,7 +332,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     {todayOpen ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />}
                                     <span className="text-sm font-bold text-muted-foreground ml-1 transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                         style={{
-                                            maxWidth: open ? 120 : 0,
+                                            maxWidth: open ? 220 : 0,
                                             opacity: open ? 1 : 0,
                                             transition: 'max-width 0.25s, opacity 0.2s',
                                             display: 'inline-block',
@@ -363,7 +363,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <span
                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                 style={{
-                                                    maxWidth: open ? 144 : 0,
+                                                    maxWidth: open ? 220 : 0,
                                                     opacity: open ? 1 : 0,
                                                     transition: 'max-width 0.25s, opacity 0.25s',
                                                     display: 'inline-block',
@@ -385,7 +385,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <span
                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                 style={{
-                                                    maxWidth: open ? 144 : 0,
+                                                    maxWidth: open ? 220 : 0,
                                                     opacity: open ? 1 : 0,
                                                     transition: 'max-width 0.25s, opacity 0.25s',
                                                     display: 'inline-block',
@@ -430,7 +430,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                             className="flex-1 truncate cursor-pointer text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-left"
                                                             onClick={() => handleTodayCategoryClick(category.id)}
                                                             style={{
-                                                                maxWidth: open ? 144 : 0,
+                                                                maxWidth: open ? 200 : 0,
                                                                 opacity: open ? 1 : 0,
                                                                 transition: 'max-width 0.25s, opacity 0.25s',
                                                                 display: 'inline-block',
@@ -456,7 +456,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                             <span
                                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                                 style={{
-                                                                    maxWidth: open ? 144 : 0,
+                                                                    maxWidth: open ? 200 : 0,
                                                                     opacity: open ? 1 : 0,
                                                                     transition: 'max-width 0.25s, opacity 0.25s',
                                                                     display: 'inline-block',
@@ -480,7 +480,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                                 <span
                                                                     className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                                     style={{
-                                                                        maxWidth: open ? 144 : 0,
+                                                                        maxWidth: open ? 200 : 0,
                                                                         opacity: open ? 1 : 0,
                                                                         transition: 'max-width 0.25s, opacity 0.25s',
                                                                         display: 'inline-block',
@@ -498,7 +498,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                 </div>
                             </div>
                         </div>
-                        <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                        {open && <ScrollBar key={`scrollbar-${open}`} orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />}
                     </ScrollArea>
                 </div>
                 {/* 下部固定エリア */}
@@ -517,7 +517,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <span className="flex justify-center items-center min-w-[32px]">
                                             <PlusCircleIcon className="h-6 w-6" />
                                         </span>
-                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'}`}>
                                             復習物追加
                                         </span>
                                     </span>
@@ -538,7 +538,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <span className="flex justify-center items-center min-w-[32px]">
                                             <DocumentPlusIcon className="h-6 w-6" />
                                         </span>
-                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'}`}>
                                             パターン作成
                                         </span>
                                     </span>
@@ -560,7 +560,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <span className="flex justify-center items-center min-w-[32px]">
                                             <ArrowRightOnRectangleIcon className="h-6 w-6" />
                                         </span>
-                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'}`}>
                                             ログアウト
                                         </span>
                                     </span>
@@ -581,7 +581,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <span className="flex justify-center items-center min-w-[32px]">
                                             <UserCircleIcon className="h-6 w-6" />
                                         </span>
-                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'}`}>
                                             設定
                                         </span>
                                     </span>
