@@ -143,24 +143,18 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     }, [displayItems, zustandItems, items]);
 
     // --- テーブル定義 ---
-    // カラム数を動的に計算（両方のデータソースを統合して使用）
+    // カラム数を動的に計算（実際に復習日がある場合のみカラムを表示）
     const maxColumns = React.useMemo(() => {
-        // データがない場合も1カラム分は確保
-        let boxPatternColumns = 0;
-        if (currentBox?.pattern_id) {
-            const boxPattern = patterns.find((p) => p.id === currentBox.pattern_id);
-            if (boxPattern?.steps) boxPatternColumns = boxPattern.steps.length;
-        }
         const zustandItemColumns = (zustandItems && zustandItems.length > 0) ? Math.max(...zustandItems.map((i) => i.review_dates.length)) : 0;
         const propsItemColumns = items.length > 0 ? Math.max(...items.map((i) => i.review_dates.length)) : 0;
         const itemColumns = Math.max(zustandItemColumns, propsItemColumns);
-        // 復習物がない場合も1カラム分は確保
-        return Math.max(boxPatternColumns, itemColumns, 1);
-    }, [currentBox, patterns, zustandItems, items]);
+        // 復習日が存在しない場合は0を返す
+        return itemColumns;
+    }, [zustandItems, items]);
 
-    // テーブル全体の幅を常に統一（復習物がある時の幅で固定）
+    // テーブル全体の幅を動的に計算
     const baseWidth = 60 + 50 + 150 + 50 + 100; // 状態+操作+復習物名+詳細+学習日
-    const reviewColumnWidth = Math.max(maxColumns, 1) * 130;
+    const reviewColumnWidth = maxColumns * 130;
     const tableWidth = baseWidth + reviewColumnWidth;
 
     // テーブルのカラム定義
@@ -321,14 +315,16 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                         {showSkeleton ? (
                             <TableSkeleton />
                         ) : (
-                            <DataTable
-                                columns={columns}
-                                data={displayItems}
-                                enablePagination={false}
-                                maxHeight="100%"
-                                fixedColumns={5}
-                                tableWidth={tableWidth}
-                            />
+                            <div className="[&::-webkit-scrollbar]:h-3 [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-md [&::-webkit-scrollbar-thumb:hover]:bg-gray-600">
+                                <DataTable
+                                    columns={columns}
+                                    data={displayItems}
+                                    enablePagination={false}
+                                    maxHeight="100%"
+                                    fixedColumns={5}
+                                    tableWidth={tableWidth}
+                                />
+                            </div>
                         )}
                     </CardContent>
                 </Card>
