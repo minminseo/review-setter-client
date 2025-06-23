@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCategoryStore, useBoxStore } from '@/store';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight as ChevronRightIcon } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 // 親コンポーネントから受け取るPropsの型を定義
 type SidebarProps = {
@@ -17,6 +17,9 @@ type SidebarProps = {
     onOpenSettings: () => void;
     open: boolean;
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    sidebarWidth: number;
+    setSidebarWidth: React.Dispatch<React.SetStateAction<number>>;
+    onDragStateChange: (isDragging: boolean) => void;
 }
 
 /**
@@ -26,7 +29,7 @@ type SidebarProps = {
  * @param onOpenCreatePattern - パターン作成モーダルを開くためのコールバック関数
  * @param onOpenSettings - 設定モーダルを開くためのコールバック関数
  */
-const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, setOpen }: SidebarProps) => {
+const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, setOpen, sidebarWidth, setSidebarWidth, onDragStateChange }: SidebarProps) => {
     const { logout, isLoggingOut } = useAuth();
     const { categories } = useCategoryStore();
     const { boxesByCategoryId } = useBoxStore();
@@ -45,6 +48,23 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
     const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
     // Todayセクション用のカテゴリーホバー状態
     const [todayHoveredCategoryId, setTodayHoveredCategoryId] = useState<string | null>(null);
+    // ドラッグ状態
+    const [isDragging, setIsDragging] = useState(false);
+    const dragRef = useRef<HTMLDivElement>(null);
+    // モバイル状態
+    const [isMobile, setIsMobile] = useState(false);
+
+    // 画面サイズの監視
+    useEffect(() => {
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth < 640);
+        };
+        
+        checkIsMobile();
+        window.addEventListener('resize', checkIsMobile);
+        
+        return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
 
     // 現在のcategoryId, boxIdをパスから抽出（正規表現を使わず分割で）
     const pathParts = location.pathname.split('/');
@@ -85,14 +105,62 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
         navigate(`/today?category=${categoryId}&box=${boxId}`);
     };
 
+    // ドラッグ開始処理
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        // モバイル時はドラッグを無効にする
+        if (isMobile) return;
+        e.preventDefault();
+        setIsDragging(true);
+        onDragStateChange(true);
+    }, [isMobile, onDragStateChange]);
+
+    // ドラッグ中の処理
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!isDragging) return;
+        
+        const newWidth = e.clientX;
+        // 最小幅240px、最大幅400pxに制限
+        const constrainedWidth = Math.max(240, Math.min(400, newWidth));
+        setSidebarWidth(constrainedWidth);
+    }, [isDragging]);
+
+    // ドラッグ終了処理
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+        onDragStateChange(false);
+    }, [onDragStateChange]);
+
+    // マウスイベントのリスナー登録
+    useEffect(() => {
+        if (isDragging) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = 'none';
+            document.body.style.cursor = 'col-resize';
+        } else {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+        };
+    }, [isDragging, handleMouseMove, handleMouseUp]);
+
     return (
         <aside
-            className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex transition-all duration-200`} style={{ width: open ? 280 : 56 }}
+            className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex ${!isDragging ? 'transition-all duration-200' : ''}`} 
+            style={{ width: open ? sidebarWidth : 56 }}
             onMouseEnter={() => {
-                if (!open && !isSidebarPinned) setOpen(true);
+                if (!open && !isSidebarPinned && !isDragging) setOpen(true);
             }}
             onMouseLeave={() => {
-                if (open && !isSidebarPinned) setOpen(false);
+                if (open && !isSidebarPinned && !isDragging) setOpen(false);
             }}
         >
             <TooltipProvider>
@@ -156,9 +224,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                     </nav>
                 </div>
                 {/* 中央スクロール可能エリア */}
-                <div className="flex-1 min-h-0" style={{ width: open ? 280 : 56 }}>
+                <div className="flex-1 min-h-0" style={{ width: open ? sidebarWidth : 56 }}>
                     <ScrollArea key={`scroll-area-${open}`} className="h-full w-full">
-                        <div className={`flex flex-col gap-2 sidebar-content ${open ? 'sidebar-open' : 'sidebar-closed'}`} style={{ width: open ? 280 : 56, minWidth: open ? 280 : 56 }}>
+                        <div className={`flex flex-col gap-2 sidebar-content ${open ? 'sidebar-open' : 'sidebar-closed'}`} style={{ width: open ? sidebarWidth : 56, minWidth: open ? sidebarWidth : 56 }}>
                             {/* Editセクション */}
                             <div
                                 className="w-full px-2 transition-all duration-300 overflow-hidden "
@@ -593,6 +661,21 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                     </nav>
                 </div>
             </TooltipProvider>
+            {/* リサイザー（デスクトップのみ） */}
+            {open && !isMobile && (
+                <div
+                    ref={dragRef}
+                    className="fixed top-0 bottom-0 z-20 w-1 cursor-col-resize hover:bg-blue-500/50 transition-colors"
+                    style={{ left: sidebarWidth - 2 }}
+                    onMouseDown={handleMouseDown}
+                    onMouseEnter={(e) => {
+                        e.stopPropagation();
+                    }}
+                    onMouseLeave={(e) => {
+                        e.stopPropagation();
+                    }}
+                />
+            )}
         </aside>
     );
 };
