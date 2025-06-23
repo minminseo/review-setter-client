@@ -136,7 +136,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent>
+                <DialogContent className="w-[95vw] max-w-lg max-h-[95vh] overflow-hidden flex flex-col">
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive" className="absolute top-4 right-16">削除</Button>
@@ -158,7 +158,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                         <DialogDescription>「{category.name}」内の「{box.name}」を編集します。</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 flex-1 overflow-y-auto pr-4 min-h-0">
                             {/* FormFieldを正しく使用してフォームフィールドを実装 */}
                             <FormField
                                 control={form.control}
@@ -173,7 +173,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                             />
                             <FormItem>
                                 <FormLabel>復習パターン</FormLabel>
-                                <Button type="button" variant="outline" className="w-full justify-start font-normal" onClick={() => setPatternModalOpen(true)}>
+                                <Button type="button" variant="outline" className="w-full max-w-full overflow-hidden justify-start font-normal truncate" onClick={() => setPatternModalOpen(true)}>
                                     {selectedPatternName}
                                 </Button>
                             </FormItem>
