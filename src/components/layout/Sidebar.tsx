@@ -469,7 +469,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                 <div key={category.id}>
                                                     {/* カテゴリボタン */}
                                                     <button
-                                                        className={`flex items-center w-full gap-1 mb-1 px-2 py-1 rounded transition-colors text-sm justify-start ${location.pathname === '/today' && todayCategoryParam === category.id && !todayBoxParam
+                                                        className={`flex items-center w-full gap-1 mb-1 px-2 py-1 rounded transition-colors text-sm justify-start ${location.pathname === '/today' && todayCategoryParam === category.id && (!todayBoxParam || todayBoxParam === 'all')
                                                             ? 'text-accent-foreground bg-accent'
                                                             : 'text-muted-foreground hover:bg-accent/50'
                                                             }`}
@@ -580,7 +580,28 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     variant="ghost"
                                     size="icon"
                                     className={`h-9 w-full flex items-center rounded-lg justify-center`}
-                                    onClick={() => onOpenCreateItem()}
+                                    onClick={() => {
+                                        // Todayセクションが選択されている場合はそちらを優先
+                                        if (location.pathname === '/today') {
+                                            // カテゴリー選択中かつボックスが「全て」または未指定なら未分類を初期値に
+                                            if (todayCategoryParam && (!todayBoxParam || todayBoxParam === 'all')) {
+                                                onOpenCreateItem({
+                                                    categoryId: todayCategoryParam,
+                                                    boxId: 'unclassified'
+                                                });
+                                            } else {
+                                                onOpenCreateItem({
+                                                    categoryId: todayCategoryParam || undefined,
+                                                    boxId: todayBoxParam || undefined
+                                                });
+                                            }
+                                        } else {
+                                            onOpenCreateItem({
+                                                categoryId: currentCategoryId || undefined,
+                                                boxId: currentBoxId || undefined
+                                            });
+                                        }
+                                    }}
                                 >
                                     <span className="flex items-center w-full">
                                         <span className="flex justify-center items-center min-w-[32px]">

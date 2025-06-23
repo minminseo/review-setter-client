@@ -211,15 +211,26 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
         mutation.mutate(data);
     };
 
-    // モーダルが閉じられた時にフォームをリセットする
+    // モーダルが開かれた時にフォームの初期値を設定し、閉じられた時にリセットする
     React.useEffect(() => {
-        if (!isOpen) {
+        if (isOpen) {
+            // モーダルが開かれた時は最新のdefaultCategoryId/defaultBoxIdを使用
             form.reset({
                 name: '',
                 detail: '',
                 learned_date: new Date(),
                 category_id: (defaultCategoryId && defaultCategoryId !== UNCLASSIFIED_ID) ? defaultCategoryId : 'UNCLASSIFIED',
                 box_id: (defaultBoxId && defaultBoxId !== UNCLASSIFIED_ID) ? defaultBoxId : 'UNCLASSIFIED',
+                pattern_id: null,
+            });
+        } else {
+            // モーダルが閉じられた時は基本的なリセット
+            form.reset({
+                name: '',
+                detail: '',
+                learned_date: new Date(),
+                category_id: 'UNCLASSIFIED',
+                box_id: 'UNCLASSIFIED',
                 pattern_id: null,
             });
         }
