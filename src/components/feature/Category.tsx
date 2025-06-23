@@ -92,7 +92,15 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
             <div className="flex items-center justify-end w-full pb-3 pt-3">
                 {!isUnclassifiedPage && currentCategory && (
                     <div className="flex items-center gap-2 w-full">
-                        <span className="text-2xl font-bold tracking-tight mr-auto">ボックス一覧</span>
+                        <span className="flex items-center gap-2 mr-auto min-w-0">
+                            <span className="text-2xl font-bold tracking-tight whitespace-nowrap">カテゴリー：</span>
+                            <span
+                                className="text-xl font-semibold truncate align-middle text-left max-w-[calc(100vw-480px)] whitespace-nowrap"
+                                title={currentCategory.name}
+                            >
+                                {currentCategory.name}
+                            </span>
+                        </span>
                         <Button onClick={() => setCreateBoxModalOpen(true)}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             ボックス作成

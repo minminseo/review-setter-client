@@ -68,6 +68,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
             learned_date: new Date(),
             category_id: (defaultCategoryId && defaultCategoryId !== UNCLASSIFIED_ID) ? defaultCategoryId : 'UNCLASSIFIED',
             box_id: (defaultBoxId && defaultBoxId !== UNCLASSIFIED_ID) ? defaultBoxId : 'UNCLASSIFIED',
+            pattern_id: null,
         },
     });
 
@@ -139,9 +140,13 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
 
     // アイテム作成APIを呼び出すためのmutation
     const mutation = useMutation({
-        mutationFn: (data: CreateItemRequest) => createItem(data),
+        mutationFn: (data: CreateItemRequest) => {
+            console.log('[CreateItemModal] Sending data:', data);
+            return createItem(data);
+        },
 
         onSuccess: (createdItem, variables) => {
+            console.log('[CreateItemModal] onSuccess called:', { createdItem, variables });
             toast.success("アイテムを作成しました！");
             // --- invalidate & zustand即時反映 ---
             // 通常ボックス
@@ -170,24 +175,39 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
             }
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
+            console.log('[CreateItemModal] About to call onClose()');
             onClose();
+            console.log('[CreateItemModal] onClose() called');
         },
-        onError: (err) => toast.error(`作成に失敗しました: ${err.message}`),
+        onError: (err) => {
+            console.error('[CreateItemModal] onError called:', err);
+            toast.error(`作成に失敗しました: ${err.message}`);
+        },
     });
 
     // フォーム送信時の処理
     const onSubmit = (values: z.infer<typeof itemSchema>) => {
+        console.log('[CreateItemModal] onSubmit called with values:', values);
+        
+        // pattern_idがnullまたは空の場合は、リクエストボディから除外
+        const processedPatternId = (!values.pattern_id || values.pattern_id === '') ? undefined : values.pattern_id;
+        
         const data: CreateItemRequest = {
-            ...values,
             // UNCLASSIFIEDをnullに変換（未分類として正しく送信）
             category_id: values.category_id === 'UNCLASSIFIED' ? null : values.category_id,
             box_id: values.box_id === 'UNCLASSIFIED' ? null : values.box_id,
+            name: values.name,
+            detail: values.detail,
             // Dateオブジェクトを "YYYY-MM-DD" 形式の文字列に変換
             learned_date: format(values.learned_date, "yyyy-MM-dd"),
             today: format(new Date(), "yyyy-MM-dd"),
             // 過去の復習日を完了扱いにするかどうかのフラグ
             is_mark_overdue_as_completed: true,
+            // pattern_idが有効な場合のみ含める
+            ...(processedPatternId && { pattern_id: processedPatternId }),
         };
+        console.log('[CreateItemModal] Processed data:', data);
+        console.log('[CreateItemModal] About to call mutation.mutate');
         mutation.mutate(data);
     };
 
@@ -200,6 +220,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                 learned_date: new Date(),
                 category_id: (defaultCategoryId && defaultCategoryId !== UNCLASSIFIED_ID) ? defaultCategoryId : 'UNCLASSIFIED',
                 box_id: (defaultBoxId && defaultBoxId !== UNCLASSIFIED_ID) ? defaultBoxId : 'UNCLASSIFIED',
+                pattern_id: null,
             });
         }
     }, [isOpen, form, defaultCategoryId, defaultBoxId]);
@@ -209,13 +230,13 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="w-[95vw] max-w-lg max-h-[95vh] overflow-hidden flex flex-col">
                 <DialogHeader>
                     <DialogTitle>復習物作成モーダル</DialogTitle>
                     <DialogDescription>新しい復習アイテムの情報を入力してください。</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 flex-1 overflow-y-auto pr-4 min-h-0">
                         <FormField name="name" control={form.control} render={({ field }) => (<FormItem><FormLabel>復習物名</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField name="detail" control={form.control} render={({ field }) => (<FormItem><FormLabel>詳細 (任意)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField name="learned_date" control={form.control} render={({ field }) => (
@@ -223,7 +244,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                 <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}> {/* openとonOpenChangeを追加 */}
                                     <PopoverTrigger asChild>
                                         <FormControl>
-                                            <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                            <Button variant={"outline"} className={cn("w-[200px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                                                 {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
                                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                             </Button>
@@ -247,10 +268,10 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                         <FormField name="category_id" control={form.control} render={({ field }) => (
                             <FormItem><FormLabel>カテゴリー</FormLabel>
                                 <Select onValueChange={(value) => { field.onChange(value); form.resetField('box_id'); }} value={field.value ?? "UNCLASSIFIED"} disabled={categoriesLoading}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder={categoriesLoading ? "読み込み中..." : "カテゴリーを選択 (任意)"} /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
-                                        {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder={categoriesLoading ? "読み込み中..." : "カテゴリーを選択 (任意)"} className="truncate" /></SelectTrigger></FormControl>
+                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+                                        <SelectItem value="UNCLASSIFIED" className="truncate">未分類</SelectItem>
+                                        {categories.map(c => <SelectItem key={c.id} value={c.id} className="truncate">{c.name}</SelectItem>)}
                                         {categoriesLoading && (
                                             <div className="p-2 text-sm text-muted-foreground text-center">
                                                 読み込み中...
@@ -268,16 +289,16 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                     disabled={boxesLoading}
                                 >
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="w-full max-w-full overflow-hidden">
                                             <SelectValue placeholder={
                                                 boxesLoading ? "読み込み中..." :
                                                     "ボックスを選択 (任意)"
-                                            } />
+                                            } className="truncate" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
-                                        {boxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+                                        <SelectItem value="UNCLASSIFIED" className="truncate">未分類</SelectItem>
+                                        {boxes.map(b => <SelectItem key={b.id} value={b.id} className="truncate">{b.name}</SelectItem>)}
                                         {boxesLoading && (
                                             <div className="p-2 text-sm text-muted-foreground text-center">
                                                 読み込み中...
@@ -296,7 +317,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                     disabled={isPatternDisabled}
                                 >
                                     <FormControl>
-                                        <SelectTrigger className={isPatternDisabled ? "bg-muted text-muted-foreground" : ""}>
+                                        <SelectTrigger className={cn("w-full max-w-full overflow-hidden", isPatternDisabled ? "bg-muted text-muted-foreground" : "")}>
                                             <SelectValue
                                                 placeholder={isPatternDisabled ?
                                                     (selectedBox?.pattern_id ?
@@ -304,12 +325,13 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                         : "未設定")
                                                     : "パターンを選択 (任意)"
                                                 }
+                                                className="truncate"
                                             />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
+                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
                                         {patterns.length > 0 ? (
-                                            patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
+                                            patterns.map(p => <SelectItem key={p.id} value={p.id} className="truncate">{p.name}</SelectItem>)
                                         ) : (
                                             <div className="p-2 text-sm text-muted-foreground text-center">
                                                 復習パターンがありません

@@ -216,6 +216,17 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         },
     ], [unfinishMutation, incompleteReviewMutation]);
 
+    // テーブル全体の幅を動的に計算
+    const tableWidth = React.useMemo(() => {
+        // 基本カラム（操作 + 復習物名 + 詳細）の幅
+        const baseWidth = 80 + 150 + 50; // 280px
+        // スクロール可能カラム（学習日）の幅
+        const scrollableColumnWidth = 130;
+        // 最小幅を設定
+        const totalWidth = Math.max(baseWidth + scrollableColumnWidth, 500);
+        return totalWidth;
+    }, []);
+
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
@@ -225,7 +236,16 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                         <DialogDescription>完了済みのアイテムを確認し、必要に応じて復習を再開できます。</DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
-                        {isLoading ? <TableSkeleton /> : <DataTable columns={columns} data={finishedItems} />}
+                        {isLoading ? <TableSkeleton /> : (
+                            <DataTable 
+                                columns={columns} 
+                                data={finishedItems} 
+                                fixedColumns={3}
+                                maxHeight="400px"
+                                enablePagination={false}
+                                tableWidth={tableWidth}
+                            />
+                        )}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={onClose}>閉じる</Button>
