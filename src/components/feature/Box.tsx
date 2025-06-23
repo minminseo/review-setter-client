@@ -145,6 +145,10 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     // --- テーブル定義 ---
     // カラム数を動的に計算（両方のデータソースを統合して使用）
     const maxColumns = React.useMemo(() => {
+        // データがない場合は0を返す（復習日カラムを表示しない）
+        const hasData = (zustandItems && zustandItems.length > 0) || items.length > 0;
+        if (!hasData) return 0;
+
         let boxPatternColumns = 0;
         if (currentBox?.pattern_id) {
             const boxPattern = patterns.find((p) => p.id === currentBox.pattern_id);
@@ -157,6 +161,17 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         return Math.max(boxPatternColumns, itemColumns, 1);
     }, [currentBox, patterns, zustandItems, items]);
 
+    // テーブル全体の幅を動的に計算
+    const tableWidth = React.useMemo(() => {
+        // 基本カラム（状態 + 操作 + 復習物名 + 詳細 + 学習日）の幅
+        const baseWidth = 60 + 50 + 150 + 50 + 100; // 410px
+        // 復習日カラムの幅（各130px）
+        const reviewColumnWidth = maxColumns * 130;
+        // 最小幅を設定（小さすぎる場合の対応）
+        const totalWidth = Math.max(baseWidth + reviewColumnWidth, 600);
+        return totalWidth;
+    }, [maxColumns]);
+
     // テーブルのカラム定義
     const columns = React.useMemo<ColumnDef<ItemResponse>[]>(() => [
         // ... (BoxPage.tsxからそのまま移植) ...
@@ -165,6 +180,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             header: () => (
                 <span className="block w-full text-center">状態</span>
             ),
+            size: 60,
             cell: ({ row }) => {
                 const today = format(new Date(), 'yyyy-MM-dd');
                 const todaysReviewDate = row.original.review_dates.find(
@@ -205,6 +221,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             header: () => (
                 <span className="block w-full text-center">操作</span>
             ),
+            size: 50,
             cell: ({ row }) => (
                 <div className="flex items-center flex justify-center">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingItem(row.original)}>
@@ -218,6 +235,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             header: () => (
                 <span className="block w-full text-center">復習物名</span>
             ),
+            size: 150,
             cell: ({ row }) => <NameCell name={row.original.name} />,
         },
         {
@@ -225,6 +243,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             header: () => (
                 <span className="block w-full text-center">詳細</span>
             ),
+            size: 50,
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
                     <Button variant="ghost" size="icon" onClick={() => setDetailItem(row.original)}>
@@ -238,6 +257,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             header: () => (
                 <span className="block w-full text-center">学習日</span>
             ),
+            size: 100,
             cell: ({ row }) => (
                 <div className="flex justify-center">
                     {format(new Date(row.original.learned_date), 'yyyy-MM-dd')}
@@ -249,6 +269,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             header: () => (
                 <span className="block w-full text-center">{index + 1}回目</span>
             ),
+            size: 130,
             cell: ({ row }: { row: { original: ItemResponse } }) => {
                 const reviewDate = row.original.review_dates[index];
                 if (!reviewDate) return <span className="text-muted-foreground">-</span>;
@@ -283,7 +304,9 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                         className="text-2xl font-bold tracking-tight max-w-full truncate flex-1 min-w-0"
                         title={currentBox?.name || "未分類ボックス"}
                     >
-                        {currentBox?.name || "未分類ボックス"}
+                        {currentBox
+                            ? `ボックス：${currentBox.name}`
+                            : "未分類ボックス"}
                     </h1>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" onClick={() => setFinishedItemsModalOpen(true)}>
@@ -303,8 +326,8 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 </div>
 
                 {/* --- スクロール可能なテーブル領域 --- */}
-                <Card className="h-full flex-1">
-                    <CardContent className=" h-full">
+                <Card className="flex-1 min-h-0">
+                    <CardContent className="h-full p-0">
                         {showSkeleton ? (
                             <TableSkeleton />
                         ) : (
@@ -314,6 +337,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                                 enablePagination={false}
                                 maxHeight="100%"
                                 fixedColumns={5}
+                                tableWidth={tableWidth}
                             />
                         )}
                     </CardContent>
