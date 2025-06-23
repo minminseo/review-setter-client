@@ -296,6 +296,17 @@ const TodaysReviewPage = () => {
         },
     ], [completeMutation, incompleteMutation, patterns]);
 
+    // テーブル全体の幅を動的に計算
+    const tableWidth = React.useMemo(() => {
+        // 基本カラム（状態 + 操作 + 復習物名 + 詳細 + 重さ）の幅
+        const baseWidth = 60 + 50 + 150 + 50 + 100; // 410px
+        // スクロール可能カラム（ステップ + 学習日 + prev + current + next）の幅（各130px）
+        const scrollableColumnWidth = 4 * 130;
+        // 最小幅を設定
+        const totalWidth = Math.max(baseWidth + scrollableColumnWidth, 600);
+        return totalWidth;
+    }, []);
+
     // URLパラメータが変更された際の同期処理
     React.useEffect(() => {
         const categoryParam = searchParams.get('category') || 'all';
@@ -510,12 +521,19 @@ const TodaysReviewPage = () => {
                         </CardHeader>
                     </Card>
                 </div>
-                <Card className="flex-1">
+                <Card className="flex-1 min-h-0">
                     <CardContent className="pt-6 h-full">
                         {isLoading && !flattenedAndFilteredReviews.length ? (
                             <TableSkeleton />
                         ) : (
-                            <DataTable columns={columns} data={flattenedAndFilteredReviews} />
+                            <DataTable 
+                                columns={columns} 
+                                data={flattenedAndFilteredReviews} 
+                                fixedColumns={5}
+                                maxHeight="100%"
+                                enablePagination={false}
+                                tableWidth={tableWidth}
+                            />
                         )}
                     </CardContent>
                 </Card>
