@@ -59,10 +59,10 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
         const checkIsMobile = () => {
             setIsMobile(window.innerWidth < 640);
         };
-        
+
         checkIsMobile();
         window.addEventListener('resize', checkIsMobile);
-        
+
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
 
@@ -117,10 +117,10 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
     // ドラッグ中の処理
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (!isDragging) return;
-        
+
         const newWidth = e.clientX;
-        // 最小幅240px、最大幅400pxに制限
-        const constrainedWidth = Math.max(240, Math.min(400, newWidth));
+        // 最小幅180px、最大幅400pxに制限
+        const constrainedWidth = Math.max(180, Math.min(400, newWidth));
         setSidebarWidth(constrainedWidth);
     }, [isDragging]);
 
@@ -154,7 +154,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
 
     return (
         <aside
-            className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex ${!isDragging ? 'transition-all duration-200' : ''}`} 
+            className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex ${!isDragging ? 'transition-all duration-200' : ''}`}
             style={{ width: open ? sidebarWidth : 56 }}
             onMouseEnter={() => {
                 if (!open && !isSidebarPinned && !isDragging) setOpen(true);
@@ -211,7 +211,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <HomeIcon className="h-5 w-5" />
                                         </span>
                                         <span
-                                            className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px]' : 'max-w-0 opacity-0'} pl-0`}
+                                            className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1' : 'max-w-0 opacity-0'} pl-0`}
                                             style={{ height: '20px', display: 'flex', alignItems: 'center' }}
                                         >
                                             ホーム
@@ -241,11 +241,12 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     onClick={() => setEditOpen((prev) => !prev)}
                                 >
                                     {editOpen ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />}
-                                    <span className="text-sm font-bold text-muted-foreground ml-1 transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis "
+                                    <span
+                                        className="text-sm font-bold text-muted-foreground ml-1 transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-left"
                                         style={{
-                                            maxWidth: open ? 220 : 0,
+                                            flex: open ? 1 : 0,
                                             opacity: open ? 1 : 0,
-                                            transition: 'max-width 0.25s, opacity 0.2s',
+                                            transition: 'flex 0.25s, opacity 0.2s',
                                             display: 'inline-block',
                                         }}
                                     >
@@ -272,9 +273,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <span
                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                 style={{
-                                                    maxWidth: open ? 220 : 0,
+                                                    flex: open ? 1 : 0,
                                                     opacity: open ? 1 : 0,
-                                                    transition: 'max-width 0.25s, opacity 0.25s',
+                                                    transition: 'flex 0.25s, opacity 0.25s',
                                                     display: 'inline-block',
                                                 }}
                                             >
@@ -317,9 +318,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                             className="flex-1 truncate cursor-pointer text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-left"
                                                             onClick={() => handleCategoryClick(category.id)}
                                                             style={{
-                                                                maxWidth: open ? 200 : 0,
+                                                                flex: open ? 1 : 0,
                                                                 opacity: open ? 1 : 0,
-                                                                transition: 'max-width 0.25s, opacity 0.25s',
+                                                                transition: 'flex 0.25s, opacity 0.25s',
                                                                 display: 'inline-block',
                                                             }}
                                                         >
@@ -343,9 +344,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                             <span
                                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                                 style={{
-                                                                    maxWidth: open ? 200 : 0,
+                                                                    flex: open ? 1 : 0,
                                                                     opacity: open ? 1 : 0,
-                                                                    transition: 'max-width 0.25s, opacity 0.25s',
+                                                                    transition: 'flex 0.25s, opacity 0.25s',
                                                                     display: 'inline-block',
                                                                 }}
                                                             >
@@ -367,9 +368,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                                 <span
                                                                     className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                                     style={{
-                                                                        maxWidth: open ? 200 : 0,
+                                                                        flex: open ? 1 : 0,
                                                                         opacity: open ? 1 : 0,
-                                                                        transition: 'max-width 0.25s, opacity 0.25s',
+                                                                        transition: 'flex 0.25s, opacity 0.25s',
                                                                         display: 'inline-block',
                                                                     }}
                                                                 >
@@ -400,9 +401,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     {todayOpen ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />}
                                     <span className="text-sm font-bold text-muted-foreground ml-1 transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                         style={{
-                                            maxWidth: open ? 220 : 0,
+                                            flex: open ? 1 : 0,
                                             opacity: open ? 1 : 0,
-                                            transition: 'max-width 0.25s, opacity 0.2s',
+                                            transition: 'flex 0.25s, opacity 0.2s',
                                             display: 'inline-block',
                                         }}
                                     >
@@ -431,9 +432,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <span
                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                 style={{
-                                                    maxWidth: open ? 220 : 0,
+                                                    flex: open ? 1 : 0,
                                                     opacity: open ? 1 : 0,
-                                                    transition: 'max-width 0.25s, opacity 0.25s',
+                                                    transition: 'flex 0.25s, opacity 0.25s',
                                                     display: 'inline-block',
                                                 }}
                                             >
@@ -453,9 +454,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <span
                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                 style={{
-                                                    maxWidth: open ? 220 : 0,
+                                                    flex: open ? 1 : 0,
                                                     opacity: open ? 1 : 0,
-                                                    transition: 'max-width 0.25s, opacity 0.25s',
+                                                    transition: 'flex 0.25s, opacity 0.25s',
                                                     display: 'inline-block',
                                                 }}
                                             >
@@ -498,9 +499,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                             className="flex-1 truncate cursor-pointer text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-left"
                                                             onClick={() => handleTodayCategoryClick(category.id)}
                                                             style={{
-                                                                maxWidth: open ? 200 : 0,
+                                                                flex: open ? 1 : 0,
                                                                 opacity: open ? 1 : 0,
-                                                                transition: 'max-width 0.25s, opacity 0.25s',
+                                                                transition: 'flex 0.25s, opacity 0.25s',
                                                                 display: 'inline-block',
                                                             }}
                                                         >
@@ -524,9 +525,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                             <span
                                                                 className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                                 style={{
-                                                                    maxWidth: open ? 200 : 0,
+                                                                    flex: open ? 1 : 0,
                                                                     opacity: open ? 1 : 0,
-                                                                    transition: 'max-width 0.25s, opacity 0.25s',
+                                                                    transition: 'flex 0.25s, opacity 0.25s',
                                                                     display: 'inline-block',
                                                                 }}
                                                             >
@@ -548,9 +549,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                                 <span
                                                                     className="truncate text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
                                                                     style={{
-                                                                        maxWidth: open ? 200 : 0,
+                                                                        flex: open ? 1 : 0,
                                                                         opacity: open ? 1 : 0,
-                                                                        transition: 'max-width 0.25s, opacity 0.25s',
+                                                                        transition: 'flex 0.25s, opacity 0.25s',
                                                                         display: 'inline-block',
                                                                     }}
                                                                 >
@@ -585,7 +586,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <span className="flex justify-center items-center min-w-[32px]">
                                             <PlusCircleIcon className="h-6 w-6" />
                                         </span>
-                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
                                             復習物追加
                                         </span>
                                     </span>
@@ -606,7 +607,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <span className="flex justify-center items-center min-w-[32px]">
                                             <DocumentPlusIcon className="h-6 w-6" />
                                         </span>
-                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
                                             パターン作成
                                         </span>
                                     </span>
@@ -628,7 +629,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <span className="flex justify-center items-center min-w-[32px]">
                                             <ArrowRightOnRectangleIcon className="h-6 w-6" />
                                         </span>
-                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
                                             ログアウト
                                         </span>
                                     </span>
@@ -649,7 +650,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         <span className="flex justify-center items-center min-w-[32px]">
                                             <UserCircleIcon className="h-6 w-6" />
                                         </span>
-                                        <span className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                                        <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
                                             設定
                                         </span>
                                     </span>

@@ -22,7 +22,7 @@ const AppLayout = () => {
     const [isCreatePatternModalOpen, setCreatePatternModalOpen] = React.useState(false);
     const [isSettingsModalOpen, setSettingsModalOpen] = React.useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [sidebarWidth, setSidebarWidth] = useState(280);
+    const [sidebarWidth, setSidebarWidth] = useState(220);
     const [isMobile, setIsMobile] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
