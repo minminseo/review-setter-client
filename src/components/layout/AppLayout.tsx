@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 
 // AppLayoutは、サイドバーから開かれるモーダルの状態を一元管理するため、
@@ -22,6 +22,21 @@ const AppLayout = () => {
     const [isCreatePatternModalOpen, setCreatePatternModalOpen] = React.useState(false);
     const [isSettingsModalOpen, setSettingsModalOpen] = React.useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarWidth, setSidebarWidth] = useState(280);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+
+    // 画面サイズの監視
+    useEffect(() => {
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth < 640);
+        };
+        
+        checkIsMobile();
+        window.addEventListener('resize', checkIsMobile);
+        
+        return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
 
     const openCreateItemModal = React.useCallback((context: { categoryId?: string; boxId?: string } = {}) => {
         // 文脈が明示的に渡されていない場合は未分類をデフォルトに設定
@@ -43,9 +58,12 @@ const AppLayout = () => {
                 onOpenSettings={() => setSettingsModalOpen(true)}
                 open={sidebarOpen}
                 setOpen={setSidebarOpen}
+                sidebarWidth={sidebarWidth}
+                setSidebarWidth={setSidebarWidth}
+                onDragStateChange={(dragging) => setIsDragging(dragging)}
             />
             {/* メインコンテンツエリア。サイドバーの幅に応じて左paddingを調整 */}
-            <div className={`flex flex-col flex-1 sm:gap-4 sm:py-4 transition-all duration-200 overflow-hidden ${sidebarOpen ? 'sm:pl-72' : 'sm:pl-14'}`}>
+            <div className={`flex flex-col flex-1 sm:gap-4 sm:py-4 ${!isDragging ? 'transition-all duration-200' : ''} overflow-hidden`} style={{ paddingLeft: !isMobile ? (sidebarOpen ? `${sidebarWidth}px` : '56px') : '0' }}>
                 <main className="flex-1 flex flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 overflow-hidden">
                     {/* ここにHomePageやCategoryPageなどの、各ページコンポーネントが描画される */}
                     <ModalProvider openCreateItemModal={openCreateItemModal}>
