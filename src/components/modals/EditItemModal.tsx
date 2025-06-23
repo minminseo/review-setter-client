@@ -36,9 +36,15 @@ const itemSchema = z.object({
     name: z.string().min(1, "復習物名は必須です。"),
     detail: z.string().optional(),
     learned_date: z.date({ required_error: "学習日は必須です。" }),
-    category_id: z.string().uuid().nullable().optional(),
-    box_id: z.string().uuid().nullable().optional(),
-    pattern_id: z.string().uuid().nullable().optional(),
+    category_id: z.union([
+        z.string().uuid("正しいカテゴリーを選択してください。"),
+        z.literal("UNCLASSIFIED")
+    ]).nullable().optional(),
+    box_id: z.union([
+        z.string().uuid("正しいボックスを選択してください。"),
+        z.literal("UNCLASSIFIED")
+    ]).nullable().optional(),
+    pattern_id: z.string().uuid("正しいパターンを選択してください。").nullable().optional(),
 });
 
 type EditItemModalProps = {
@@ -57,8 +63,8 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
             name: item.name,
             detail: item.detail || '',
             learned_date: new Date(item.learned_date),
-            category_id: item.category_id,
-            box_id: item.box_id,
+            category_id: item.category_id || 'UNCLASSIFIED',
+            box_id: item.box_id || 'UNCLASSIFIED',
             pattern_id: item.pattern_id,
         },
     });
@@ -118,17 +124,20 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     // 選択されたボックスの情報を取得（フィルタリング後のリストから）
     const selectedBox = watchedBoxId ? filteredBoxes.find(box => box.id === watchedBoxId) : null;
     
-    // ボックスが選択されている場合は復習パターン選択を無効化
-    const isPatternDisabled = !!selectedBox;
+    // ボックスが選択されている場合は復習パターン選択を無効化（未分類は除く）
+    const watchedBoxIdValue = form.watch('box_id');
+    const isPatternDisabled = !!selectedBox && watchedBoxIdValue !== 'UNCLASSIFIED';
 
     // ボックス選択時に自動で復習パターンを設定する
     React.useEffect(() => {
-        if (selectedBox && selectedBox.pattern_id) {
+        const watchedBoxIdValue = form.watch('box_id');
+        
+        // 通常のボックスが選択された場合のみ、そのボックスのパターンに変更
+        if (selectedBox && selectedBox.pattern_id && watchedBoxIdValue !== 'UNCLASSIFIED') {
             form.setValue('pattern_id', selectedBox.pattern_id);
-        } else if (!selectedBox) {
-            // ボックスが選択解除された場合は復習パターンをクリア
-            form.setValue('pattern_id', null);
         }
+        // 未分類ボックス選択時や、ボックス選択解除時は復習パターンを変更しない
+        // （元の復習パターンを維持）
     }, [selectedBox, form]);
 
     const updateMutation = useMutation({
@@ -289,6 +298,9 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     const onSubmit = (values: z.infer<typeof itemSchema>) => {
         const data: UpdateItemRequest = {
             ...values,
+            // UNCLASSIFIEDをnullに変換（未分類として正しく送信）
+            category_id: values.category_id === 'UNCLASSIFIED' ? null : values.category_id,
+            box_id: values.box_id === 'UNCLASSIFIED' ? null : values.box_id,
             learned_date: format(values.learned_date, "yyyy-MM-dd"),
             today: format(new Date(), "yyyy-MM-dd"),
             is_mark_overdue_as_completed: true,
@@ -298,7 +310,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="w-[95vw] max-w-lg max-h-[95vh] overflow-hidden flex flex-col">
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" className="absolute top-4 right-16">削除</Button>
@@ -321,7 +333,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     <DialogDescription>「{item.name}」の情報を編集します。</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 flex-1 overflow-y-auto pr-4 min-h-0">
                         <FormField name="name" control={form.control} render={({ field }) => (<FormItem><FormLabel>復習物名</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField name="detail" control={form.control} render={({ field }) => (<FormItem><FormLabel>詳細 (任意)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField name="learned_date" control={form.control} render={({ field }) => (
@@ -329,7 +341,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <FormControl>
-                                            <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                            <Button variant={"outline"} className={cn("w-[200px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                                                 {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
                                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                             </Button>
@@ -342,8 +354,8 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                         <FormField name="category_id" control={form.control} render={({ field }) => (
                             <FormItem><FormLabel>カテゴリー</FormLabel>
                                 <Select onValueChange={(value) => { field.onChange(value); form.resetField('box_id'); }} value={field.value ?? ""}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="カテゴリーを選択 (任意)" /></SelectTrigger></FormControl>
-                                    <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder="カテゴリーを選択 (任意)" className="truncate" /></SelectTrigger></FormControl>
+                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">{categories.map(c => <SelectItem key={c.id} value={c.id} className="truncate">{c.name}</SelectItem>)}</SelectContent>
                                 </Select><FormMessage />
                             </FormItem>
                         )} />
@@ -357,10 +369,11 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         </span>
                                     )}
                                 </FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={!watchedCategoryId}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="ボックスを選択 (任意)" /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        {filteredBoxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                                <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder="ボックスを選択 (任意)" className="truncate" /></SelectTrigger></FormControl>
+                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+                                        <SelectItem value="UNCLASSIFIED" className="truncate">未分類</SelectItem>
+                                        {filteredBoxes.map(b => <SelectItem key={b.id} value={b.id} className="truncate">{b.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -380,7 +393,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                     disabled={isPatternDisabled}
                                 >
                                     <FormControl>
-                                        <SelectTrigger className={isPatternDisabled ? "bg-muted text-muted-foreground" : ""}>
+                                        <SelectTrigger className={cn("w-full max-w-full overflow-hidden", isPatternDisabled ? "bg-muted text-muted-foreground" : "")}>
                                             <SelectValue 
                                                 placeholder={isPatternDisabled ? 
                                                     (selectedBox?.pattern_id ? 
@@ -388,12 +401,13 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                         : "未設定") 
                                                     : "パターンを選択 (任意)"
                                                 } 
+                                                className="truncate"
                                             />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
+                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
                                         {patterns.length > 0 ? (
-                                            patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
+                                            patterns.map(p => <SelectItem key={p.id} value={p.id} className="truncate">{p.name}</SelectItem>)
                                         ) : (
                                             <div className="p-2 text-sm text-muted-foreground text-center">
                                                 復習パターンがありません
