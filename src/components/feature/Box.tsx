@@ -145,36 +145,26 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     // --- テーブル定義 ---
     // カラム数を動的に計算（両方のデータソースを統合して使用）
     const maxColumns = React.useMemo(() => {
-        // データがない場合は0を返す（復習日カラムを表示しない）
-        const hasData = (zustandItems && zustandItems.length > 0) || items.length > 0;
-        if (!hasData) return 0;
-
+        // データがない場合も1カラム分は確保
         let boxPatternColumns = 0;
         if (currentBox?.pattern_id) {
             const boxPattern = patterns.find((p) => p.id === currentBox.pattern_id);
             if (boxPattern?.steps) boxPatternColumns = boxPattern.steps.length;
         }
-        // 両方のデータソースから最大カラム数を計算
         const zustandItemColumns = (zustandItems && zustandItems.length > 0) ? Math.max(...zustandItems.map((i) => i.review_dates.length)) : 0;
         const propsItemColumns = items.length > 0 ? Math.max(...items.map((i) => i.review_dates.length)) : 0;
         const itemColumns = Math.max(zustandItemColumns, propsItemColumns);
+        // 復習物がない場合も1カラム分は確保
         return Math.max(boxPatternColumns, itemColumns, 1);
     }, [currentBox, patterns, zustandItems, items]);
 
-    // テーブル全体の幅を動的に計算
-    const tableWidth = React.useMemo(() => {
-        // 基本カラム（状態 + 操作 + 復習物名 + 詳細 + 学習日）の幅
-        const baseWidth = 60 + 50 + 150 + 50 + 100; // 410px
-        // 復習日カラムの幅（各130px）
-        const reviewColumnWidth = maxColumns * 130;
-        // 最小幅を設定（小さすぎる場合の対応）
-        const totalWidth = Math.max(baseWidth + reviewColumnWidth, 600);
-        return totalWidth;
-    }, [maxColumns]);
+    // テーブル全体の幅を常に統一（復習物がある時の幅で固定）
+    const baseWidth = 60 + 50 + 150 + 50 + 100; // 状態+操作+復習物名+詳細+学習日
+    const reviewColumnWidth = Math.max(maxColumns, 1) * 130;
+    const tableWidth = baseWidth + reviewColumnWidth;
 
     // テーブルのカラム定義
     const columns = React.useMemo<ColumnDef<ItemResponse>[]>(() => [
-        // ... (BoxPage.tsxからそのまま移植) ...
         {
             accessorKey: 'is_finished',
             header: () => (
