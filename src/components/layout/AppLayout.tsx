@@ -45,7 +45,7 @@ const AppLayout = () => {
                 setOpen={setSidebarOpen}
             />
             {/* メインコンテンツエリア。サイドバーの幅に応じて左paddingを調整 */}
-            <div className={`flex flex-col flex-1 sm:gap-4 sm:py-4 transition-all duration-200 overflow-hidden ${sidebarOpen ? 'sm:pl-48' : 'sm:pl-14'}`}>
+            <div className={`flex flex-col flex-1 sm:gap-4 sm:py-4 transition-all duration-200 overflow-hidden ${sidebarOpen ? 'sm:pl-72' : 'sm:pl-14'}`}>
                 <main className="flex-1 flex flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 overflow-hidden">
                     {/* ここにHomePageやCategoryPageなどの、各ページコンポーネントが描画される */}
                     <ModalProvider openCreateItemModal={openCreateItemModal}>
