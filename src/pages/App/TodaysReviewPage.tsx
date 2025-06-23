@@ -16,6 +16,7 @@ import {
 import { fetchCategories } from '@/api/categoryApi';
 import { fetchBoxes } from '@/api/boxApi'; // ボックス取得APIをインポート
 import { useItemStore, useCategoryStore, useBoxStore, usePatternStore } from '@/store';
+import { useModal } from '@/contexts/ModalContext';
 import { DailyReviewDate, GetDailyReviewDatesResponse } from '@/types';
 import { UNCLASSIFIED_ID } from '@/constants';
 
@@ -82,6 +83,9 @@ const TodaysReviewPage = () => {
     const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
     const { todaysReviews: zustandTodaysReviews, setTodaysReviews } = useItemStore();
     const { patterns } = usePatternStore();
+
+    // --- Modal Context ---
+    const { updateCreateItemContext } = useModal();
 
     // URLパラメータから初期値を取得
     const categoryParam = searchParams.get('category') || 'all';
@@ -320,32 +324,46 @@ const TodaysReviewPage = () => {
         }
     }, [searchParams, selectedCategoryId, selectedBoxId]);
 
+    // タブ選択状況が変更されたときにModalContextを更新
+    React.useEffect(() => {
+        updateCreateItemContext({
+            categoryId: selectedCategoryId === 'all' ? 'unclassified' : selectedCategoryId,
+            boxId: selectedBoxId === 'all' ? 'unclassified' : selectedBoxId
+        });
+    }, [selectedCategoryId, selectedBoxId, updateCreateItemContext]);
+
     // --- イベントハンドラ ---
     const handleCategoryChange = (newCategoryId: string) => {
         setSelectedCategoryId(newCategoryId);
         setSelectedBoxId('all'); // カテゴリー変更時はボックス選択をリセット
 
         // URLパラメータを更新
-        const newParams = new URLSearchParams();
-        if (newCategoryId !== 'all') {
+        if (newCategoryId === 'all') {
+            setSearchParams({}, { replace: true }); // クエリなし（/today）
+        } else {
+            const newParams = new URLSearchParams();
             newParams.set('category', newCategoryId);
+            newParams.set('box', 'all');
+            setSearchParams(newParams, { replace: true });
         }
-        newParams.set('box', 'all');
-        setSearchParams(newParams);
     };
 
     const handleBoxChange = (newBoxId: string) => {
         setSelectedBoxId(newBoxId);
 
         // URLパラメータを更新
-        const newParams = new URLSearchParams();
-        if (selectedCategoryId !== 'all') {
-            newParams.set('category', selectedCategoryId);
+        if (selectedCategoryId === 'all' && newBoxId === 'all') {
+            setSearchParams({}, { replace: true }); // クエリなし（/today）
+        } else {
+            const newParams = new URLSearchParams();
+            if (selectedCategoryId !== 'all') {
+                newParams.set('category', selectedCategoryId);
+            }
+            if (newBoxId !== 'all') {
+                newParams.set('box', newBoxId);
+            }
+            setSearchParams(newParams, { replace: true });
         }
-        if (newBoxId !== 'all') {
-            newParams.set('box', newBoxId);
-        }
-        setSearchParams(newParams);
     };
 
     const handleNavigate = () => {
@@ -526,9 +544,9 @@ const TodaysReviewPage = () => {
                         {isLoading && !flattenedAndFilteredReviews.length ? (
                             <TableSkeleton />
                         ) : (
-                            <DataTable 
-                                columns={columns} 
-                                data={flattenedAndFilteredReviews} 
+                            <DataTable
+                                columns={columns}
+                                data={flattenedAndFilteredReviews}
                                 fixedColumns={5}
                                 maxHeight="100%"
                                 enablePagination={false}

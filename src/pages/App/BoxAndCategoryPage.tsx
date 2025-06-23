@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 // useQueryClient をインポートに追加
 import { useQuery, /*useQueryClient*/ } from '@tanstack/react-query';
 import { useBoxStore, useCategoryStore, useItemStore, usePatternStore } from '@/store';
+import { useModal } from '@/contexts/ModalContext';
 import { fetchBoxes } from '@/api/boxApi';
 import { fetchCategories } from '@/api/categoryApi';
 import { fetchItemsByBox, fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory } from '@/api/itemApi';
@@ -42,6 +43,9 @@ const BoxAndCategoryPage = () => {
     const { setItemsForBox } = useItemStore();
     const { setPatterns } = usePatternStore();
 
+    // --- Modal Context ---
+    const { updateCreateItemContext } = useModal();
+
 
     // --- State ---
     const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
@@ -55,6 +59,14 @@ const BoxAndCategoryPage = () => {
         setSelectedCategoryId(categoryId || UNCLASSIFIED_ID);
         setSelectedBoxId(boxId || (categoryId === UNCLASSIFIED_ID ? UNCLASSIFIED_ID : ''));
     }, [categoryId, boxId]);
+
+    // タブ選択状況が変更されたときにModalContextを更新
+    React.useEffect(() => {
+        updateCreateItemContext({
+            categoryId: selectedCategoryId,
+            boxId: selectedBoxId
+        });
+    }, [selectedCategoryId, selectedBoxId, updateCreateItemContext]);
 
 
     // カテゴリータブ変更時のハンドラ
