@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
-// import { SortDropdown } from '@/components/shared/SortDropdown'; // 必要に応じてソート機能を追加
+import { CreatePatternModal } from './CreatePatternModal'; // 追加
 
 // このモーダルが親コンポーネントから受け取るPropsの型を定義
 type SelectPatternModalProps = {
@@ -55,6 +55,9 @@ export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternM
         onClose();      // モーダルを閉じる
     };
 
+    // CreatePatternModalのopen状態
+    const [isCreateOpen, setCreateOpen] = React.useState(false);
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-2xl">
@@ -63,11 +66,6 @@ export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternM
                     <DialogDescription>
                         適用する復習パターンを選択してください。
                     </DialogDescription>
-                    {/*
-          <div className="absolute top-4 right-16">
-            <SortDropdown options={[{value: 'name_asc', label: '名前順'}]} value={'name_asc'} onValueChange={() => {}} />
-          </div>
-          */}
                 </DialogHeader>
 
                 {/* パターンリストのコンテナ */}
@@ -103,10 +101,16 @@ export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternM
                 </div>
 
                 <DialogFooter>
-                    <Button type="button" variant="outline" onClick={onClose}>
-                        閉じる
-                    </Button>
+                    <div className="w-full flex flex-row items-center justify-between">
+                        <Button type="button" variant="secondary" onClick={() => setCreateOpen(true)}>
+                            復習パターン作成
+                        </Button>
+                        <Button type="button" variant="outline" onClick={onClose}>
+                            閉じる
+                        </Button>
+                    </div>
                 </DialogFooter>
+                <CreatePatternModal isOpen={isCreateOpen} onClose={() => setCreateOpen(false)} /> {/* 追加 */}
             </DialogContent>
         </Dialog>
     );

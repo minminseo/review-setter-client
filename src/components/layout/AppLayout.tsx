@@ -31,10 +31,10 @@ const AppLayout = () => {
         const checkIsMobile = () => {
             setIsMobile(window.innerWidth < 640);
         };
-        
+
         checkIsMobile();
         window.addEventListener('resize', checkIsMobile);
-        
+
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
 
@@ -70,7 +70,7 @@ const AppLayout = () => {
             <div className={`flex flex-col flex-1 sm:gap-4 sm:py-4 ${!isDragging ? 'transition-all duration-200' : ''} overflow-hidden`} style={{ paddingLeft: !isMobile ? (sidebarOpen ? `${sidebarWidth}px` : '56px') : '0' }}>
                 <main className="flex-1 flex flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 overflow-hidden">
                     {/* ここにHomePageやCategoryPageなどの、各ページコンポーネントが描画される */}
-                    <ModalProvider 
+                    <ModalProvider
                         openCreateItemModal={openCreateItemModal}
                         updateCreateItemContext={updateCreateItemContext}
                     >

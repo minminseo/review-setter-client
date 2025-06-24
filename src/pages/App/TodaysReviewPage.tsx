@@ -34,6 +34,7 @@ import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
 import { ItemDetailModal } from '@/components/modals/ItemDetailModal';
 import { EditReviewDateModal } from '@/components/modals/EditReviewDateModal';
 import NameCell from '@/components/shared/NameCell';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 /**
  * APIから取得したネストされた今日の復習データを、テーブルで表示しやすいようにフラットな配列に変換するヘルパー関数
@@ -516,7 +517,7 @@ const TodaysReviewPage = () => {
                 </div>
             </div>
 
-            <div className="flex-1 flex flex-col overflow-hidden p-4 pt-0">
+            <div className="flex-1 flex flex-col overflow-hidden p-0">
                 <div className="flex items-center justify-end p-3 gap-2">
                     <Button onClick={handleNavigate} variant="secondary">
                         <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-2" />
@@ -539,21 +540,27 @@ const TodaysReviewPage = () => {
                         </CardHeader>
                     </Card>
                 </div>
-                <Card className="flex-1 min-h-0">
-                    <CardContent className="pt-6 h-full">
-                        {isLoading && !flattenedAndFilteredReviews.length ? (
-                            <TableSkeleton />
-                        ) : (
-                            <DataTable
-                                columns={columns}
-                                data={flattenedAndFilteredReviews}
-                                fixedColumns={5}
-                                maxHeight="100%"
-                                enablePagination={false}
-                                tableWidth={tableWidth}
-                            />
-                        )}
+
+                <Card className="flex-1 min-h-0 p-0">
+
+                    <CardContent className="p-0 h-full">
+                        <ScrollArea className="w-full max-h-[calc(100vh-200px)] rounded-xl">
+                            {isLoading && !flattenedAndFilteredReviews.length ? (
+                                <TableSkeleton />
+                            ) : (
+                                <DataTable
+                                    columns={columns}
+                                    data={flattenedAndFilteredReviews}
+                                    fixedColumns={5}
+                                    maxHeight="100%"
+                                    enablePagination={false}
+                                    tableWidth={tableWidth}
+                                />
+                            )}
+                            <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                        </ScrollArea>
                     </CardContent>
+
                 </Card>
 
                 {/* 詳細モーダル・編集モーダル */}

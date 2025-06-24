@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCategoryStore } from '@/store';
 import {
@@ -13,20 +13,22 @@ import {
     fetchDailyReviewCountByBox,
     fetchDailyUnclassifiedReviewCountByCategory
 } from '@/api/itemApi';
+import { fetchPatterns } from '@/api/patternApi';
 import { GetCategoryOutput, ItemCountGroupedByBoxResponse, UnclassifiedItemCountGroupedByCategoryResponse, DailyCountGroupedByBoxResponse, UnclassifiedDailyDatesCountGroupedByCategoryResponse } from '@/types';
 
 // UI Components
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+
 
 // Modals
 import { CreateCategoryModal } from '@/components/modals/CreateCategoryModal';
 import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
 import { UNCLASSIFIED_ID } from '@/constants';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ClockIcon, Cog8ToothIcon, DocumentIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 
 /**
  * ログイン後のホームページ（ダッシュボード）。
@@ -108,6 +110,13 @@ const HomePage = () => {
         });
     }, [categoriesQuery.data, itemCountByBoxQuery.data, dailyReviewCountByBoxQuery.data, unclassifiedItemCountByCategoryQuery.data, dailyUnclassifiedReviewCountByCategoryQuery.data]);
 
+    // 復習パターン一覧取得
+    const { data: patterns, isLoading: isPatternLoading } = useQuery({
+        queryKey: ['patterns'],
+        queryFn: fetchPatterns,
+        staleTime: 1000 * 60 * 5,
+    });
+
     return (
         <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
             {/* 左ペイン */}
@@ -115,7 +124,8 @@ const HomePage = () => {
                 <Card>
                     <CardHeader><CardTitle>今日の復習</CardTitle></CardHeader>
                     <CardContent>
-                        {isLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold">全体: {totalDailyReviewCountQuery.data?.count ?? 0}</div>}
+                        {isLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold"><ClockIcon className="inline-block mr-2 h-6 w-6" />
+                            {totalDailyReviewCountQuery.data?.count ?? 0}</div>}
                         <Button className="mt-4 w-full" onClick={() => navigate('/today')}>今日の復習を開始</Button>
                     </CardContent>
                 </Card>
@@ -126,52 +136,85 @@ const HomePage = () => {
             </div>
 
             {/* 右ペイン */}
-            <div className="grid auto-rows-max items-start gap-4 md:gap-8 xl:col-span-2">
+            <div className="grid auto-rows-max items-start gap-4 md:gap-4 xl:col-span-2">
+
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate(`/categories/${UNCLASSIFIED_ID}/boxes/${UNCLASSIFIED_ID}`)}>
                         <CardHeader><CardTitle>未分類復習物ボックス</CardTitle></CardHeader>
                         <CardContent>
-                            {isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold">総数: {unclassifiedItemCountQuery.data?.count ?? 0}</p>}
+                            {isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold"><DocumentIcon className="inline-block mr-2 h-6 w-6" />
+                                {unclassifiedItemCountQuery.data?.count ?? 0}</p>}
                         </CardContent>
                     </Card>
                     <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate('/patterns')}>
-                        <CardHeader><CardTitle>復習パターン一覧</CardTitle><CardDescription>復習パターンを管理します</CardDescription></CardHeader>
+                        <CardHeader><CardTitle>復習パターン一覧</CardTitle></CardHeader>
+                        <CardContent>
+                            {(isLoading || isPatternLoading) ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold"><Squares2X2Icon className="inline-block mr-2 h-6 w-6" />
+                                {patterns ? patterns.length : 0}</p>}
+                        </CardContent>
                     </Card>
                 </div>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>カテゴリー一覧</CardTitle>
-                        <Button size="sm" variant="outline" onClick={() => setCreateCategoryModalOpen(true)}>
-                            <PlusCircle className="h-4 w-4 mr-2" />
-                            カテゴリー作成
-                        </Button>
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                        {isLoading ? (Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)) : (
-                            categoriesWithStats.map(category => (
-                                <div key={category.id} className="flex items-center p-2 rounded-md hover:bg-muted">
-                                    <Link to={`/categories/${category.id}`} className="flex-grow grid grid-cols-3 items-center">
-                                        <h3 className="font-semibold col-span-2">{category.name}</h3>
-                                        <div className="text-sm text-muted-foreground text-right">
-                                            <span>今日の復習: {category.dailyReviewCount} / </span>
-                                            <span>総数: {category.totalItemCount}</span>
-                                        </div>
-                                    </Link>
-                                    <div className="ml-4 flex items-center">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onClick={() => setEditingCategory(category)}>カテゴリーを編集</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </CardContent>
-                </Card>
+                <div className="h-screen flex flex-col overflow-hidden  ">
+                    <div className="flex-1 flex flex-col overflow-hidden p-0 ">
+                        <Card >
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>カテゴリー一覧</CardTitle>
+                                <Button size="sm" variant="outline" onClick={() => setCreateCategoryModalOpen(true)}>
+                                    <PlusIcon className="h-4 w-4 mr-2" />
+                                    カテゴリー作成
+                                </Button>
+                            </CardHeader>
+                            <ScrollArea className="w-full h-full max-h-[calc(100vh-240px)] border-t">
+                                <CardContent className="space-y-1 pt-3 px-3">
+                                    {isLoading ? (
+                                        Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
+                                    ) : (
+                                        categoriesWithStats.map(category => (
+                                            <div
+                                                key={category.id}
+                                                className="flex flex-col sm:flex-row sm:items-center p-2 rounded-md hover:bg-muted gap-2"
+                                            >
+                                                <Link
+                                                    to={`/categories/${category.id}`}
+                                                    className="flex-grow grid grid-cols-1 sm:grid-cols-3 items-center gap-1"
+                                                >
+                                                    <div
+                                                        className="font-semibold sm:col-span-2 truncate"
+                                                        style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                                                        title={category.name}
+                                                    >
+                                                        {category.name}
+                                                    </div>
+                                                    <div className="text-sm text-muted-foreground flex gap-4 justify-end text-right w-full">
+                                                        <span className="inline-flex items-center min-w-[60px]">
+                                                            <ClockIcon className="inline-block mr-1 h-4 w-4" />
+                                                            {category.dailyReviewCount}
+                                                        </span>
+                                                        <span className="inline-flex items-center min-w-[60px]">
+                                                            <DocumentIcon className="inline-block mr-1 h-4 w-4" />
+                                                            {category.totalItemCount}
+                                                        </span>
+                                                    </div>
+                                                </Link>
+                                                <div className="flex items-center justify-end">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 transition-colors hover:bg-gray-200 hover:brightness-150"
+                                                        onClick={() => setEditingCategory(category)}
+                                                    >
+                                                        <Cog8ToothIcon className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </CardContent>
+                                <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                            </ScrollArea>
+                        </Card>
+                    </div>
+                </div>
             </div>
 
             {/* モーダル群 */}

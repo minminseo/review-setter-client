@@ -7,8 +7,7 @@ import { toast } from 'sonner';
 
 // API & Store
 import { deleteItem, completeReviewDate, incompleteReviewDate } from '@/api/itemApi';
-import { useItemStore, usePatternStore } from '@/store';
-import { useModal } from '@/contexts/ModalContext';
+import { useItemStore } from '@/store';
 import { ItemResponse, ReviewDateResponse, GetCategoryOutput, GetBoxOutput } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { CogIcon, InformationCircleIcon, PencilIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, InformationCircleIcon, PencilIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import NameCell from '@/components/shared/NameCell';
@@ -28,6 +27,7 @@ import { EditReviewDateModal } from '@/components/modals/EditReviewDateModal';
 import { BoxSummaryModal } from '@/components/modals/BoxSummaryModal';
 import { EditBoxModal } from '@/components/modals/EditBoxModal';
 import { FinishedItemsModal } from '@/components/modals/FinishedItemsModal';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 // Boxコンポーネントが受け取るPropsの型定義
 interface BoxProps {
@@ -46,11 +46,9 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     // --- Hooks ---
     const { categoryId, boxId } = useParams<{ categoryId: string; boxId: string }>();
     const queryClient = useQueryClient();
-    const { openCreateItemModal } = useModal();
 
     // --- Zustandストア ---
     const { getItemsForBox, removeItemFromBox } = useItemStore();
-    const { patterns } = usePatternStore();
 
     // --- State (モーダル管理) ---
     const [detailItem, setDetailItem] = React.useState<ItemResponse | null>(null);
@@ -280,12 +278,12 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     ], [zustandItems, items, maxColumns, completeReviewMutation, incompleteReviewMutation]);
 
     return (
-        <>
-            <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="h-screen flex flex-col overflow-hidden ">
+            <div className="flex-1 flex flex-col overflow-hidden p-0">
                 {/* --- ヘッダー部分 --- */}
-                <div className="flex items-center justify-between pb-3 pt-3">
+                <div className="flex items-center justify-between pb-2 pt-2">
                     <h1
-                        className="text-2xl font-bold tracking-tight max-w-full truncate flex-1 min-w-0"
+                        className="text-lg font-bold tracking-tight max-w-full truncate flex-1 min-w-0"
                         title={currentBox?.name || "未分類ボックス"}
                     >
                         {currentBox
@@ -302,7 +300,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                                     <InformationCircleIcon className="h-5 w-5" />
                                 </Button>
                                 <Button variant="ghost" size="icon" onClick={() => setEditBoxModalOpen(true)}>
-                                    <CogIcon className="h-5 w-5" />
+                                    <Cog6ToothIcon className="h-5 w-5" />
                                 </Button>
                             </>
                         )}
@@ -310,12 +308,12 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 </div>
 
                 {/* --- スクロール可能なテーブル領域 --- */}
-                <Card className="flex-1 min-h-0">
-                    <CardContent className="h-full p-0">
-                        {showSkeleton ? (
-                            <TableSkeleton />
-                        ) : (
-                            <div className="[&::-webkit-scrollbar]:h-3 [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-track]:rounded-md [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-md [&::-webkit-scrollbar-thumb:hover]:bg-gray-600">
+                <Card className="flex-1 min-h-0 p-0">
+                    <CardContent className="p-0 h-full ">
+                        <ScrollArea className="w-full h-full max-h-[calc(100vh-200px)] rounded-xl">
+                            {showSkeleton ? (
+                                <TableSkeleton />
+                            ) : (
                                 <DataTable
                                     columns={columns}
                                     data={displayItems}
@@ -324,34 +322,38 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                                     fixedColumns={5}
                                     tableWidth={tableWidth}
                                 />
-                            </div>
-                        )}
+                            )}
+                            <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                        </ScrollArea>
                     </CardContent>
                 </Card>
+
+
+
+
+
+                {/* --- この画面で使われるモーダル群 --- */}
+                {detailItem && <ItemDetailModal isOpen={!!detailItem} onClose={() => setDetailItem(null)} item={detailItem} />}
+                {editingItem && <EditItemModal isOpen={!!editingItem} onClose={() => setEditingItem(null)} item={editingItem} />}
+                {deletingItem && (
+                    <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>本当に「{deletingItem.name}」を削除しますか？</AlertDialogTitle></AlertDialogHeader>
+                            <AlertDialogDescription>この操作は取り消せません。</AlertDialogDescription>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteMutation.mutate(deletingItem.item_id)} disabled={deleteMutation.isPending}>
+                                    {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+                {editingDate && <EditReviewDateModal isOpen={!!editingDate} onClose={() => setEditingDate(null)} data={editingDate} />}
+                {currentBox && <BoxSummaryModal isOpen={isSummaryModalOpen} onClose={() => setSummaryModalOpen(false)} box={currentBox} itemCount={items.length} />}
+                {currentCategory && currentBox && <EditBoxModal isOpen={isEditBoxModalOpen} onClose={() => setEditBoxModalOpen(false)} category={currentCategory} box={currentBox} />}
+                <FinishedItemsModal isOpen={isFinishedItemsModalOpen} onClose={() => setFinishedItemsModalOpen(false)} boxId={boxId} categoryId={categoryId} />
             </div>
-
-
-            {/* --- この画面で使われるモーダル群 --- */}
-            {detailItem && <ItemDetailModal isOpen={!!detailItem} onClose={() => setDetailItem(null)} item={detailItem} />}
-            {editingItem && <EditItemModal isOpen={!!editingItem} onClose={() => setEditingItem(null)} item={editingItem} />}
-            {deletingItem && (
-                <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>本当に「{deletingItem.name}」を削除しますか？</AlertDialogTitle></AlertDialogHeader>
-                        <AlertDialogDescription>この操作は取り消せません。</AlertDialogDescription>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteMutation.mutate(deletingItem.item_id)} disabled={deleteMutation.isPending}>
-                                {deleteMutation.isPending ? '削除中...' : '削除する'}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
-            {editingDate && <EditReviewDateModal isOpen={!!editingDate} onClose={() => setEditingDate(null)} data={editingDate} />}
-            {currentBox && <BoxSummaryModal isOpen={isSummaryModalOpen} onClose={() => setSummaryModalOpen(false)} box={currentBox} itemCount={items.length} />}
-            {currentCategory && currentBox && <EditBoxModal isOpen={isEditBoxModalOpen} onClose={() => setEditBoxModalOpen(false)} category={currentCategory} box={currentBox} />}
-            <FinishedItemsModal isOpen={isFinishedItemsModalOpen} onClose={() => setFinishedItemsModalOpen(false)} boxId={boxId} categoryId={categoryId} />
-        </>
+        </div>
     );
 };

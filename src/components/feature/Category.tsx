@@ -10,14 +10,15 @@ import { fetchItemCountByBox, fetchDailyReviewCountByBox } from '@/api/itemApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
 
 // Modals
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
 import { EditBoxModal } from '@/components/modals/EditBoxModal';
 import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
-import { CogIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, Cog6ToothIcon, Cog8ToothIcon, DocumentIcon, PlusCircleIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // Categoryコンポーネントが受け取るPropsの型定義
 interface CategoryProps {
@@ -87,95 +88,110 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
     }
 
     return (
-        <div>
+        <div className="flex flex-col h-full min-h-0">
             {/* --- 右上のアクションボタン群 --- */}
-            <div className="flex items-center justify-end w-full pb-3 pt-3">
+            <div className="flex items-center justify-end w-full pb-2 pt-2">
                 {!isUnclassifiedPage && currentCategory && (
                     <div className="flex items-center gap-2 w-full">
-                        <span className="flex items-center gap-2 mr-auto min-w-0">
-                            <span className="text-2xl font-bold tracking-tight whitespace-nowrap">カテゴリー：</span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="text-lg font-bold tracking-tight whitespace-nowrap">カテゴリー：</span>
                             <span
-                                className="text-xl font-semibold truncate align-middle text-left max-w-[calc(100vw-480px)] whitespace-nowrap"
+                                className="text-xl font-semibold truncate min-w-0 flex-1"
                                 title={currentCategory.name}
                             >
                                 {currentCategory.name}
                             </span>
-                        </span>
-                        <Button onClick={() => setCreateBoxModalOpen(true)}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            ボックス作成
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setEditCategoryModalOpen(true)}>
-                            <CogIcon className="h-5 w-5" />
-                        </Button>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <Button onClick={() => setCreateBoxModalOpen(true)}>
+                                <PlusIcon className="mr-2 h-4 w-4" />
+                                ボックス作成
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setEditCategoryModalOpen(true)}>
+                                <Cog8ToothIcon className="h-5 w-5" />
+                            </Button>
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* --- メインコンテンツ（ボックス一覧） --- */}
-            <div className="flex flex-col gap-4">
-                {isLoading ? (
-                    <CardListSkeleton count={4} />
-                ) : error ? (
-                    <div className="col-span-full text-center py-8">
-                        <p className="text-red-500">データの読み込みに失敗しました。</p>
-                        <p className="text-sm text-muted-foreground mt-2">ページを再読み込みしてください。</p>
-                    </div>
-                ) : boxes.length === 0 && !isUnclassifiedPage ? (
-                    <div className="col-span-full text-center py-8">
-                        <p className="text-muted-foreground">ボックスがありません。「ボックス作成」ボタンから新しいボックスを作成してください。</p>
-                    </div>
-                ) : (
-                    boxes.map((box) => (
-                        <Card key={box.id} className="flex flex-col overflow-hidden relative">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 absolute top-2 right-2 z-10">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingBox(box); }}>編集</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <CardHeader>
-                                <CardTitle>
-                                    <span
-                                        className="block text-sm truncate overflow-hidden whitespace-nowrap text-ellipsis "
-                                        title={box.name}
-                                    >
-                                        {box.name}
-                                    </span>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-grow px-4">
-                                <div className="flex gap-4">
-                                    <Button asChild>
-                                        <Link to={`/categories/${box.category_id}/boxes/${box.id}`}>開く</Link>
-                                    </Button>
-                                    <div className="flex flex-col items-start">
-                                        <span className="text-xs text-muted-foreground">復習物数</span>
-                                        <span className="text-base font-medium">{getItemCount(box.id)}</span>
-                                    </div>
-                                    <div className="flex flex-col items-start">
-                                        <span className="text-xs text-muted-foreground">復習パターン</span>
+            <ScrollArea className="w-full max-h-[calc(100vh-240px)]">
+                <div className="flex flex-col gap-4 pb-4">
+                    {isLoading ? (
+                        <CardListSkeleton count={4} />
+                    ) : error ? (
+                        <div className="col-span-full text-center py-8">
+                            <p className="text-red-500">データの読み込みに失敗しました。</p>
+                            <p className="text-sm text-muted-foreground mt-2">ページを再読み込みしてください。</p>
+                        </div>
+                    ) : boxes.length === 0 && !isUnclassifiedPage ? (
+                        <div className="col-span-full text-center py-8">
+                            <p className="text-muted-foreground">ボックスがありません。「ボックス作成」ボタンから新しいボックスを作成してください。</p>
+                        </div>
+                    ) : (
+                        boxes.map((box) => (
+                            <Card key={box.id} className="flex flex-col overflow-hidden relative">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 absolute top-2 right-2 z-10"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingBox(box);
+                                    }}
+                                >
+                                    <Cog6ToothIcon className="h-4 w-4" />
+                                </Button>
+                                <CardHeader>
+                                    <CardTitle>
                                         <span
-                                            className="text-base font-medium truncate max-w-[100px]"
-                                            title={getPatternName(box.pattern_id)}
+                                            className="block text-sm truncate overflow-hidden whitespace-nowrap text-ellipsis "
+                                            title={box.name}
                                         >
-                                            {getPatternName(box.pattern_id)}
+                                            {box.name}
                                         </span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex-grow px-4">
+                                    <div className="flex items-start gap-4 flex-wrap">
+                                        <Button asChild className="flex-shrink-0">
+                                            <Link to={`/categories/${box.category_id}/boxes/${box.id}`}>開く</Link>
+                                        </Button>
+                                        <div className="flex flex-col items-start min-w-0 flex-shrink-0">
+                                            <span className="text-xs text-muted-foreground mb-1">復習物</span>
+                                            <div className="flex items-center gap-2">
+                                                <DocumentIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                <span className="text-base font-medium">{getItemCount(box.id)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-start min-w-0 flex-shrink-0">
+                                            <span className="text-xs text-muted-foreground mb-1 whitespace-nowrap">今日の復習</span>
+                                            <div className="flex items-center gap-2">
+                                                <ClockIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                <span className="text-base font-medium">{getDailyReviewCount(box.id)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-start min-w-0 flex-1 max-w-[200px]">
+                                            <span className="text-xs text-muted-foreground mb-1 whitespace-nowrap">復習パターン</span>
+                                            <div className="flex items-center gap-2 min-w-0 w-full">
+                                                <Cog8ToothIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                <span
+                                                    className="text-base font-medium truncate min-w-0"
+                                                    title={getPatternName(box.pattern_id)}
+                                                >
+                                                    {getPatternName(box.pattern_id)}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col items-start">
-                                        <span className="text-xs text-muted-foreground">今日の復習数</span>
-                                        <span className="text-base font-medium">{getDailyReviewCount(box.id)}</span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))
-                )}
-            </div>
+                                </CardContent>
+                            </Card>
+                        ))
+                    )}
+                </div>
+                <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+            </ScrollArea>
 
             {/* --- この画面で使われるモーダル群 --- */}
             {currentCategory && <CreateBoxModal isOpen={isCreateBoxModalOpen} onClose={() => setCreateBoxModalOpen(false)} categoryId={currentCategory.id} categoryName={currentCategory.name} />}

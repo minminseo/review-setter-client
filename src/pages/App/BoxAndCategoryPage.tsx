@@ -286,7 +286,8 @@ const BoxAndCategoryPage = () => {
     const zustandItems = useItemStore.getState().getItemsForBox(storeBoxId || '');
 
     return (
-        <div className="min-h-screen flex flex-col overflow-hidden">
+        // <div className="min-h-screen flex flex-col overflow-hidden">
+        <>
             {/* 上部固定ヘッダー */}
             <div
                 className="flex-shrink-0 space-y-4 bg-background z-10"
@@ -391,30 +392,30 @@ const BoxAndCategoryPage = () => {
             </div>
 
             {/* メインコンテンツ */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    {isBoxView ? (
-                        <Box
-                            key={boxId}
-                            items={zustandItems && zustandItems.length > 0
-                                ? zustandItems
-                                : (fetchedItems ? fetchedItems.filter(item => !item.is_finished) : [])}
-                            isLoading={isItemsLoading}
-                            currentCategory={currentCategory}
-                            currentBox={currentBox}
-                        />
-                    ) : (
-                        <Category
-                            key={categoryId}
-                            boxes={boxesForCurrentCategory}
-                            isLoading={isBoxesLoading}
-                            error={boxesError}
-                            currentCategory={currentCategory}
-                            isUnclassifiedPage={isUnclassifiedCategoryPage}
-                        />
-                    )}
-                </div>
-            </div>
+            {/* <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-hidden"> */}
+            {isBoxView ? (
+                <Box
+                    key={boxId}
+                    items={zustandItems && zustandItems.length > 0
+                        ? zustandItems
+                        : (fetchedItems ? fetchedItems.filter(item => !item.is_finished) : [])}
+                    isLoading={isItemsLoading}
+                    currentCategory={currentCategory}
+                    currentBox={currentBox}
+                />
+            ) : (
+                <Category
+                    key={categoryId}
+                    boxes={boxesForCurrentCategory}
+                    isLoading={isBoxesLoading}
+                    error={boxesError}
+                    currentCategory={currentCategory}
+                    isUnclassifiedPage={isUnclassifiedCategoryPage}
+                />
+            )}
+            {/* </div>
+            </div> */}
 
             <SelectCategoryModal
                 isOpen={isSelectCategoryModalOpen}
@@ -427,7 +428,8 @@ const BoxAndCategoryPage = () => {
                 onSelect={(box) => navigate(`/categories/${categoryId}/boxes/${box.id}`)}
                 categoryId={categoryId}
             />
-        </div>
+            {/* </div> */}
+        </>
     );
 };
 
