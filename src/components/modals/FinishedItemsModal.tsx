@@ -8,13 +8,18 @@ import { toast } from 'sonner';
 import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate, fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory, fetchItemsByBox } from '@/api/itemApi';
 import { UNCLASSIFIED_ID } from '@/constants';
 import { useItemStore } from '@/store';
+import { cn } from '@/lib/utils';
 // 型定義
 import { ItemResponse } from '@/types';
 // UIコンポーネント
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
+import { ChevronDoubleLeftIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import NameCell from '@/components/shared/NameCell';
 // 詳細表示用にItemDetailModalをインポート
 import { ItemDetailModal } from './ItemDetailModal';
 
@@ -40,6 +45,13 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
     const setItemsForBox = useItemStore(state => state.setItemsForBox);
     // 詳細表示モーダルで表示するアイテムを管理するstate
     const [detailItem, setDetailItem] = React.useState<ItemResponse | null>(null);
+
+    // --- State (復習物名列の幅調整) ---
+    const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
+    const [isResizing, setIsResizing] = React.useState(false);
+    const [isHovering, setIsHovering] = React.useState(false);
+    const [startX, setStartX] = React.useState(0);
+    const [startWidth, setStartWidth] = React.useState(0);
 
     const queryKey = ['finishedItems', { boxId, categoryId }];
     const queryFn = () => {
@@ -146,6 +158,64 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         onError: (err) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
     });
 
+    // --- リサイズ機能 ---
+    const handleResizeStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+        setStartX(e.clientX);
+        setStartWidth(nameColumnWidth);
+    };
+
+    const handleResizeMove = React.useCallback((e: MouseEvent) => {
+        if (!isResizing) return;
+
+        const diff = e.clientX - startX;
+        const newWidth = Math.max(100, startWidth + diff); // 最小100px、最大無制限
+        setNameColumnWidth(newWidth);
+    }, [isResizing, startX, startWidth]);
+
+    const handleResizeEnd = React.useCallback(() => {
+        setIsResizing(false);
+    }, []);
+
+    const handleResetWidth = () => {
+        setNameColumnWidth(300); // 初期値にリセット
+    };
+
+    React.useEffect(() => {
+        if (isResizing) {
+            document.addEventListener('mousemove', handleResizeMove);
+            document.addEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        } else {
+            document.removeEventListener('mousemove', handleResizeMove);
+            document.removeEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleResizeMove);
+            document.removeEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+    }, [isResizing, handleResizeMove, handleResizeEnd]);
+
+    // --- テーブル定義 ---
+    // カラム数を動的に計算（実際に復習日がある場合のみカラムを表示）
+    const maxColumns = React.useMemo(() => {
+        const itemColumns = finishedItems.length > 0 ? Math.max(...finishedItems.map((i) => i.review_dates.length)) : 0;
+        // 復習日が存在しない場合は0を返す
+        return itemColumns;
+    }, [finishedItems.length]);
+
+    // テーブル全体の幅を動的に計算
+    const baseWidth = 50 + nameColumnWidth + 50 + 100; // 操作+復習物名+詳細+学習日
+    const reviewColumnWidth = maxColumns * 130;
+    const tableWidth = baseWidth + reviewColumnWidth;
+
     const columns = React.useMemo<ColumnDef<ItemResponse>[]>(() => [
         {
             id: 'actions',
@@ -198,54 +268,123 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         },
         {
             accessorKey: 'name',
-            header: '復習物名',
+            header: () => (
+                <div className="flex items-center justify-center relative">
+                    <span className="block w-full text-center">復習物名</span>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 h-4 w-4 p-0 hover:bg-gray-200"
+                        onClick={handleResetWidth}
+                        title="幅を初期化"
+                    >
+                        <ChevronDoubleLeftIcon className="h-3 w-3" />
+                    </Button>
+                </div>
+            ),
+            size: nameColumnWidth,
+            cell: ({ row }) => <NameCell name={row.original.name} />,
         },
         {
             id: 'detail',
-            header: '詳細',
+            header: () => (
+                <span className="block w-full text-center">詳細</span>
+            ),
+            size: 50,
             cell: ({ row }) => (
-                <Button variant="ghost" size="icon" onClick={() => setDetailItem(row.original)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
-                </Button>
-            )
+                <div className="flex items-center justify-center">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-gray-200 hover:text-gray-400 transition-colors"
+                        onClick={() => setDetailItem(row.original)}
+                    >
+                        <DocumentTextIcon className="h-5 w-5" />
+                    </Button>
+                </div>
+            ),
         },
         {
             accessorKey: 'learned_date',
-            header: '学習日',
-            cell: ({ row }) => format(new Date(row.original.learned_date), 'yyyy-MM-dd'),
+            header: () => (
+                <span className="block w-full text-center">学習日</span>
+            ),
+            size: 100,
+            cell: ({ row }) => (
+                <div className="flex justify-center">
+                    {format(new Date(row.original.learned_date), 'yyyy-MM-dd')}
+                </div>
+            ),
         },
-    ], [unfinishMutation, incompleteReviewMutation]);
+        ...Array.from({ length: maxColumns }).map((_, index) => ({
+            id: `review_date_${index + 1}`,
+            header: () => (
+                <span className="block w-full text-center">{index + 1}回目</span>
+            ),
+            size: 130,
+            cell: ({ row }: { row: { original: ItemResponse } }) => {
+                const reviewDate = row.original.review_dates[index];
+                if (!reviewDate) return <span className="text-muted-foreground">-</span>;
+                const isToday = format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                return (
+                    <div className="flex items-center justify-center">
+                        <Button
+                            variant={!reviewDate.is_completed && !isToday ? 'outline' : 'default'}
+                            size="sm"
+                            className={cn(
+                                isToday && !reviewDate.is_completed && 'bg-blue-800 hover:bg-blue-900 text-gray-200',
+                                isToday && reviewDate.is_completed && 'bg-blue-900 text-gray-400',
+                                !isToday && reviewDate.is_completed && 'bg-green-700 text-white',
+                                'cursor-not-allowed opacity-50'
+                            )}
+                            disabled
+                        >
+                            {format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd')}
+                        </Button>
+                    </div>
+                );
+            },
+        })),
+    ], [finishedItems, maxColumns, unfinishMutation, incompleteReviewMutation, nameColumnWidth, handleResetWidth]);
 
-    // テーブル全体の幅を動的に計算
-    const tableWidth = React.useMemo(() => {
-        // 基本カラム（操作 + 復習物名 + 詳細）の幅
-        const baseWidth = 80 + 150 + 50; // 280px
-        // スクロール可能カラム（学習日）の幅
-        const scrollableColumnWidth = 130;
-        // 最小幅を設定
-        const totalWidth = Math.max(baseWidth + scrollableColumnWidth, 500);
-        return totalWidth;
-    }, []);
 
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="sm:max-w-4xl">
+                <DialogContent className="w-screen !max-w-none h-[90vh] max-h-[80vh]">
                     <DialogHeader>
                         <DialogTitle>完了済み復習物一覧</DialogTitle>
                         <DialogDescription>完了済みのアイテムを確認し、必要に応じて復習を再開できます。</DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
-                        {isLoading ? <TableSkeleton /> : (
-                            <DataTable 
-                                columns={columns} 
-                                data={finishedItems} 
-                                fixedColumns={3}
-                                maxHeight="400px"
-                                enablePagination={false}
-                                tableWidth={tableWidth}
-                            />
-                        )}
+                    <div className="flex-1 flex flex-col overflow-hidden py-4">
+                        {/* --- スクロール可能なテーブル領域 --- */}
+                        <Card className="flex-1 min-h-0 p-0">
+                            <CardContent className="p-0 h-full">
+                                <ScrollArea className="w-full h-full max-h-[calc(90vh-200px)] rounded-xl">
+                                    {isLoading ? (
+                                        <TableSkeleton />
+                                    ) : (
+                                        <DataTable
+                                            columns={columns}
+                                            data={finishedItems}
+                                            enablePagination={false}
+                                            maxHeight="100%"
+                                            fixedColumns={5}
+                                            tableWidth={tableWidth}
+                                            resizableColumn={{
+                                                index: 2, // 復習物名列（0: 状態, 1: 操作, 2: 復習物名）
+                                                onResizeStart: handleResizeStart,
+                                                isResizing: isResizing,
+                                                isHovering: isHovering,
+                                                onHover: setIsHovering
+                                            }}
+                                        />
+                                    )}
+                                    <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                                    <ScrollBar orientation="horizontal" className="!bg-transparent [&>div]:!bg-gray-600" />
+                                </ScrollArea>
+                            </CardContent>
+                        </Card>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={onClose}>閉じる</Button>
