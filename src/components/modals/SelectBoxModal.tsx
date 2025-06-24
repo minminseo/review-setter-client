@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { InboxIcon } from '@heroicons/react/24/outline';
 
 import { fetchBoxes } from '@/api/boxApi';
 import { useBoxStore } from '@/store';
@@ -16,6 +17,7 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // このモーダルが親コンポーネントから受け取るPropsの型を定義
 type SelectBoxModalProps = {
@@ -60,41 +62,51 @@ export const SelectBoxModal = ({ isOpen, onClose, onSelect, categoryId }: Select
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>ボックス一覧</DialogTitle>
                     <DialogDescription>
                         操作対象のボックスを選択してください。
                     </DialogDescription>
                 </DialogHeader>
-
-                <div className="max-h-[60vh] overflow-y-auto space-y-2 p-1">
-                    {!categoryId ? (
-                        // カテゴリーがまだ選択されていない場合の表示
-                        <p className="text-sm text-muted-foreground text-center py-4">
-                            先にカテゴリーを選択してください。
-                        </p>
-                    ) : isLoading ? (
-                        // データ取得中のスケルトン表示
-                        Array.from({ length: 5 }).map((_, i) => (
-                            <Skeleton key={i} className="h-10 w-full" />
-                        ))
-                    ) : (
-                        // ボックスリストの表示
-                        boxes?.map((box) => (
-                            <Button
-                                key={box.id}
-                                variant="outline"
-                                className="w-full justify-start"
-                                onClick={() => handleSelect(box)}
-                            >
-                                {box.name}
-                            </Button>
-                        ))
-                    )}
+                <div className="overflow-hidden">
+                    <ScrollArea className="w-full h-full max-h-[calc(100vh-240px)] ">
+                        <div className="space-y-2 p-1">
+                            {!categoryId ? (
+                                // カテゴリーがまだ選択されていない場合の表示
+                                <p className="text-sm text-muted-foreground text-center py-4">
+                                    先にカテゴリーを選択してください。
+                                </p>
+                            ) : isLoading ? (
+                                // データ取得中のスケルトン表示
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <Skeleton key={i} className="h-10 w-full" />
+                                ))
+                            ) : (
+                                // ボックスリストの表示
+                                boxes?.map((box) => (
+                                    <Button
+                                        key={box.id}
+                                        variant="outline"
+                                        className="w-full flex justify-start items-center h-12 py-2 px-3"
+                                        onClick={() => handleSelect(box)}
+                                    >
+                                        <InboxIcon className="mr-2 h-5 w-5 shrink-0 text-muted-foreground" />
+                                        <span
+                                            className="text-left truncate max-w-[24rem] w-full block"
+                                            style={{ display: 'block' }}
+                                            title={box.name}
+                                        >
+                                            {box.name}
+                                        </span>
+                                    </Button>
+                                ))
+                            )}
+                        </div>
+                        <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                    </ScrollArea>
                 </div>
-
-                <DialogFooter>
+                <DialogFooter className="w-full justify-end">
                     <Button type="button" variant="secondary" onClick={onClose}>
                         閉じる
                     </Button>

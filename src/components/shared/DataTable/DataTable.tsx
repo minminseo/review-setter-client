@@ -188,7 +188,7 @@ export const DataTable = <TData, TValue>({
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={columns.length} className="h-24 text-center">
+                                        <TableCell colSpan={columns.length} className="h-24 text-center border-r-0">
                                             No results.
                                         </TableCell>
                                     </TableRow>
@@ -248,7 +248,7 @@ export const DataTable = <TData, TValue>({
                                 ) : (
                                     // データがない場合は「No results」と表示
                                     <TableRow>
-                                        <TableCell colSpan={columns.length} className="h-24 text-center">
+                                        <TableCell colSpan={columns.length} className="h-24 text-center border-r-0">
                                             No results.
                                         </TableCell>
                                     </TableRow>

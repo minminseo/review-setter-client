@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { InboxIcon } from 'lucide-react';
+import { InboxStackIcon } from '@heroicons/react/24/outline';
 
 import { fetchCategories } from '@/api/categoryApi';
 import { useCategoryStore } from '@/store';
@@ -16,6 +18,7 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // このモーダルが親コンポーネントから受け取るProps（プロパティ）の型を定義
 type SelectCategoryModalProps = {
@@ -57,7 +60,7 @@ export const SelectCategoryModal = ({ isOpen, onClose, onSelect }: SelectCategor
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>カテゴリー一覧</DialogTitle>
                     <DialogDescription>
@@ -65,29 +68,40 @@ export const SelectCategoryModal = ({ isOpen, onClose, onSelect }: SelectCategor
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* カテゴリーリストのコンテナ。高さが固定され、内容が多ければスクロールバーが表示される */}
-                <div className="max-h-[60vh] overflow-y-auto space-y-2 p-1">
-                    {isLoading ? (
-                        // データ取得中は、ボタンのスケルトンUIを5つ表示する
-                        Array.from({ length: 5 }).map((_, i) => (
-                            <Skeleton key={i} className="h-10 w-full" />
-                        ))
-                    ) : (
-                        // 取得したカテゴリーリストをループしてボタンとして表示
-                        categories.map((category) => (
-                            <Button
-                                key={category.id}
-                                variant="outline"
-                                className="w-full justify-start"
-                                onClick={() => handleSelect(category)}
-                            >
-                                {category.name}
-                            </Button>
-                        ))
-                    )}
+                <div className="overflow-hidden">
+                    <ScrollArea className="w-full h-full max-h-[calc(100vh-240px)] ">
+                        {/* カテゴリーリストのコンテナ。ScrollAreaが高さとスクロールを管理する */}
+                        <div className="space-y-2 p-1">
+                            {isLoading ? (
+                                // データ取得中は、ボタンのスケルトンUIを5つ表示する
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <Skeleton key={i} className="h-10 w-full" />
+                                ))
+                            ) : (
+                                // 取得したカテゴリーリストをループしてボタンとして表示
+                                categories.map((category) => (
+                                    <Button
+                                        key={category.id}
+                                        variant="outline"
+                                        className="w-full flex justify-start items-center h-12 py-2 px-3"
+                                        onClick={() => handleSelect(category)}
+                                    >
+                                        <InboxStackIcon className="mr-2 h-5 w-5 shrink-0 text-muted-foreground" />
+                                        <span
+                                            className="text-left truncate max-w-[24rem] w-full block"
+                                            style={{ display: 'block' }}
+                                            title={category.name}
+                                        >
+                                            {category.name}
+                                        </span>
+                                    </Button>
+                                ))
+                            )}
+                        </div>
+                        <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                    </ScrollArea>
                 </div>
-
-                <DialogFooter>
+                <DialogFooter className="w-full justify-end">
                     <Button type="button" variant="secondary" onClick={onClose}>
                         閉じる
                     </Button>
