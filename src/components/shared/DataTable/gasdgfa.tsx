@@ -91,11 +91,12 @@ export const DataTable = <TData, TValue>({
                                             return (
                                                 <TableHead
                                                     key={header.id}
-                                                    className={`${isFixed ? 'sticky z-50' : ''} ${!isFixed ? 'border-l-0' : ''} border-r border-border`}
+                                                    className={`${isFixed ? 'sticky z-50' : ''} ${!isFixed ? 'border-l-0' : ''}`}
                                                     style={{
                                                         position: isFixed ? 'sticky' : 'static',
                                                         zIndex: isFixed ? 50 : undefined,
-                                                        borderRight: index === fixedColumns - 1 ? '2px solid rgba(128, 128, 128, 0.5)' : '1px solid rgba(128, 128, 128, 0.3)',
+                                                        borderRight: index === fixedColumns - 1 ? '2px solid hsl(var(--border))' : 'none',
+                                                        borderLeft: !isFixed ? 'none' : undefined,
                                                         boxShadow: index === fixedColumns - 1 ? '2px 0 4px rgba(0, 0, 0, 0.1)' : 'none',
                                                         width,
                                                         minWidth: width,
@@ -138,11 +139,12 @@ export const DataTable = <TData, TValue>({
                                                 return (
                                                     <TableCell
                                                         key={cell.id}
-                                                        className={`${isFixed ? 'sticky z-10' : ''} ${!isFixed ? 'border-l-0' : ''} border-r border-b border-border`}
+                                                        className={`${isFixed ? 'sticky z-10' : ''} ${!isFixed ? 'border-l-0' : ''}`}
                                                         style={{
                                                             position: isFixed ? 'sticky' : 'static',
                                                             zIndex: isFixed ? 10 : undefined,
-                                                            borderRight: index === fixedColumns - 1 ? '2px solid rgba(128, 128, 128, 0.5)' : '1px solid rgba(128, 128, 128, 0.3)',
+                                                            borderRight: index === fixedColumns - 1 ? '2px solid hsl(var(--border))' : 'none',
+                                                            borderLeft: !isFixed ? 'none' : undefined,
                                                             boxShadow: index === fixedColumns - 1 ? '2px 0 4px rgba(0, 0, 0, 0.1)' : 'none',
                                                             width,
                                                             minWidth: width,

@@ -193,37 +193,44 @@ const TodaysReviewPage = () => {
         // 状態カラム（完了/未完了）
         {
             id: 'is_completed',
-            header: '状態',
+            header: () => (
+                <span className="block w-full text-center">状態</span>
+            ),
             cell: ({ row }) => {
                 const isCompleted = row.original.is_completed;
                 return isCompleted ? (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="bg-gray-800 hover:bg-gray-900 text-white border-white-400 w-full"
-                        onClick={() => {
-                            const { item_id, review_date_id, step_number } = row.original;
-                            const mutationData = { itemId: item_id, reviewDateId: review_date_id, data: { step_number } };
-                            incompleteMutation.mutate(mutationData);
-                        }}
-                        disabled={incompleteMutation.isPending}
-                    >
-                        取消
-                    </Button>
+                    <div className="flex items-center justify-center">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="bg-gray-800 hover:bg-gray-900 text-white border-white-400 w-full"
+                            onClick={() => {
+                                const { item_id, review_date_id, step_number } = row.original;
+                                const mutationData = { itemId: item_id, reviewDateId: review_date_id, data: { step_number } };
+                                incompleteMutation.mutate(mutationData);
+                            }}
+                            disabled={incompleteMutation.isPending}
+                        >
+
+                            取消
+                        </Button>
+                    </div>
                 ) : (
-                    <Button
-                        variant="default"
-                        size="sm"
-                        className="bg-green-700 hover:bg-green-800 text-white w-full"
-                        onClick={() => {
-                            const { item_id, review_date_id, step_number } = row.original;
-                            const mutationData = { itemId: item_id, reviewDateId: review_date_id, data: { step_number } };
-                            completeMutation.mutate(mutationData);
-                        }}
-                        disabled={completeMutation.isPending}
-                    >
-                        完了
-                    </Button>
+                    <div className="flex items-center justify-center">
+                        <Button
+                            variant="default"
+                            size="sm"
+                            className="bg-green-700 hover:bg-green-800 text-white w-full"
+                            onClick={() => {
+                                const { item_id, review_date_id, step_number } = row.original;
+                                const mutationData = { itemId: item_id, reviewDateId: review_date_id, data: { step_number } };
+                                completeMutation.mutate(mutationData);
+                            }}
+                            disabled={completeMutation.isPending}
+                        >
+                            完了
+                        </Button>
+                    </div>
                 );
             },
             size: 60,
@@ -231,73 +238,122 @@ const TodaysReviewPage = () => {
         // 操作カラム（歯車アイコン）
         {
             id: 'actions',
-            header: '操作',
-            cell: ({ row }) => (
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingReviewDate(row.original)}>
-                    <PencilIcon className="h-5 w-5" />
-                </Button>
+            header: () => (
+                <span className="block w-full text-center">操作</span>
             ),
-            size: 60,
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingReviewDate(row.original)}>
+                        <PencilIcon className="h-5 w-5" />
+                    </Button>
+                </div>
+            ),
+            size: 50,
         },
         // item_name（復習物名）
         {
             accessorKey: 'item_name',
-            header: '復習物名',
+            header: () => (
+                <span className="block w-full text-center">復習物名</span>
+            ),
             cell: ({ row }) => <NameCell name={row.original.item_name} />, // 省略表示＋ツールチップ
         },
         // 詳細カラム（情報アイコン）
         {
             id: 'detail',
-            header: '詳細',
-            cell: ({ row }) => (
-                <Button variant="ghost" size="icon" onClick={() => setDetailItem(row.original)}>
-                    <DocumentTextIcon className="h-5 w-5" />
-                </Button>
+            header: () => (
+                <span className="block w-full text-center">詳細</span>
             ),
-            size: 60,
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    <Button variant="ghost" size="icon" onClick={() => setDetailItem(row.original)}>
+                        <DocumentTextIcon className="h-5 w-5" />
+                    </Button>
+                </div>
+            ),
+            size: 50,
         },
         // 重さカラム（target_weight）
         {
             id: 'target_weight',
-            header: '重さ',
-            cell: ({ row }) => {
-                // box_idがあればboxのpattern_idから、なければcategory_idやitem_idから推測
-                const tw = row.original.target_weight;
-                if (tw) return tw;
-                // fallback: patternsからitem_idやbox_idで探す場合はここで拡張
-                return '-';
-            },
+            header: () => (
+                <span className="block w-full text-center">重さ</span>
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    {/* box_idがあればboxのpattern_idから、なければcategory_idやitem_idから推測 */}
+                    {row.original.target_weight ? row.original.target_weight : '-'}
+                </div>
+            ),
+            size: 50,
         },
         // ステップカラム
         {
             accessorKey: 'step_number',
-            header: 'ステップ',
-            cell: ({ row }) => row.original.step_number,
+            header: () => (
+                <span className="block w-full text-center">ステップ</span>
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    {row.original.step_number}
+                </div>
+            ),
+            size: 80,
         },
         // 学習日カラム
         {
             id: 'learned_date',
-            header: '学習日',
-            cell: ({ row }) => row.original.learned_date || '-',
-
+            header: () => (
+                <span className="block w-full text-center">学習日</span>
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    {row.original.learned_date || '-'}
+                </div>
+            ),
+            size: 100,
         },
         // prevカラム
         {
             id: 'prev',
-            header: 'prev',
-            cell: ({ row }) => row.original.prev_scheduled_date || '-',
+            header: () => (
+                <span className="block w-full text-center">prev</span>
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    {row.original.prev_scheduled_date || '-'}
+                </div>
+            ),
+            size: 100,
+
         },
         // currentカラム
         {
             id: 'current',
-            header: 'current',
-            cell: ({ row }) => row.original.scheduled_date || '-',
+            header: () => (
+                <span className="block w-full text-center">current</span>
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center ">
+                    {row.original.scheduled_date || '-'}
+                </div>
+            ),
+            size: 100,
+
         },
         // nextカラム
         {
             id: 'next',
-            header: 'next',
-            cell: ({ row }) => row.original.next_scheduled_date || '-',
+            header: () => (
+                <span className="block w-full text-center">next</span>
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center justify-center">
+                    {row.original.next_scheduled_date || '-'}
+                </div>
+            ),
+            size: 100,
+
         },
     ], [completeMutation, incompleteMutation, patterns]);
 
@@ -544,7 +600,7 @@ const TodaysReviewPage = () => {
                 <Card className="flex-1 min-h-0 p-0">
 
                     <CardContent className="p-0 h-full">
-                        <ScrollArea className="w-full max-h-[calc(100vh-200px)] rounded-xl">
+                        <ScrollArea className="w-full max-h-[calc(100vh-200px)] rounded-xl ">
                             {isLoading && !flattenedAndFilteredReviews.length ? (
                                 <TableSkeleton />
                             ) : (
