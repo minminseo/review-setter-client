@@ -1,13 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { HomeIcon, PlusCircleIcon, DocumentPlusIcon, UserCircleIcon, ArrowRightOnRectangleIcon, InboxStackIcon, InboxIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, DocumentPlusIcon, UserCircleIcon, ArrowRightOnRectangleIcon, InboxStackIcon, InboxIcon, SquaresPlusIcon, ChevronLeftIcon, ChevronDoubleLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCategoryStore, useBoxStore } from '@/store';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 // 親コンポーネントから受け取るPropsの型を定義
@@ -187,11 +186,29 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                             tabIndex={0}
                         >
                             {open ? (
-                                <ChevronLeft className="h-5 w-5" />
+                                <ChevronLeftIcon className="h-5 w-5" />
                             ) : (
-                                <ChevronRight className="h-5 w-5" />
+                                <ChevronRightIcon className="h-5 w-5" />
                             )}
                         </Button>
+                        {open && (
+                            <div className="flex-1 flex justify-end">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="rounded-lg ml-1"
+                                    onClick={() => {
+                                        setOpen(false);
+                                        setIsSidebarPinned(true); // このトグルで閉じた場合はピン留めON（ホバーで開かない）
+                                    }}
+                                    aria-label="サイドバーを閉じる（ホバーで開かない）"
+                                    tabIndex={0}
+                                    disabled={!open}
+                                >
+                                    <ChevronDoubleLeftIcon className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        )}
                     </div>
                     {/* 上部のナビゲーションアイコン */}
                     <nav className={`flex flex-col gap-4 px-2 sm:py-5 w-full`} style={{ alignItems: 'center' }}>
@@ -201,12 +218,12 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     to="/"
                                     className={({ isActive }) =>
                                         [
-                                            "h-9 w-full flex items-center rounded pt-1 pb-1 transition-color hover:bg-accent/50 ",
-                                            isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"
+                                            "h-9 w-full flex items-center rounded pt-1 pb-1 transition-color hover:bg-accent/50 h-10",
+                                            isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground h-10"
                                         ].join(" ")
                                     }
                                 >
-                                    <span className="flex items-center w-full ">
+                                    <span className="flex items-center w-full h-10">
                                         <span className="flex justify-center items-center min-w-[32px]">
                                             <HomeIcon className="h-5 w-5" />
                                         </span>
@@ -571,15 +588,15 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                     </ScrollArea>
                 </div>
                 {/* 下部固定エリア */}
-                <div className="flex-shrink-0 w-full">
+                <div className="flex-shrink-0 w-full ">
                     {/* 下部の設定・ログアウト・追加/作成ボタン */}
-                    <nav className={`flex flex-col gap-1 px-2 sm:py-2 w-full`} style={{ alignItems: 'center' }}>
+                    <nav className={`flex flex-col gap-1 px-2 sm:py-2 w-full pl-0 ml-0 `} style={{ alignItems: 'center' }}>
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`h-9 w-full flex items-center rounded-lg justify-center`}
+                                    className={`h-11 w-full flex items-center rounded-lg justify-center `}
                                     onClick={() => {
                                         // Todayセクションが選択されている場合はそちらを優先
                                         if (location.pathname === '/today') {
@@ -605,7 +622,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                 >
                                     <span className="flex items-center w-full">
                                         <span className="flex justify-center items-center min-w-[32px]">
-                                            <PlusCircleIcon className="h-6 w-6" />
+                                            <DocumentPlusIcon className="h-6 w-6" />
                                         </span>
                                         <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
                                             復習物追加
@@ -621,12 +638,12 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`h-9 w-full flex items-center rounded-lg text-muted-foreground justify-center`}
+                                    className={`h-11 w-full flex items-center rounded-lg text-muted-foreground justify-center`}
                                     onClick={onOpenCreatePattern}
                                 >
                                     <span className="flex items-center w-full">
                                         <span className="flex justify-center items-center min-w-[32px]">
-                                            <DocumentPlusIcon className="h-6 w-6" />
+                                            <SquaresPlusIcon className="h-6 w-6" />
                                         </span>
                                         <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
                                             パターン作成
@@ -642,7 +659,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 h-9 w-full flex items-center justify-center`}
+                                    className={`h-11 ml-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 w-full flex items-center justify-center`}
                                     onClick={handleLogout}
                                     disabled={isLoggingOut}
                                 >
@@ -664,7 +681,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`rounded-lg text-muted-foreground h-9 w-full flex items-center justify-center`}
+                                    className={`h-11 rounded-lg text-muted-foreground  w-full flex items-center justify-center`}
                                     onClick={onOpenSettings}
                                 >
                                     <span className="flex items-center w-full">
