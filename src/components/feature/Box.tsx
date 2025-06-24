@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Cog6ToothIcon, InformationCircleIcon, PencilIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, InformationCircleIcon, PencilIcon, DocumentTextIcon, ChevronDoubleLeftIcon } from '@heroicons/react/24/outline';
 import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import NameCell from '@/components/shared/NameCell';
@@ -59,6 +59,13 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     const [isEditBoxModalOpen, setEditBoxModalOpen] = React.useState(false);
     const [isFinishedItemsModalOpen, setFinishedItemsModalOpen] = React.useState(false);
 
+    // --- State (復習物名列の幅調整) ---
+    const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
+    const [isResizing, setIsResizing] = React.useState(false);
+    const [isHovering, setIsHovering] = React.useState(false);
+    const [startX, setStartX] = React.useState(0);
+    const [startWidth, setStartWidth] = React.useState(0);
+
     // --- Mutations ---
     const deleteMutation = useMutation({
         mutationFn: (itemId: string) => deleteItem(itemId),
@@ -90,6 +97,51 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         },
         onError: (err: any) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
     });
+
+    // --- リサイズ機能 ---
+    const handleResizeStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+        setStartX(e.clientX);
+        setStartWidth(nameColumnWidth);
+    };
+
+    const handleResizeMove = React.useCallback((e: MouseEvent) => {
+        if (!isResizing) return;
+
+        const diff = e.clientX - startX;
+        const newWidth = Math.max(100, startWidth + diff); // 最小100px、最大無制限
+        setNameColumnWidth(newWidth);
+    }, [isResizing, startX, startWidth]);
+
+    const handleResizeEnd = React.useCallback(() => {
+        setIsResizing(false);
+    }, []);
+
+    const handleResetWidth = () => {
+        setNameColumnWidth(300); // 初期値にリセット
+    };
+
+    React.useEffect(() => {
+        if (isResizing) {
+            document.addEventListener('mousemove', handleResizeMove);
+            document.addEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        } else {
+            document.removeEventListener('mousemove', handleResizeMove);
+            document.removeEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleResizeMove);
+            document.removeEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+    }, [isResizing, handleResizeMove, handleResizeEnd]);
 
     // --- アイテムリストの取得ロジック ---
     let storeBoxId = boxId;
@@ -151,7 +203,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     }, [zustandItems, items]);
 
     // テーブル全体の幅を動的に計算
-    const baseWidth = 60 + 50 + 150 + 50 + 100; // 状態+操作+復習物名+詳細+学習日
+    const baseWidth = 60 + 50 + nameColumnWidth + 50 + 100; // 状態+操作+復習物名+詳細+学習日
     const reviewColumnWidth = maxColumns * 130;
     const tableWidth = baseWidth + reviewColumnWidth;
 
@@ -206,7 +258,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             size: 50,
             cell: ({ row }) => (
                 <div className="flex items-center flex justify-center">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingItem(row.original)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 hover:text-gray-400 transition-colors" onClick={() => setEditingItem(row.original)}>
                         <PencilIcon className="h-4 w-4" />
                     </Button>
                 </div>
@@ -215,9 +267,20 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         {
             accessorKey: 'name',
             header: () => (
-                <span className="block w-full text-center">復習物名</span>
+                <div className="flex items-center justify-center relative">
+                    <span className="block w-full text-center">復習物名</span>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 h-4 w-4 p-0 hover:bg-gray-200"
+                        onClick={handleResetWidth}
+                        title="幅を初期化"
+                    >
+                        <ChevronDoubleLeftIcon className="h-3 w-3" />
+                    </Button>
+                </div>
             ),
-            size: 150,
+            size: nameColumnWidth,
             cell: ({ row }) => <NameCell name={row.original.name} />,
         },
         {
@@ -228,7 +291,12 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             size: 50,
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
-                    <Button variant="ghost" size="icon" onClick={() => setDetailItem(row.original)}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-gray-200 hover:text-gray-400 transition-colors"
+                        onClick={() => setDetailItem(row.original)}
+                    >
                         <DocumentTextIcon className="h-5 w-5" />
                     </Button>
                 </div>
@@ -256,22 +324,25 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 const reviewDate = row.original.review_dates[index];
                 if (!reviewDate) return <span className="text-muted-foreground">-</span>;
                 const isToday = format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-                const isClickable = isToday;
+                const isClickable = isToday && !reviewDate.is_completed;
                 return (
-                    <Button
-                        variant={!reviewDate.is_completed && !isToday ? 'outline' : 'default'}
-                        size="sm"
-                        className={cn(
-                            isToday && !reviewDate.is_completed && 'bg-blue-700 hover:bg-blue-800 text-gray-200',
-                            isToday && reviewDate.is_completed && 'bg-blue-900 hover:bg-blue-950 text-gray-400',
-                            !isToday && reviewDate.is_completed && 'bg-green-700 text-white',
-                            !isClickable && 'cursor-not-allowed opacity-50',
-                        )}
-                        onClick={isClickable ? () => setEditingDate({ item: row.original, reviewDate }) : undefined}
-                        disabled={!isClickable}
-                    >
-                        {format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd')}
-                    </Button>
+                    <div className="flex items-center justify-center">
+                        <Button
+                            variant={!reviewDate.is_completed && !isToday ? 'outline' : 'default'}
+
+                            size="sm"
+                            className={cn(
+                                isToday && !reviewDate.is_completed && 'bg-blue-800 hover:bg-blue-900 text-gray-200',
+                                isToday && reviewDate.is_completed && 'bg-blue-900 text-gray-400',
+                                !isToday && reviewDate.is_completed && 'bg-green-700 text-white',
+                                !isClickable && 'cursor-not-allowed opacity-50',
+                            )}
+                            onClick={isClickable ? () => setEditingDate({ item: row.original, reviewDate }) : undefined}
+                            disabled={!isClickable}
+                        >
+                            {format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd')}
+                        </Button>
+                    </div>
                 );
             },
         })),
@@ -321,6 +392,13 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                                     maxHeight="100%"
                                     fixedColumns={5}
                                     tableWidth={tableWidth}
+                                    resizableColumn={{
+                                        index: 2, // 復習物名列（0: 状態, 1: 操作, 2: 復習物名）
+                                        onResizeStart: handleResizeStart,
+                                        isResizing: isResizing,
+                                        isHovering: isHovering,
+                                        onHover: setIsHovering
+                                    }}
                                 />
                             )}
                             <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />

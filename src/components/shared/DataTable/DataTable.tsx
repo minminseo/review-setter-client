@@ -20,6 +20,13 @@ interface DataTableProps<TData, TValue> {
     maxHeight?: string; // テーブルの最大高さ（縦スクロール用）
     fixedColumns?: number; // 左側に固定するカラム数
     tableWidth?: number; // テーブルの全体幅
+    resizableColumn?: {
+        index: number;
+        onResizeStart: (e: React.MouseEvent) => void;
+        isResizing: boolean;
+        isHovering: boolean;
+        onHover: (isHovering: boolean) => void;
+    };
 }
 
 /**
@@ -35,6 +42,7 @@ export const DataTable = <TData, TValue>({
     maxHeight,
     fixedColumns = 0,
     tableWidth,
+    resizableColumn,
 }: DataTableProps<TData, TValue>) => {
     // テーブルのソート状態を管理する
     const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -88,10 +96,12 @@ export const DataTable = <TData, TValue>({
                                                 leftPosition = `${accumulatedWidth}px`;
                                             }
 
+                                            const isResizableColumn = resizableColumn && index === resizableColumn.index;
+
                                             return (
                                                 <TableHead
                                                     key={header.id}
-                                                    className={`${isFixed ? 'sticky z-50' : ''} ${!isFixed ? 'border-l-0' : ''} border-r border-border`}
+                                                    className={`${isFixed ? 'sticky z-50' : ''} ${!isFixed ? 'border-l-0' : ''} border-r border-border relative`}
                                                     style={{
                                                         position: isFixed ? 'sticky' : 'static',
                                                         zIndex: isFixed ? 50 : undefined,
@@ -106,6 +116,15 @@ export const DataTable = <TData, TValue>({
                                                     {header.isPlaceholder ? null : flexRender(
                                                         header.column.columnDef.header,
                                                         header.getContext()
+                                                    )}
+                                                    {isResizableColumn && (
+                                                        <div
+                                                            className={`absolute right-0 top-0 w-1 h-full cursor-col-resize transition-colors z-50 ${resizableColumn.isHovering ? 'bg-blue-500' : 'hover:bg-blue-500'
+                                                                }`}
+                                                            onMouseDown={resizableColumn.onResizeStart}
+                                                            onMouseEnter={() => resizableColumn.onHover(true)}
+                                                            onMouseLeave={() => resizableColumn.onHover(false)}
+                                                        />
                                                     )}
                                                 </TableHead>
                                             );
@@ -135,10 +154,12 @@ export const DataTable = <TData, TValue>({
                                                     leftPosition = `${accumulatedWidth}px`;
                                                 }
 
+                                                const isResizableColumn = resizableColumn && index === resizableColumn.index;
+
                                                 return (
                                                     <TableCell
                                                         key={cell.id}
-                                                        className={`${isFixed ? 'sticky z-10' : ''} ${!isFixed ? 'border-l-0' : ''} border-r border-b border-border`}
+                                                        className={`${isFixed ? 'sticky z-10' : ''} ${!isFixed ? 'border-l-0' : ''} border-r border-b border-border relative`}
                                                         style={{
                                                             position: isFixed ? 'sticky' : 'static',
                                                             zIndex: isFixed ? 10 : undefined,
@@ -151,6 +172,15 @@ export const DataTable = <TData, TValue>({
                                                         }}
                                                     >
                                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                                        {isResizableColumn && (
+                                                            <div
+                                                                className={`absolute right-0 top-0 w-1 h-full cursor-col-resize transition-colors z-10 ${resizableColumn.isHovering ? 'bg-blue-500' : 'hover:bg-blue-500'
+                                                                    }`}
+                                                                onMouseDown={resizableColumn.onResizeStart}
+                                                                onMouseEnter={() => resizableColumn.onHover(true)}
+                                                                onMouseLeave={() => resizableColumn.onHover(false)}
+                                                            />
+                                                        )}
                                                     </TableCell>
                                                 );
                                             })}
