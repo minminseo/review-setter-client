@@ -10,6 +10,7 @@ import { deleteItem, completeReviewDate, incompleteReviewDate } from '@/api/item
 import { useItemStore } from '@/store';
 import { ItemResponse, ReviewDateResponse, GetCategoryOutput, GetBoxOutput } from '@/types';
 import { cn } from '@/lib/utils';
+import { usePatternStore } from '@/store/patternStore';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -195,14 +196,13 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     }, [displayItems, zustandItems, items]);
 
     // --- テーブル定義 ---
-    // カラム数を動的に計算（実際に復習日がある場合のみカラムを表示）
-    const maxColumns = React.useMemo(() => {
-        const zustandItemColumns = (zustandItems && zustandItems.length > 0) ? Math.max(...zustandItems.map((i) => i.review_dates.length)) : 0;
-        const propsItemColumns = items.length > 0 ? Math.max(...items.map((i) => i.review_dates.length)) : 0;
-        const itemColumns = Math.max(zustandItemColumns, propsItemColumns);
-        // 復習日が存在しない場合は0を返す
-        return itemColumns;
-    }, [zustandItems, items]);
+    // カラム数を動的に計算（ボックスの復習パターンのステップ数を基準に表示）
+    const { patterns } = usePatternStore();
+    const pattern = React.useMemo(() => {
+        if (!currentBox?.pattern_id) return null;
+        return patterns.find((p) => p.id === currentBox.pattern_id) || null;
+    }, [patterns, currentBox?.pattern_id]);
+    const maxColumns = pattern ? pattern.steps.length : 0;
 
     // テーブル全体の幅を動的に計算
     const baseWidth = 60 + 50 + nameColumnWidth + 50 + 100; // 状態+操作+復習物名+詳細+学習日
@@ -389,7 +389,8 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 {/* --- スクロール可能なテーブル領域 --- */}
                 <Card className="flex-1 min-h-0 p-0">
                     <CardContent className="p-0 h-full ">
-                        <ScrollArea className="w-full h-full max-h-[calc(100vh-200px)] rounded-xl">
+                        <ScrollArea className="w-full h-full max-h-[calc(100vh-200px)] rounded-xl whitespace-nowrap">
+
                             {showSkeleton ? (
                                 <TableSkeleton />
                             ) : (
@@ -410,6 +411,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                                 />
                             )}
                             <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                            <ScrollBar orientation="horizontal" />
                         </ScrollArea>
                     </CardContent>
                 </Card>
