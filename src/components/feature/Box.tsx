@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Cog6ToothIcon, InformationCircleIcon, PencilIcon, DocumentTextIcon, ChevronDoubleLeftIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, InformationCircleIcon, PencilIcon, DocumentTextIcon, ChevronDoubleLeftIcon, InboxIcon } from '@heroicons/react/24/outline';
 import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import NameCell from '@/components/shared/NameCell';
@@ -28,6 +28,7 @@ import { BoxSummaryModal } from '@/components/modals/BoxSummaryModal';
 import { EditBoxModal } from '@/components/modals/EditBoxModal';
 import { FinishedItemsModal } from '@/components/modals/FinishedItemsModal';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { CreateItemModal } from '@/components/modals/CreateItemModal';
 
 // Boxコンポーネントが受け取るPropsの型定義
 interface BoxProps {
@@ -58,6 +59,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     const [isSummaryModalOpen, setSummaryModalOpen] = React.useState(false);
     const [isEditBoxModalOpen, setEditBoxModalOpen] = React.useState(false);
     const [isFinishedItemsModalOpen, setFinishedItemsModalOpen] = React.useState(false);
+    const [isCreateItemModalOpen, setCreateItemModalOpen] = React.useState(false);
 
     // --- State (復習物名列の幅調整) ---
     const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
@@ -353,6 +355,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             <div className="flex-1 flex flex-col overflow-hidden p-0">
                 {/* --- ヘッダー部分 --- */}
                 <div className="flex items-center justify-between pb-2 pt-2">
+                    <InboxIcon className="inline-block mr-2 h-6 w-6" />
                     <h1
                         className="text-lg font-bold tracking-tight max-w-full truncate flex-1 min-w-0"
                         title={currentBox?.name || "未分類ボックス"}
@@ -362,6 +365,11 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                             : "未分類ボックス"}
                     </h1>
                     <div className="flex items-center gap-2">
+                        {currentBox && (
+                            <Button variant="default" onClick={() => setCreateItemModalOpen(true)}>
+                                復習物を作成
+                            </Button>
+                        )}
                         <Button variant="outline" onClick={() => setFinishedItemsModalOpen(true)}>
                             完了済みを確認
                         </Button>
@@ -431,6 +439,15 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 {currentBox && <BoxSummaryModal isOpen={isSummaryModalOpen} onClose={() => setSummaryModalOpen(false)} box={currentBox} itemCount={items.length} />}
                 {currentCategory && currentBox && <EditBoxModal isOpen={isEditBoxModalOpen} onClose={() => setEditBoxModalOpen(false)} category={currentCategory} box={currentBox} />}
                 <FinishedItemsModal isOpen={isFinishedItemsModalOpen} onClose={() => setFinishedItemsModalOpen(false)} boxId={boxId} categoryId={categoryId} />
+                {/* 復習物作成モーダル */}
+                {currentBox && (
+                    <CreateItemModal
+                        isOpen={isCreateItemModalOpen}
+                        onClose={() => setCreateItemModalOpen(false)}
+                        defaultCategoryId={currentBox.category_id}
+                        defaultBoxId={currentBox.id}
+                    />
+                )}
             </div>
         </div>
     );

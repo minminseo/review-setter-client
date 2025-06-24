@@ -25,6 +25,7 @@ import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
 import { Category } from '@/components/feature/Category';
 import { Box } from '@/components/feature/Box';
 import { useRef, useEffect, useState } from 'react';
+import { InboxIcon, InboxStackIcon } from '@heroicons/react/24/outline';
 
 /**
  * カテゴリーページとボックスページを統合したコンポーネント。
@@ -290,11 +291,10 @@ const BoxAndCategoryPage = () => {
         <>
             {/* 上部固定ヘッダー */}
             <div
-                className="flex-shrink-0 space-y-4 bg-background z-10"
+                className="flex-shrink-0 space-y-4 z-10 "
                 style={{
                     position: 'sticky',
                     top: 0,
-                    boxShadow: '0 2px 8px -4px rgba(0,0,0,0.08)',
                 }}
             >
                 <Breadcrumbs items={breadcrumbItems} />
@@ -304,7 +304,7 @@ const BoxAndCategoryPage = () => {
                 >
                     {/* カテゴリーラベル */}
                     <div className="flex items-center">
-                        <span className="text-sm font-semibold shrink-0">カテゴリー:</span>
+                        <span className="text-sm font-semibold shrink-0"><InboxStackIcon className="inline-block mr-2 h-6 w-6" />カテゴリー</span>
                     </div>
                     {/* カテゴリータブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
@@ -328,7 +328,7 @@ const BoxAndCategoryPage = () => {
                                 </Tabs>
                             </div>
                             {hasMoreCategories && (
-                                <div className="absolute right-0 flex items-center justify-center bg-background" style={{ width: 48, height: '100%' }}>
+                                <div className="absolute right-0 flex items-center justify-center" style={{ width: 48, height: '100%' }}>
                                     <Button
                                         variant="ghost" size="icon" onClick={() => setSelectCategoryModalOpen(true)}
                                         className="shrink-0 h-8 w-8"
@@ -341,7 +341,7 @@ const BoxAndCategoryPage = () => {
                     </div>
                     {/* ボックスラベル */}
                     <div className="flex items-center">
-                        <span className="text-sm font-semibold shrink-0">ボックス:</span>
+                        <span className="text-sm font-semibold shrink-0"><InboxIcon className="inline-block mr-2 h-6 w-6" />ボックス</span>
                     </div>
                     {/* ボックスタブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
@@ -377,7 +377,7 @@ const BoxAndCategoryPage = () => {
                                 </Tabs>
                             </div>
                             {hasMoreBoxes && selectedCategoryId !== UNCLASSIFIED_ID && (
-                                <div className="absolute right-0 flex items-center justify-center bg-background" style={{ width: 48, height: '100%' }}>
+                                <div className="absolute right-0 flex items-center justify-center" style={{ width: 48, height: '100%' }}>
                                     <Button
                                         variant="ghost" size="icon" onClick={() => setSelectBoxModalOpen(true)}
                                         className="shrink-0 h-8 w-8"

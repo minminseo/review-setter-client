@@ -28,7 +28,7 @@ import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
 import { UNCLASSIFIED_ID } from '@/constants';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { ClockIcon, Cog8ToothIcon, DocumentIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
+import { ClockIcon, Cog8ToothIcon, DocumentIcon, InboxIcon, InboxStackIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 
 /**
  * ログイン後のホームページ（ダッシュボード）。
@@ -140,7 +140,7 @@ const HomePage = () => {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate(`/categories/${UNCLASSIFIED_ID}/boxes/${UNCLASSIFIED_ID}`)}>
-                        <CardHeader><CardTitle>未分類復習物ボックス</CardTitle></CardHeader>
+                        <CardHeader><CardTitle><InboxIcon className="inline-block mr-2 h-6 w-6" />未分類復習物ボックス</CardTitle></CardHeader>
                         <CardContent>
                             {isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold"><DocumentIcon className="inline-block mr-2 h-6 w-6" />
                                 {unclassifiedItemCountQuery.data?.count ?? 0}</p>}
@@ -178,12 +178,13 @@ const HomePage = () => {
                                                     to={`/categories/${category.id}`}
                                                     className="flex-grow grid grid-cols-1 sm:grid-cols-3 items-center gap-1"
                                                 >
+
                                                     <div
                                                         className="font-semibold sm:col-span-2 truncate"
                                                         style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                                                         title={category.name}
                                                     >
-                                                        {category.name}
+                                                        <InboxStackIcon className="inline-block mr-2 h-6 w-6" />{category.name}
                                                     </div>
                                                     <div className="text-sm text-muted-foreground flex gap-4 justify-end text-right w-full">
                                                         <span className="inline-flex items-center min-w-[60px]">

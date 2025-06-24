@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
-import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon, PencilIcon, ChevronDoubleLeftIcon } from '@heroicons/react/24/outline';
 import { MoreHorizontal } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 
@@ -110,6 +110,13 @@ const TodaysReviewPage = () => {
     const [detailItem, setDetailItem] = React.useState<DailyReviewDate | null>(null);
     const [editingReviewDate, setEditingReviewDate] = React.useState<DailyReviewDate | null>(null);
 
+    // --- State (復習物名列の幅調整) ---
+    const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
+    const [isResizing, setIsResizing] = React.useState(false);
+    const [isHovering, setIsHovering] = React.useState(false);
+    const [startX, setStartX] = React.useState(0);
+    const [startWidth, setStartWidth] = React.useState(0);
+
     // --- データ取得 (React Query) ---
     // 1. カテゴリー一覧 (フィルタータブ用)
     const { data: fetchedCategories, isSuccess: catSuccess } = useQuery({
@@ -188,6 +195,51 @@ const TodaysReviewPage = () => {
     const completeMutation = useMutation({ mutationFn: completeReviewDate, ...createMutationOptions(true) });
     const incompleteMutation = useMutation({ mutationFn: incompleteReviewDate, ...createMutationOptions(false) });
 
+    // --- リサイズ機能 ---
+    const handleResizeStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+        setStartX(e.clientX);
+        setStartWidth(nameColumnWidth);
+    };
+
+    const handleResizeMove = React.useCallback((e: MouseEvent) => {
+        if (!isResizing) return;
+
+        const diff = e.clientX - startX;
+        const newWidth = Math.max(100, startWidth + diff); // 最小100px、最大無制限
+        setNameColumnWidth(newWidth);
+    }, [isResizing, startX, startWidth]);
+
+    const handleResizeEnd = React.useCallback(() => {
+        setIsResizing(false);
+    }, []);
+
+    const handleResetWidth = () => {
+        setNameColumnWidth(300); // 初期値にリセット
+    };
+
+    React.useEffect(() => {
+        if (isResizing) {
+            document.addEventListener('mousemove', handleResizeMove);
+            document.addEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        } else {
+            document.removeEventListener('mousemove', handleResizeMove);
+            document.removeEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleResizeMove);
+            document.removeEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+    }, [isResizing, handleResizeMove, handleResizeEnd]);
+
     // --- テーブルの列定義 ---
     const columns = React.useMemo<ColumnDef<DailyReviewDate>[]>(() => [
         // 状態カラム（完了/未完了）
@@ -254,8 +306,20 @@ const TodaysReviewPage = () => {
         {
             accessorKey: 'item_name',
             header: () => (
-                <span className="block w-full text-center">復習物名</span>
+                <div className="flex items-center justify-center relative">
+                    <span className="block w-full text-center">復習物名</span>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 h-4 w-4 p-0 hover:bg-gray-200"
+                        onClick={handleResetWidth}
+                        title="幅を初期化"
+                    >
+                        <ChevronDoubleLeftIcon className="h-3 w-3" />
+                    </Button>
+                </div>
             ),
+            size: nameColumnWidth,
             cell: ({ row }) => <NameCell name={row.original.item_name} />, // 省略表示＋ツールチップ
         },
         // 詳細カラム（情報アイコン）
@@ -285,7 +349,7 @@ const TodaysReviewPage = () => {
                     {row.original.target_weight ? row.original.target_weight : '-'}
                 </div>
             ),
-            size: 50,
+            size: 60,
         },
         // ステップカラム
         {
@@ -359,14 +423,14 @@ const TodaysReviewPage = () => {
 
     // テーブル全体の幅を動的に計算
     const tableWidth = React.useMemo(() => {
-        // 基本カラム（状態 + 操作 + 復習物名 + 詳細 + 重さ）の幅
-        const baseWidth = 60 + 50 + 150 + 50 + 100; // 410px
-        // スクロール可能カラム（ステップ + 学習日 + prev + current + next）の幅（各130px）
-        const scrollableColumnWidth = 4 * 130;
+        // 基本カラム（状態 + 操作 + 復習物名 + 詳細 + 重さ + ステップ + 学習日）の幅
+        const baseWidth = 60 + 50 + nameColumnWidth + 50 + 55 + 80 + 100; // 動的に計算
+        // スクロール可能カラム（prev + current + next）の幅（各100px）
+        const scrollableColumnWidth = 3 * 100;
         // 最小幅を設定
         const totalWidth = Math.max(baseWidth + scrollableColumnWidth, 600);
         return totalWidth;
-    }, []);
+    }, [nameColumnWidth]);
 
     // URLパラメータが変更された際の同期処理
     React.useEffect(() => {
@@ -611,6 +675,13 @@ const TodaysReviewPage = () => {
                                     maxHeight="100%"
                                     enablePagination={false}
                                     tableWidth={tableWidth}
+                                    resizableColumn={{
+                                        index: 2, // 復習物名列（0: 状態, 1: 操作, 2: 復習物名）
+                                        onResizeStart: handleResizeStart,
+                                        isResizing: isResizing,
+                                        isHovering: isHovering,
+                                        onHover: setIsHovering
+                                    }}
                                 />
                             )}
                             <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />

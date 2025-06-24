@@ -17,7 +17,7 @@ import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
 import { EditBoxModal } from '@/components/modals/EditBoxModal';
 import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
-import { ClockIcon, Cog6ToothIcon, Cog8ToothIcon, DocumentIcon, PlusCircleIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
+import { ClockIcon, Cog6ToothIcon, Cog8ToothIcon, DocumentIcon, InboxStackIcon, PlusCircleIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // Categoryコンポーネントが受け取るPropsの型定義
@@ -94,7 +94,7 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                 {!isUnclassifiedPage && currentCategory && (
                     <div className="flex items-center gap-2 w-full">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <span className="text-lg font-bold tracking-tight whitespace-nowrap">カテゴリー：</span>
+                            <span className="text-lg font-bold tracking-tight whitespace-nowrap"><InboxStackIcon className="inline-block mr-2 h-6 w-6" />カテゴリー：</span>
                             <span
                                 className="text-xl font-semibold truncate min-w-0 flex-1"
                                 title={currentCategory.name}
@@ -175,7 +175,7 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                                         <div className="flex flex-col items-start min-w-0 flex-1 max-w-[200px]">
                                             <span className="text-xs text-muted-foreground mb-1 whitespace-nowrap">復習パターン</span>
                                             <div className="flex items-center gap-2 min-w-0 w-full">
-                                                <Cog8ToothIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                <Squares2X2Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                                 <span
                                                     className="text-base font-medium truncate min-w-0"
                                                     title={getPatternName(box.pattern_id)}
