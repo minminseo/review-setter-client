@@ -217,6 +217,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 <span className="block w-full text-center">状態</span>
             ),
             size: 60,
+
             cell: ({ row }) => {
                 const today = format(new Date(), 'yyyy-MM-dd');
                 const todaysReviewDate = row.original.review_dates.find(
@@ -389,7 +390,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 {/* --- スクロール可能なテーブル領域 --- */}
                 <Card className="flex-1 min-h-0 p-0">
                     <CardContent className="p-0 h-full ">
-                        <ScrollArea className="w-full h-full max-h-[calc(100vh-200px)] rounded-xl whitespace-nowrap">
+                        <ScrollArea className="w-full h-full max-h-[calc(100vh-200px)] rounded-xl whitespace-nowrap pr-3 pb-4">
 
                             {showSkeleton ? (
                                 <TableSkeleton />
@@ -408,10 +409,11 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                                         isHovering: isHovering,
                                         onHover: setIsHovering
                                     }}
+
                                 />
                             )}
                             <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
-                            <ScrollBar orientation="horizontal" />
+                            <ScrollBar orientation="horizontal" className="!bg-transparent [&>div]:!bg-gray-600" />
                         </ScrollArea>
                     </CardContent>
                 </Card>

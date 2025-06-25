@@ -130,12 +130,14 @@
 [data-slot="scroll-area-viewport"] {
   height: 100% !important;
   width: 100% !important;
-  /* スクロールバー用の右マージンを確保 */
+  /* スクロールバー用のマージンを確保 */
   padding-right: 12px !important;
+  padding-bottom: 12px !important;
   box-sizing: border-box !important;
 }
 
-[data-slot="scroll-area-scrollbar"] {
+/* 垂直スクロールバー */
+[data-slot="scroll-area-scrollbar"][data-orientation="vertical"] {
   display: flex !important;
   user-select: none !important;
   touch-action: none !important;
@@ -152,10 +154,34 @@
   pointer-events: auto !important;
 }
 
+/* 水平スクロールバー */
+[data-slot="scroll-area-scrollbar"][data-orientation="horizontal"] {
+  display: flex !important;
+  user-select: none !important;
+  touch-action: none !important;
+  padding: 1px !important;
+  background: transparent !important;
+  transition: all 160ms ease-out !important;
+  position: absolute !important;
+  left: 2px !important;
+  right: 12px !important;
+  bottom: 2px !important;
+  height: 8px !important;
+  z-index: 100 !important;
+  opacity: 0 !important;
+  pointer-events: auto !important;
+}
+
 /* スクロール時やホバー時にスクロールバーを表示 */
-[data-slot="scroll-area"]:hover [data-slot="scroll-area-scrollbar"],
-[data-slot="scroll-area-scrollbar"]:hover,
-[data-slot="scroll-area-scrollbar"][data-state="visible"] {
+[data-slot="scroll-area"]:hover [data-slot="scroll-area-scrollbar"][data-orientation="vertical"],
+[data-slot="scroll-area-scrollbar"][data-orientation="vertical"]:hover,
+[data-slot="scroll-area-scrollbar"][data-orientation="vertical"][data-state="visible"] {
+  opacity: 1 !important;
+}
+
+[data-slot="scroll-area"]:hover [data-slot="scroll-area-scrollbar"][data-orientation="horizontal"],
+[data-slot="scroll-area-scrollbar"][data-orientation="horizontal"]:hover,
+[data-slot="scroll-area-scrollbar"][data-orientation="horizontal"][data-state="visible"] {
   opacity: 1 !important;
 }
 
