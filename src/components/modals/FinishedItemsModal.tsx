@@ -219,7 +219,10 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
     const columns = React.useMemo<ColumnDef<ItemResponse>[]>(() => [
         {
             id: 'actions',
-            header: '操作',
+            header: () => (
+                <span className="block w-full text-center">状態</span>
+            ),
+            size: 60,
             cell: ({ row }) => {
                 const today = format(new Date(), 'yyyy-MM-dd');
                 const item = row.original;
@@ -241,40 +244,44 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 // 再開ボタンの表示条件：一つでも未完了の復習日がある
                 const showRestartButton = hasIncompleteReviewDate;
 
-                return (
-                    <div className='flex gap-2'>
-                        {/* 取消ボタン：すべて完了済み かつ 最後の復習日が今日の場合のみ表示 */}
-                        {showCancelButton && (
-                            <Button
-                                size="sm"
-                                variant="outline"
+                if (!(showCancelButton || showRestartButton)) {
+                    return <span className="text-muted-foreground flex justify-center">-</span>;
+                }
+                if (showCancelButton) {
+                    return (
+                        // 取消ボタン：すべて完了済み かつ 最後の復習日が今日の場合のみ表示
 
-                                onClick={() => incompleteReviewMutation.mutate({
-                                    itemId: item.item_id,
-                                    reviewDateId: lastReviewDate.review_date_id,
-                                    stepNumber: lastReviewDate.step_number
-                                })}
-                                disabled={incompleteReviewMutation.isPending}
-                            >
-                                取消
-                            </Button>
-                        )}
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="bg-gray-800 hover:bg-gray-900 text-white border-white-400 w-full"
+                            onClick={() => incompleteReviewMutation.mutate({
+                                itemId: item.item_id,
+                                reviewDateId: lastReviewDate.review_date_id,
+                                stepNumber: lastReviewDate.step_number
+                            })}
+                            disabled={incompleteReviewMutation.isPending}
+                        >
+                            取消
+                        </Button>
+                    );
+                }
+                if (showRestartButton) {
+                    return (
+                        // 再開ボタン：一つでも未完了の復習日がある場合のみ表示
 
-                        {/* 再開ボタン：一つでも未完了の復習日がある場合のみ表示 */}
-                        {showRestartButton && (
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-gray-400"
-                                onClick={() => unfinishMutation.mutate(item)}
-                                disabled={unfinishMutation.isPending}
-                            >
-                                再開
-                            </Button>
-                        )}
-                    </div>
-                );
-            },
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-gray-400 hover:text-gray-400 bg-gray-800 hover:bg-gray-900 border-white-400 w-full"
+                            onClick={() => unfinishMutation.mutate(item)}
+                            disabled={unfinishMutation.isPending}
+                        >
+                            再開
+                        </Button>
+                    );
+                }
+            }
         },
         {
             accessorKey: 'name',
@@ -361,16 +368,16 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="w-screen !max-w-none h-[90vh] max-h-[80vh]">
+                <DialogContent className="w-screen !max-w-none h-[90vh] max-h-[75vh]">
                     <DialogHeader>
                         <DialogTitle>完了済み復習物一覧</DialogTitle>
-                        <DialogDescription>完了済みのアイテムを確認し、必要に応じて復習を再開できます。</DialogDescription>
+                        <DialogDescription>完了済みのアイテムを確認し、必要に応じて復習を取消、もしくは再開できます。</DialogDescription>
                     </DialogHeader>
-                    <div className="flex-1 flex flex-col overflow-hidden py-4">
+                    <div className="flex-1 flex flex-col overflow-hidden py-4 mb-2">
                         {/* --- スクロール可能なテーブル領域 --- */}
                         <Card className="flex-1 min-h-0 p-0 py-0">
                             <CardContent className="p-0 h-full">
-                                <ScrollArea className="w-full h-full max-h-[calc(90vh-200px)] rounded-xl pb-6">
+                                <ScrollArea className="w-full h-full max-h-[calc(90vh-200px)] rounded-xl pb-6 pr-3">
                                     {isLoading ? (
                                         <TableSkeleton />
                                     ) : (
@@ -379,10 +386,10 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                                             data={finishedItems}
                                             enablePagination={false}
                                             maxHeight="100%"
-                                            fixedColumns={5}
+                                            fixedColumns={4}
                                             tableWidth={tableWidth}
                                             resizableColumn={{
-                                                index: 2, // 復習物名列（0: 状態, 1: 操作, 2: 復習物名）
+                                                index: 1, // 復習物名列（0: 状態, 1: 操作, 2: 復習物名）
                                                 onResizeStart: handleResizeStart,
                                                 isResizing: isResizing,
                                                 isHovering: isHovering,
@@ -396,8 +403,9 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                             </CardContent>
                         </Card>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={onClose}>閉じる</Button>
+                    <DialogFooter >
+                        <Button variant="outline" className="fixed bottom-0 right-0 mb-5 mr-5"
+                            onClick={onClose}>閉じる</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
