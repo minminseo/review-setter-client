@@ -661,10 +661,10 @@ const TodaysReviewPage = () => {
                     </Card>
                 </div>
 
-                <Card className="flex-1 min-h-0 p-0">
+                <Card className="flex-1 min-h-0 p-0 py-0">
 
                     <CardContent className="p-0 h-full">
-                        <ScrollArea className="w-full max-h-[calc(100vh-150px)] rounded-xl pb-4 pr-3">
+                        <ScrollArea className="w-full h-full rounded-xl pb-3 pr-3">
                             {isLoading && !flattenedAndFilteredReviews.length ? (
                                 <TableSkeleton />
                             ) : (
@@ -685,7 +685,7 @@ const TodaysReviewPage = () => {
                                 />
                             )}
                             <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
-                            <ScrollBar orientation="horizontal" className="!bg-transparent [&>div]:!bg-gray-600" />
+                            <ScrollBar orientation="horizontal" className="!bg-transparent ml-2 [&>div]:!bg-gray-600 !h-1.5" />
                         </ScrollArea>
                     </CardContent>
 

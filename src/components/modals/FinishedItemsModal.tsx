@@ -230,16 +230,25 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                     format(new Date(lastReviewDate.scheduled_date), 'yyyy-MM-dd') === today;
 
                 // すべての復習日が完了しているかチェック
+                const allReviewDatesCompleted = item.review_dates.every(rd => rd.is_completed);
+
+                // 一つでも未完了の復習日があるかチェック
                 const hasIncompleteReviewDate = item.review_dates.some(rd => !rd.is_completed);
+
+                // 取消ボタンの表示条件：すべての復習日が完了 AND 最後の復習日が今日
+                const showCancelButton = allReviewDatesCompleted && isLastReviewDateToday;
+
+                // 再開ボタンの表示条件：一つでも未完了の復習日がある
+                const showRestartButton = hasIncompleteReviewDate;
 
                 return (
                     <div className='flex gap-2'>
-                        {/* 最後の復習日が今日の場合は「取消」ボタンを表示 */}
-                        {isLastReviewDateToday && (
+                        {/* 取消ボタン：すべて完了済み かつ 最後の復習日が今日の場合のみ表示 */}
+                        {showCancelButton && (
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="text-gray-600 border-gray-400"
+
                                 onClick={() => incompleteReviewMutation.mutate({
                                     itemId: item.item_id,
                                     reviewDateId: lastReviewDate.review_date_id,
@@ -251,11 +260,12 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                             </Button>
                         )}
 
-                        {/* 未完了の復習日がある場合は「再開」ボタンを表示 */}
-                        {hasIncompleteReviewDate && (
+                        {/* 再開ボタン：一つでも未完了の復習日がある場合のみ表示 */}
+                        {showRestartButton && (
                             <Button
                                 size="sm"
                                 variant="outline"
+                                className="text-gray-400"
                                 onClick={() => unfinishMutation.mutate(item)}
                                 disabled={unfinishMutation.isPending}
                             >
@@ -358,9 +368,9 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                     </DialogHeader>
                     <div className="flex-1 flex flex-col overflow-hidden py-4">
                         {/* --- スクロール可能なテーブル領域 --- */}
-                        <Card className="flex-1 min-h-0 p-0">
+                        <Card className="flex-1 min-h-0 p-0 py-0">
                             <CardContent className="p-0 h-full">
-                                <ScrollArea className="w-full h-full max-h-[calc(90vh-200px)] rounded-xl">
+                                <ScrollArea className="w-full h-full max-h-[calc(90vh-200px)] rounded-xl pb-6">
                                     {isLoading ? (
                                         <TableSkeleton />
                                     ) : (
@@ -381,7 +391,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                                         />
                                     )}
                                     <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
-                                    <ScrollBar orientation="horizontal" className="!bg-transparent [&>div]:!bg-gray-600" />
+                                    <ScrollBar orientation="horizontal" className="!bg-transparent [&>div]:!bg-gray-600 !h-1.5" />
                                 </ScrollArea>
                             </CardContent>
                         </Card>

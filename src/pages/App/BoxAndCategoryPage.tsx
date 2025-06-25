@@ -95,9 +95,9 @@ const BoxAndCategoryPage = () => {
     // --- Utility Functions ---
     // storeBoxIdの計算ロジックを統一
     const getStoreBoxId = React.useCallback((boxId: string | undefined, categoryId: string | undefined) => {
-        if ((boxId === 'unclassified' || !boxId) && categoryId && categoryId !== UNCLASSIFIED_ID) {
+        if ((boxId === 'unclassified' || boxId === UNCLASSIFIED_ID || !boxId) && categoryId && categoryId !== UNCLASSIFIED_ID && categoryId !== 'unclassified') {
             return `unclassified-${categoryId}`;
-        } else if (!boxId || boxId === 'unclassified') {
+        } else if (!boxId || boxId === 'unclassified' || boxId === UNCLASSIFIED_ID) {
             return 'unclassified';
         }
         return boxId;
@@ -129,32 +129,58 @@ const BoxAndCategoryPage = () => {
     });
 
     // --- 追加デバッグ ---
-    const enabledItemsQuery = isBoxView || !boxId;
-    console.log('[useQuery-items] boxId:', boxId, 'categoryId:', categoryId, 'isBoxView:', isBoxView, 'enabled:', enabledItemsQuery, 'queryKey:', ['items', boxId, categoryId]);
+    const enabledItemsQuery = isBoxView;
+    console.log('=== BoxAndCategoryPage Debug ===');
+    console.log('[BoxAndCategoryPage] URL params:', { boxId, categoryId });
+    console.log('[BoxAndCategoryPage] Constants:', { UNCLASSIFIED_ID });
+    console.log('[BoxAndCategoryPage] Conditions:', { 
+        isBoxView, 
+        isUnclassifiedCategoryPage,
+        enabledItemsQuery 
+    });
+    console.log('[BoxAndCategoryPage] Query key:', ['items', boxId, categoryId]);
+    console.log('===============================');
 
     // 3. (ボックス表示時のみ) 現在のボックスに属するアイテムリスト
     const { data: fetchedItems, isLoading: isItemsLoading, isSuccess: itemsSuccess } = useQuery({
         queryKey: ['items', boxId, categoryId],
         queryFn: async () => {
-            console.log('[useQuery-items] params:', { boxId, categoryId });
-            // 1. 完全未分類（カテゴリーもボックスも未分類）
-            if (categoryId === UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
-                const res = await fetchUnclassifiedItems();
-                console.log('[useQuery-items] fetchUnclassifiedItems result:', res);
-                return res;
-            }
-            // 2. カテゴリー未分類以外＋ボックス未分類
-            if (categoryId && categoryId !== UNCLASSIFIED_ID && boxId === UNCLASSIFIED_ID) {
-                const res = await fetchUnclassifiedItemsByCategory(categoryId);
-                console.log('[useQuery-items] fetchUnclassifiedItemsByCategory result:', res);
-                return res;
-            }
-            // 3. 通常のボックス
-            if (boxId && boxId !== UNCLASSIFIED_ID) {
+            console.log('=== useQuery-items API Decision ===');
+            console.log('[useQuery-items] Raw params:', { boxId, categoryId });
+            console.log('[useQuery-items] Type checks:', {
+                'boxId !== UNCLASSIFIED_ID': boxId !== UNCLASSIFIED_ID,
+                'categoryId !== UNCLASSIFIED_ID': categoryId !== UNCLASSIFIED_ID,
+                'boxId === UNCLASSIFIED_ID': boxId === UNCLASSIFIED_ID,
+                'boxId === "unclassified"': boxId === 'unclassified',
+                'categoryId === UNCLASSIFIED_ID': categoryId === UNCLASSIFIED_ID,
+                'categoryId === "unclassified"': categoryId === 'unclassified'
+            });
+            
+            // 1. 通常のボックス
+            if (boxId && boxId !== UNCLASSIFIED_ID && boxId !== 'unclassified') {
+                console.log('[useQuery-items] → Calling fetchItemsByBox with boxId:', boxId);
                 const res = await fetchItemsByBox(boxId);
-                console.log('[useQuery-items] fetchItemsByBox result:', res);
+                console.log('[useQuery-items] fetchItemsByBox result count:', res?.length || 0);
                 return res;
             }
+            
+            // 2. カテゴリー未分類以外＋ボックス未分類 
+            if (categoryId && categoryId !== UNCLASSIFIED_ID && categoryId !== 'unclassified' && (boxId === UNCLASSIFIED_ID || boxId === 'unclassified')) {
+                console.log('[useQuery-items] → Calling fetchUnclassifiedItemsByCategory with categoryId:', categoryId);
+                const res = await fetchUnclassifiedItemsByCategory(categoryId);
+                console.log('[useQuery-items] fetchUnclassifiedItemsByCategory result count:', res?.length || 0);
+                return res;
+            }
+            
+            // 3. 完全未分類（カテゴリーもボックスも未分類）
+            if ((categoryId === UNCLASSIFIED_ID || categoryId === 'unclassified') && (boxId === UNCLASSIFIED_ID || boxId === 'unclassified')) {
+                console.log('[useQuery-items] → Calling fetchUnclassifiedItems');
+                const res = await fetchUnclassifiedItems();
+                console.log('[useQuery-items] fetchUnclassifiedItems result count:', res?.length || 0);
+                return res;
+            }
+            
+            console.log('[useQuery-items] → No condition matched, returning empty array');
             return [];
         },
         enabled: enabledItemsQuery, // ボックス画面 or 未分類ボックス画面
@@ -181,15 +207,41 @@ const BoxAndCategoryPage = () => {
     }, [boxesSuccess, fetchedBoxes, categoryId, setBoxesForCategory]);
 
     React.useEffect(() => {
+        console.log('=== BoxAndCategoryPage useEffect (itemsSuccess) ===');
+        console.log('[BoxAndCategoryPage] itemsSuccess:', itemsSuccess);
+        console.log('[BoxAndCategoryPage] fetchedItems:', fetchedItems);
+        
         if (itemsSuccess && fetchedItems) {
+            console.log('[BoxAndCategoryPage] Raw fetchedItems from API:');
+            console.log('  Total items:', fetchedItems.length);
+            fetchedItems.forEach((item, index) => {
+                console.log(`  Item ${index + 1} (${item.name}):`);
+                console.log('    - review_dates:', item.review_dates);
+                console.log('    - review_dates length:', item.review_dates?.length || 0);
+                console.log('    - is_finished:', item.is_finished);
+            });
+
             // 完了済みアイテムを除外してストアに保存
             const activeItems = fetchedItems.filter(item => !item.is_finished);
             const storeBoxId = getStoreBoxId(boxId, categoryId);
-            // デバッグ用ログ
-            console.log('[BoxAndCategoryPage] storeBoxId:', storeBoxId);
-            console.log('[BoxAndCategoryPage] activeItems:', activeItems);
+
+            console.log('[BoxAndCategoryPage] After filtering:');
+            console.log('  storeBoxId:', storeBoxId);
+            console.log('  activeItems count:', activeItems.length);
+            console.log('  getStoreBoxId params:', { boxId, categoryId });
+            
+            activeItems.forEach((item, index) => {
+                console.log(`  Active Item ${index + 1} (${item.name}):`);
+                console.log('    - review_dates:', item.review_dates);
+                console.log('    - review_dates length:', item.review_dates?.length || 0);
+            });
+
+            console.log('[BoxAndCategoryPage] Calling setItemsForBox with:', { storeBoxId, activeItemsCount: activeItems.length });
             setItemsForBox(storeBoxId || '', activeItems);
+        } else {
+            console.log('[BoxAndCategoryPage] No items to process');
         }
+        console.log('================================================');
     }, [itemsSuccess, fetchedItems, boxId, categoryId, setItemsForBox, getStoreBoxId]);
 
     // ★修正点: パターン取得後の副作用を useEffect に分離
@@ -284,7 +336,8 @@ const BoxAndCategoryPage = () => {
 
     // --- メインコンテンツ ---
     const storeBoxId = getStoreBoxId(boxId, categoryId);
-    const zustandItems = useItemStore.getState().getItemsForBox(storeBoxId || '');
+    const { getItemsForBox } = useItemStore();
+    const zustandItems = getItemsForBox(storeBoxId || '');
 
     return (
         // <div className="min-h-screen flex flex-col overflow-hidden">

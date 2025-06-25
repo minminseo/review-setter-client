@@ -43,26 +43,49 @@ export const useItemStore = create<ItemState>((set, get) => ({
     itemsByBoxId: {},
     todaysReviews: null,
 
-    getItemsForBox: (boxId) => get().itemsByBoxId[boxId],
+    getItemsForBox: (boxId) => {
+        const result = get().itemsByBoxId[boxId];
+        console.log('=== getItemsForBox Debug ===');
+        console.log('[itemStore] boxId:', boxId);
+        console.log('[itemStore] result exists:', !!result);
+        console.log('[itemStore] result length:', result?.length || 0);
+        console.log('[itemStore] all stored keys:', Object.keys(get().itemsByBoxId));
+        console.log('[itemStore] all stored data:', get().itemsByBoxId);
+        console.log('============================');
+        return result;
+    },
 
-    setItemsForBox: (boxId, items) => set((state) => ({
-        itemsByBoxId: { 
-            ...state.itemsByBoxId, 
-            [boxId]: items.filter(item => !item.is_finished) // 完了済みアイテムを除外
-        },
-    })),
+    setItemsForBox: (boxId, items) => {
+        console.log('=== setItemsForBox Debug ===');
+        console.log('boxId:', boxId);
+        console.log('input items count:', items.length);
+        items.forEach((item, index) => {
+            console.log(`Item ${index + 1} (${item.name}):`);
+            console.log('  - review_dates:', item.review_dates);
+            console.log('  - review_dates length:', item.review_dates?.length || 0);
+            console.log('  - is_finished:', item.is_finished);
+        });
+        console.log('============================');
+
+        set((state) => ({
+            itemsByBoxId: {
+                ...state.itemsByBoxId,
+                [boxId]: items // 重複フィルタリングを削除
+            },
+        }));
+    },
 
     setTodaysReviews: (data) => set({ todaysReviews: data }),
 
     addItemToBox: (boxId, item) => set((state) => {
         // 完了済みアイテムは追加しない（ただし、サーバーからの正確なデータは信頼）
         if (item.is_finished) return state;
-        
+
         // 重複チェック：同じアイテムIDが既に存在する場合は追加しない
         const existingItems = state.itemsByBoxId[boxId] || [];
         const itemExists = existingItems.some(existingItem => existingItem.item_id === item.item_id);
         if (itemExists) return state;
-        
+
         return {
             itemsByBoxId: {
                 ...state.itemsByBoxId,
@@ -78,24 +101,24 @@ export const useItemStore = create<ItemState>((set, get) => ({
         console.log('updatedItem.review_dates:', updatedItem.review_dates);
         console.log('updatedItem.review_dates length:', updatedItem.review_dates?.length);
         console.log('is_finished:', updatedItem.is_finished);
-        
+
         const existingItems = state.itemsByBoxId[boxId] || [];
         const existingItem = existingItems.find(item => item.item_id === updatedItem.item_id);
         console.log('existing item review_dates:', existingItem?.review_dates);
         console.log('============================================');
-        
+
         // 完了済みアイテムに更新された場合は削除
         if (updatedItem.is_finished) {
             return {
                 itemsByBoxId: {
                     ...state.itemsByBoxId,
-                    [boxId]: (state.itemsByBoxId[boxId] || []).filter((item) => 
+                    [boxId]: (state.itemsByBoxId[boxId] || []).filter((item) =>
                         item.item_id !== updatedItem.item_id
                     ),
                 },
             };
         }
-        
+
         // 通常の更新
         const newState = {
             itemsByBoxId: {
@@ -112,7 +135,7 @@ export const useItemStore = create<ItemState>((set, get) => ({
                 })
             },
         };
-        
+
         return newState;
     }),
 

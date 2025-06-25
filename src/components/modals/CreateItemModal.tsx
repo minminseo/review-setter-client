@@ -251,8 +251,8 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                                <ScrollArea className="flex-1 border-t min-h-0">
-                                    <div className="space-y-4 py-4 pr-4">
+                                <ScrollArea className="flex-1 border-t min-h-0 max-h-[calc(100vh-200px)]">
+                                    <div className="space-y-4 py-4">
                                         <FormField name="name" control={form.control} render={({ field }) => (<FormItem><FormLabel>復習物名</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField name="detail" control={form.control} render={({ field }) => (<FormItem><FormLabel>詳細 (任意)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField name="learned_date" control={form.control} render={({ field }) => (
@@ -283,11 +283,25 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                         )} />
                                         <FormField name="category_id" control={form.control} render={({ field }) => (
                                             <FormItem><FormLabel>カテゴリー</FormLabel>
-                                                <Select onValueChange={(value) => { field.onChange(value); form.resetField('box_id'); }} value={field.value ?? "UNCLASSIFIED"} disabled={categoriesLoading}>
-                                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder={categoriesLoading ? "読み込み中..." : "カテゴリーを選択 (任意)"} className="truncate" /></SelectTrigger></FormControl>
-                                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-                                                        <SelectItem value="UNCLASSIFIED" className="truncate">未分類</SelectItem>
-                                                        {categories.map(c => <SelectItem key={c.id} value={c.id} className="truncate">{c.name}</SelectItem>)}
+                                                <Select onValueChange={(value) => { 
+                                                    field.onChange(value); 
+                                                    // カテゴリー変更時はボックスを未分類に設定
+                                                    form.setValue('box_id', 'UNCLASSIFIED'); 
+                                                }} value={field.value ?? "UNCLASSIFIED"} disabled={categoriesLoading}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="w-full min-w-0 max-w-[450px]">
+                                                            <SelectValue placeholder={categoriesLoading ? "読み込み中..." : "カテゴリーを選択 (任意)"} />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent className="w-full min-w-0 max-w-[450px]">
+                                                        <SelectItem value="UNCLASSIFIED">
+                                                            未分類
+                                                        </SelectItem>
+                                                        {categories.map(c => (
+                                                            <SelectItem key={c.id} value={c.id}>
+                                                                {c.name}
+                                                            </SelectItem>
+                                                        ))}
                                                         {categoriesLoading && (
                                                             <div className="p-2 text-sm text-muted-foreground text-center">
                                                                 読み込み中...
@@ -305,16 +319,19 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                     disabled={boxesLoading}
                                                 >
                                                     <FormControl>
-                                                        <SelectTrigger className="w-full max-w-full overflow-hidden">
-                                                            <SelectValue placeholder={
-                                                                boxesLoading ? "読み込み中..." :
-                                                                    "ボックスを選択 (任意)"
-                                                            } className="truncate" />
+                                                        <SelectTrigger className="w-full min-w-0 max-w-[450px]">
+                                                            <SelectValue placeholder={boxesLoading ? "読み込み中..." : "ボックスを選択 (任意)"} />
                                                         </SelectTrigger>
                                                     </FormControl>
-                                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-                                                        <SelectItem value="UNCLASSIFIED" className="truncate">未分類</SelectItem>
-                                                        {boxes.map(b => <SelectItem key={b.id} value={b.id} className="truncate">{b.name}</SelectItem>)}
+                                                    <SelectContent className="w-full min-w-0 max-w-[450px]">
+                                                        <SelectItem value="UNCLASSIFIED">
+                                                            未分類
+                                                        </SelectItem>
+                                                        {boxes.map(b => (
+                                                            <SelectItem key={b.id} value={b.id}>
+                                                                {b.name}
+                                                            </SelectItem>
+                                                        ))}
                                                         {boxesLoading && (
                                                             <div className="p-2 text-sm text-muted-foreground text-center">
                                                                 読み込み中...
@@ -333,21 +350,24 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                     disabled={isPatternDisabled}
                                                 >
                                                     <FormControl>
-                                                        <SelectTrigger className={cn("w-full max-w-full overflow-hidden", isPatternDisabled ? "bg-muted text-muted-foreground" : "")}>
+                                                        <SelectTrigger className={cn("w-full min-w-0 max-w-[200px]", isPatternDisabled ? "bg-muted text-muted-foreground" : "")}>
                                                             <SelectValue
-                                                                placeholder={isPatternDisabled ?
-                                                                    (selectedBox?.pattern_id ?
-                                                                        (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
+                                                                placeholder={isPatternDisabled
+                                                                    ? (selectedBox?.pattern_id
+                                                                        ? (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
                                                                         : "未設定")
                                                                     : "パターンを選択 (任意)"
                                                                 }
-                                                                className="truncate"
                                                             />
                                                         </SelectTrigger>
                                                     </FormControl>
-                                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+                                                    <SelectContent className="w-full min-w-0 max-w-[200px]">
                                                         {patterns.length > 0 ? (
-                                                            patterns.map(p => <SelectItem key={p.id} value={p.id} className="truncate">{p.name}</SelectItem>)
+                                                            patterns.map(p => (
+                                                                <SelectItem key={p.id} value={p.id}>
+                                                                    {p.name}
+                                                                </SelectItem>
+                                                            ))
                                                         ) : (
                                                             <div className="p-2 text-sm text-muted-foreground text-center">
                                                                 復習パターンがありません
@@ -358,6 +378,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
+
                                     </div>
                                     <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
                                 </ScrollArea>
