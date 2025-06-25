@@ -75,7 +75,7 @@ export const DataTable = <TData, TValue>({
                     }}
                 >
                     <div style={{ width: tableWidth ? `${tableWidth}px` : '100%', minWidth: tableWidth ? `${tableWidth}px` : '800px' }}>
-                        <Table style={{ tableLayout: 'fixed', width: '100%' }} >
+                        <Table style={{ tableLayout: 'fixed', width: tableWidth ? `${tableWidth}px` : '100%' }} >
                             <TableHeader className="sticky top-0 z-30 dark:bg-background ">
                                 {table.getHeaderGroups().map((headerGroup) => (
                                     <TableRow key={headerGroup.id}>
@@ -101,11 +101,11 @@ export const DataTable = <TData, TValue>({
                                             return (
                                                 <TableHead
                                                     key={header.id}
-                                                    className={`${isFixed ? 'sticky z-50' : ''} ${!isFixed ? 'border-l-0' : ''} border-r border-border relative`}
+                                                    className={`${isFixed ? 'sticky z-50 bg-background' : ''} `}
                                                     style={{
                                                         position: isFixed ? 'sticky' : 'static',
                                                         zIndex: isFixed ? 50 : undefined,
-                                                        borderRight: index === fixedColumns - 1 ? '2px solid rgba(128, 128, 128, 0.5)' : '1px solid rgba(128, 128, 128, 0.3)',
+                                                        borderRight: 'none',
                                                         boxShadow: index === fixedColumns - 1 ? '2px 0 4px rgba(0, 0, 0, 0.1)' : 'none',
                                                         width,
                                                         minWidth: width,
@@ -119,7 +119,7 @@ export const DataTable = <TData, TValue>({
                                                     )}
                                                     {isResizableColumn && (
                                                         <div
-                                                            className={`absolute right-0 top-0 w-1 h-full cursor-col-resize transition-colors z-50 ${resizableColumn.isHovering ? 'bg-blue-500' : 'hover:bg-blue-500'
+                                                            className={`border absolute right-0 top-0 w-1 h-full cursor-col-resize transition-colors z-50 ${resizableColumn.isHovering ? 'bg-blue-500' : 'hover:bg-blue-500'
                                                                 }`}
                                                             onMouseDown={resizableColumn.onResizeStart}
                                                             onMouseEnter={() => resizableColumn.onHover(true)}
@@ -159,12 +159,12 @@ export const DataTable = <TData, TValue>({
                                                 return (
                                                     <TableCell
                                                         key={cell.id}
-                                                        className={`${isFixed ? 'sticky z-10' : ''} ${!isFixed ? 'border-l-0' : ''} border-r border-b border-border relative`}
+                                                        className={`${isFixed ? 'sticky z-10 bg-card' : ''} `}
                                                         style={{
                                                             position: isFixed ? 'sticky' : 'static',
                                                             zIndex: isFixed ? 10 : undefined,
-                                                            borderRight: index === fixedColumns - 1 ? '2px solid rgba(128, 128, 128, 0.5)' : '1px solid rgba(128, 128, 128, 0.3)',
-                                                            boxShadow: index === fixedColumns - 1 ? '2px 0 4px rgba(0, 0, 0, 0.1)' : 'none',
+                                                            // borderRight: 'none',
+                                                            boxShadow: index === fixedColumns - 1 ? '2px 0 4px rgba(0, 0, 0, 0.54)' : 'none',
                                                             width,
                                                             minWidth: width,
                                                             maxWidth: width,
@@ -174,7 +174,7 @@ export const DataTable = <TData, TValue>({
                                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                                         {isResizableColumn && (
                                                             <div
-                                                                className={`absolute right-0 top-0 w-1 h-full cursor-col-resize transition-colors z-10 ${resizableColumn.isHovering ? 'bg-blue-500' : 'hover:bg-blue-500'
+                                                                className={`border absolute right-0 top-0 w-1 h-full cursor-col-resize transition-colors z-10 ${resizableColumn.isHovering ? 'bg-blue-500' : 'hover:bg-blue-500'
                                                                     }`}
                                                                 onMouseDown={resizableColumn.onResizeStart}
                                                                 onMouseEnter={() => resizableColumn.onHover(true)}
