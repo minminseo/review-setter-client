@@ -183,24 +183,49 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                 return ['items', boxId, categoryId];
             };
             
-            // 1. Zustandストアを即座にサーバーレスポンスで更新
-            if (oldBoxId !== newBoxId) {
-                // ボックス間移動の場合
-                if (oldBoxId) {
-                    removeItemFromBox(oldBoxId, item.item_id);
+            // Zustandストアのキー計算関数
+            const getStoreBoxId = (boxId: string | null | undefined, categoryId: string | null | undefined) => {
+                if (!boxId || boxId === 'unclassified') {
+                    if (!categoryId || categoryId === 'unclassified') {
+                        return 'unclassified';
+                    }
+                    return `unclassified-${categoryId}`;
                 }
-                if (newBoxId) {
-                    addItemToBox(newBoxId, enrichedUpdatedItem);
+                return boxId;
+            };
+
+            // 1. Zustandストアを即座にサーバーレスポンスで更新
+            const oldStoreBoxId = getStoreBoxId(oldBoxId, oldCategoryId);
+            const newStoreBoxId = getStoreBoxId(newBoxId, newCategoryId);
+            
+            if (oldStoreBoxId !== newStoreBoxId) {
+                // ボックス間移動の場合
+                console.log('[EditItemModal] Moving item between boxes:', {
+                    oldStoreBoxId,
+                    newStoreBoxId,
+                    itemId: item.item_id
+                });
+                
+                if (oldStoreBoxId) {
+                    removeItemFromBox(oldStoreBoxId, item.item_id);
+                }
+                if (newStoreBoxId) {
+                    addItemToBox(newStoreBoxId, enrichedUpdatedItem);
                 }
             } else {
                 // 同じボックス内での更新
-                if (oldBoxId) {
+                console.log('[EditItemModal] Updating item in same box:', {
+                    storeBoxId: oldStoreBoxId,
+                    itemId: item.item_id
+                });
+                
+                if (oldStoreBoxId) {
                     console.log('=== Zustand updateItemInBox Debug ===');
-                    console.log('oldBoxId:', oldBoxId);
+                    console.log('oldStoreBoxId:', oldStoreBoxId);
                     console.log('enrichedUpdatedItem being stored:', enrichedUpdatedItem);
                     console.log('enrichedUpdatedItem.review_dates being stored:', enrichedUpdatedItem.review_dates);
                     console.log('====================================');
-                    updateItemInBox(oldBoxId, enrichedUpdatedItem);
+                    updateItemInBox(oldStoreBoxId, enrichedUpdatedItem);
                 }
             }
             
@@ -212,24 +237,55 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
             if (oldBoxId !== newBoxId || oldCategoryId !== newCategoryId) {
                 queryClient.setQueryData(oldQueryKey, (oldData: any) => {
                     if (!oldData) return oldData;
+                    console.log('[EditItemModal] Removing item from old cache:', {
+                        oldQueryKey,
+                        itemId: enrichedUpdatedItem.item_id,
+                        oldDataLength: oldData.length
+                    });
                     return oldData.filter((i: any) => i.item_id !== enrichedUpdatedItem.item_id);
                 });
-            }
-            
-            // 新しいクエリキーにアイテムを追加または更新
-            queryClient.setQueryData(newQueryKey, (oldData: any) => {
-                if (!oldData) return [enrichedUpdatedItem];
                 
-                const existingIndex = oldData.findIndex((i: any) => i.item_id === enrichedUpdatedItem.item_id);
-                if (existingIndex >= 0) {
-                    // 既存アイテムを更新
-                    const newData = [...oldData];
-                    newData[existingIndex] = enrichedUpdatedItem;
-                    return newData;
+                // 移動先のキャッシュが存在しない場合は無効化して再取得
+                const existingNewData = queryClient.getQueryData(newQueryKey);
+                if (!existingNewData) {
+                    console.log('[EditItemModal] Target cache does not exist, invalidating:', newQueryKey);
+                    queryClient.invalidateQueries({ queryKey: newQueryKey });
+                } else {
+                    // 移動先のキャッシュが存在する場合のみ直接更新
+                    queryClient.setQueryData(newQueryKey, (oldData: any) => {
+                        console.log('[EditItemModal] Updating existing target cache:', {
+                            newQueryKey,
+                            existingDataLength: oldData?.length || 0,
+                            itemId: enrichedUpdatedItem.item_id
+                        });
+                        
+                        if (!oldData) return [enrichedUpdatedItem];
+                        
+                        const existingIndex = oldData.findIndex((i: any) => i.item_id === enrichedUpdatedItem.item_id);
+                        if (existingIndex >= 0) {
+                            // 既存アイテムを更新
+                            const newData = [...oldData];
+                            newData[existingIndex] = enrichedUpdatedItem;
+                            return newData;
+                        }
+                        // 新しいアイテムを追加
+                        return [...oldData, enrichedUpdatedItem];
+                    });
                 }
-                // 新しいアイテムを追加
-                return [...oldData, enrichedUpdatedItem];
-            });
+            } else {
+                // 同じボックス内での更新の場合
+                queryClient.setQueryData(newQueryKey, (oldData: any) => {
+                    if (!oldData) return [enrichedUpdatedItem];
+                    
+                    const existingIndex = oldData.findIndex((i: any) => i.item_id === enrichedUpdatedItem.item_id);
+                    if (existingIndex >= 0) {
+                        const newData = [...oldData];
+                        newData[existingIndex] = enrichedUpdatedItem;
+                        return newData;
+                    }
+                    return oldData;
+                });
+            }
             
             // 3. 関連データの無効化
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
@@ -353,9 +409,16 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                         )} />
                         <FormField name="category_id" control={form.control} render={({ field }) => (
                             <FormItem><FormLabel>カテゴリー</FormLabel>
-                                <Select onValueChange={(value) => { field.onChange(value); form.resetField('box_id'); }} value={field.value ?? ""}>
-                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder="カテゴリーを選択 (任意)" className="truncate" /></SelectTrigger></FormControl>
-                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">{categories.map(c => <SelectItem key={c.id} value={c.id} className="truncate">{c.name}</SelectItem>)}</SelectContent>
+                                <Select onValueChange={(value) => { 
+                                    field.onChange(value); 
+                                    // カテゴリー変更時はボックスを未分類に設定
+                                    form.setValue('box_id', 'UNCLASSIFIED'); 
+                                }} value={field.value ?? "UNCLASSIFIED"}>
+                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder="カテゴリーを選択 (任意)" /></SelectTrigger></FormControl>
+                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+                                        <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
+                                        {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                    </SelectContent>
                                 </Select><FormMessage />
                             </FormItem>
                         )} />
@@ -369,11 +432,11 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         </span>
                                     )}
                                 </FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder="ボックスを選択 (任意)" className="truncate" /></SelectTrigger></FormControl>
+                                <Select onValueChange={field.onChange} value={field.value ?? "UNCLASSIFIED"}>
+                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder="ボックスを選択 (任意)" /></SelectTrigger></FormControl>
                                     <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-                                        <SelectItem value="UNCLASSIFIED" className="truncate">未分類</SelectItem>
-                                        {filteredBoxes.map(b => <SelectItem key={b.id} value={b.id} className="truncate">{b.name}</SelectItem>)}
+                                        <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
+                                        {filteredBoxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -401,13 +464,12 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                         : "未設定") 
                                                     : "パターンを選択 (任意)"
                                                 } 
-                                                className="truncate"
                                             />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
                                         {patterns.length > 0 ? (
-                                            patterns.map(p => <SelectItem key={p.id} value={p.id} className="truncate">{p.name}</SelectItem>)
+                                            patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
                                         ) : (
                                             <div className="p-2 text-sm text-muted-foreground text-center">
                                                 復習パターンがありません

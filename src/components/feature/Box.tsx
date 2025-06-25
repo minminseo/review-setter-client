@@ -147,52 +147,74 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     }, [isResizing, handleResizeMove, handleResizeEnd]);
 
     // --- アイテムリストの取得ロジック ---
+    console.log('=== Box Component storeBoxId calculation ===');
+    console.log('[Box] Input params:', { boxId, categoryId });
+    
     let storeBoxId = boxId;
     if ((boxId === 'unclassified' || !boxId) && categoryId && categoryId !== 'unclassified') {
+        console.log('[Box] → Condition: Category unclassified');
         storeBoxId = `unclassified-${categoryId}`;
-    } else if (!boxId) {
+    } else if (!boxId || boxId === 'unclassified') {
+        console.log('[Box] → Condition: Full unclassified');
         storeBoxId = 'unclassified';
+    } else {
+        console.log('[Box] → Condition: Normal box');
     }
+    
+    console.log('[Box] Calculated storeBoxId:', storeBoxId);
     const zustandItems = getItemsForBox(storeBoxId || '');
+    console.log('[Box] Retrieved zustandItems count:', zustandItems?.length || 0);
+    console.log('==========================================');
 
     // デバッグ用ログ
     React.useEffect(() => {
-        // どのキーでzustandから取得しているか
+        console.log('=== Box Component useEffect Debug ===');
         console.log('[Box] storeBoxId:', storeBoxId);
-        // zustandストアの中身
+        console.log('[Box] zustandItems count:', zustandItems?.length || 0);
         console.log('[Box] zustandItems:', zustandItems);
-        // propsで渡されたitems
+        console.log('[Box] props.items count:', items?.length || 0);
         console.log('[Box] props.items:', items);
-        // categoryId, boxId
-        console.log('[Box] categoryId:', categoryId, 'boxId:', boxId);
+        console.log('[Box] params:', { categoryId, boxId });
+        console.log('====================================');
     }, [storeBoxId, zustandItems, items, categoryId, boxId]);
 
     // --- スケルトン表示制御 ---
     const showSkeleton = isLoading && (!zustandItems || zustandItems.length === 0);
     const displayItems = zustandItems && zustandItems.length > 0 ? zustandItems : items;
 
+    console.log('=== Box displayItems Decision ===');
+    console.log('[Box] showSkeleton:', showSkeleton);
+    console.log('[Box] isLoading:', isLoading);
+    console.log('[Box] zustandItems length:', zustandItems?.length || 0);
+    console.log('[Box] props.items length:', items?.length || 0);
+    console.log('[Box] displayItems source:', zustandItems && zustandItems.length > 0 ? 'zustand' : 'props');
+    console.log('[Box] displayItems length:', displayItems?.length || 0);
+    console.log('=================================');
+
     // デバッグ用：displayItemsのreview_datesをチェック
     React.useEffect(() => {
+        console.log('=== Box displayItems useEffect Debug ===');
+        console.log('[Box] displayItems length:', displayItems?.length || 0);
+        
         if (displayItems && displayItems.length > 0) {
-            console.log('=== Box displayItems Debug ===');
-            console.log('displayItems source:', zustandItems && zustandItems.length > 0 ? 'zustand' : 'props');
-            console.log('displayItems count:', displayItems.length);
+            console.log('[Box] displayItems source:', zustandItems && zustandItems.length > 0 ? 'zustand' : 'props');
+            console.log('[Box] displayItems count:', displayItems.length);
             displayItems.forEach((item, index) => {
-                console.log(`Item ${index + 1} (${item.name}):`);
-                console.log('  - review_dates:', item.review_dates);
-                console.log('  - review_dates length:', item.review_dates?.length || 0);
+                console.log(`  Item ${index + 1} (${item.name}):`);
+                console.log('    - review_dates:', item.review_dates);
+                console.log('    - review_dates length:', item.review_dates?.length || 0);
             });
-            console.log('==============================');
-        }
-    }, [displayItems, zustandItems]);
-
-    // displayItemsが空の場合の追加デバッグ
-    React.useEffect(() => {
-        if (!displayItems || displayItems.length === 0) {
-            console.log('[Box] displayItems is empty');
+        } else {
+            console.log('[Box] displayItems is empty or null');
             console.log('[Box] zustandItems:', zustandItems);
             console.log('[Box] props.items:', items);
+            console.log('[Box] Debugging why displayItems is empty:');
+            console.log('  - zustandItems exists:', !!zustandItems);
+            console.log('  - zustandItems.length > 0:', zustandItems && zustandItems.length > 0);
+            console.log('  - items exists:', !!items);
+            console.log('  - items.length:', items?.length || 0);
         }
+        console.log('========================================');
     }, [displayItems, zustandItems, items]);
 
     // --- テーブル定義 ---
@@ -202,7 +224,29 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         if (!currentBox?.pattern_id) return null;
         return patterns.find((p) => p.id === currentBox.pattern_id) || null;
     }, [patterns, currentBox?.pattern_id]);
-    const maxColumns = pattern ? pattern.steps.length : 0;
+    
+    // 未分類ボックスの場合、アイテムの最大review_dates数を使用
+    const maxColumns = React.useMemo(() => {
+        if (pattern) {
+            return pattern.steps.length;
+        }
+        
+        // 未分類ボックスの場合：全アイテムの最大review_dates数を計算
+        if (displayItems && displayItems.length > 0) {
+            const maxReviewDates = Math.max(...displayItems.map(item => item.review_dates?.length || 0));
+            console.log('[Box] Calculated maxColumns from items:', maxReviewDates);
+            return maxReviewDates;
+        }
+        
+        return 0;
+    }, [pattern, displayItems]);
+    
+    console.log('=== Box Table Configuration Debug ===');
+    console.log('[Box] currentBox:', currentBox);
+    console.log('[Box] pattern:', pattern);
+    console.log('[Box] maxColumns:', maxColumns);
+    console.log('[Box] displayItems for table:', displayItems);
+    console.log('====================================');
 
     // テーブル全体の幅を動的に計算
     const baseWidth = 60 + 50 + nameColumnWidth + 50 + 100; // 状態+操作+復習物名+詳細+学習日
@@ -324,15 +368,24 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             ),
             size: 130,
             cell: ({ row }: { row: { original: ItemResponse } }) => {
-                const reviewDate = row.original.review_dates[index];
-                if (!reviewDate) return <span className="text-muted-foreground">-</span>;
+                const reviewDate = row.original.review_dates?.[index];
+                console.log(`[Box] Review column ${index + 1} for item "${row.original.name}":`, {
+                    review_dates_length: row.original.review_dates?.length || 0,
+                    reviewDate: reviewDate,
+                    index: index
+                });
+                
+                if (!reviewDate) {
+                    console.log(`[Box] No review date at index ${index} for item "${row.original.name}"`);
+                    return <span className="text-muted-foreground flex justify-center">-</span>;
+                }
+                
                 const isToday = format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
                 const isClickable = isToday && !reviewDate.is_completed;
                 return (
                     <div className="flex items-center justify-center">
                         <Button
                             variant={!reviewDate.is_completed && !isToday ? 'outline' : 'default'}
-
                             size="sm"
                             className={cn(
                                 isToday && !reviewDate.is_completed && 'bg-blue-800 hover:bg-blue-900 text-gray-200',
@@ -388,7 +441,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 </div>
 
                 {/* --- スクロール可能なテーブル領域 --- */}
-                <Card className="flex-1 min-h-0 p-0">
+                <Card className="flex-1 min-h-0 p-0 py-0">
                     <CardContent className="p-0 h-full ">
                         <ScrollArea className="w-full h-full max-h-[calc(100vh-200px)] rounded-xl whitespace-nowrap pr-3 pb-4">
 
@@ -413,7 +466,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                                 />
                             )}
                             <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
-                            <ScrollBar orientation="horizontal" className="!bg-transparent [&>div]:!bg-gray-600" />
+                            <ScrollBar orientation="horizontal" className="!bg-transparent ml-2 [&>div]:!bg-gray-600 !h-1.5" />
                         </ScrollArea>
                     </CardContent>
                 </Card>
