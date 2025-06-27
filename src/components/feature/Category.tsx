@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
+import { SortDropdown } from '@/components/shared/SortDropdown';
 
 // Modals
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
@@ -78,6 +79,38 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
     const [editingBox, setEditingBox] = React.useState<GetBoxOutput | null>(null);
     const [isEditCategoryModalOpen, setEditCategoryModalOpen] = React.useState(false);
 
+    // --- State (ソート) ---
+    const [boxSortOrder, setBoxSortOrder] = React.useState('name_asc');
+    const boxSortOptions = [
+        { value: 'name_asc', label: 'ボックス名 (昇順)' },
+        { value: 'name_desc', label: 'ボックス名 (降順)' },
+        { value: 'registered_at_desc', label: '作成順 (新しい順)' },
+        { value: 'registered_at_asc', label: '作成順 (古い順)' },
+        { value: 'edited_at_desc', label: '更新順 (新しい順)' },
+        { value: 'edited_at_asc', label: '更新順 (古い順)' },
+    ];
+    // --- ソート済みボックスリスト ---
+    const sortedBoxes = React.useMemo(() => {
+        if (!boxes) return [];
+        const arr = [...boxes];
+        switch (boxSortOrder) {
+            case 'name_asc':
+                return arr.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+            case 'name_desc':
+                return arr.sort((a, b) => b.name.localeCompare(a.name, 'ja'));
+            case 'registered_at_desc':
+                return arr.sort((a, b) => new Date(b.registered_at).getTime() - new Date(a.registered_at).getTime());
+            case 'registered_at_asc':
+                return arr.sort((a, b) => new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime());
+            case 'edited_at_desc':
+                return arr.sort((a, b) => new Date(b.edited_at).getTime() - new Date(a.edited_at).getTime());
+            case 'edited_at_asc':
+                return arr.sort((a, b) => new Date(a.edited_at).getTime() - new Date(b.edited_at).getTime());
+            default:
+                return arr;
+        }
+    }, [boxes, boxSortOrder]);
+
     // categoryIdが存在しない、またはカテゴリーが見つからない場合はエラー表示
     if (!isUnclassifiedPage && !currentCategory) {
         // isLoading中はスケルトンが表示されるため、ここではエラー時のみをハンドリング
@@ -107,6 +140,11 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                                 <PlusIcon className="mr-2 h-4 w-4" />
                                 ボックス作成
                             </Button>
+                            <SortDropdown
+                                options={boxSortOptions}
+                                value={boxSortOrder}
+                                onValueChange={setBoxSortOrder}
+                            />
                             <Button variant="ghost" size="icon" onClick={() => setEditCategoryModalOpen(true)}>
                                 <Cog8ToothIcon className="h-5 w-5" />
                             </Button>
@@ -125,12 +163,12 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                             <p className="text-red-500">データの読み込みに失敗しました。</p>
                             <p className="text-sm text-muted-foreground mt-2">ページを再読み込みしてください。</p>
                         </div>
-                    ) : boxes.length === 0 && !isUnclassifiedPage ? (
+                    ) : sortedBoxes.length === 0 && !isUnclassifiedPage ? (
                         <div className="col-span-full text-center py-8">
                             <p className="text-muted-foreground">ボックスがありません。「ボックス作成」ボタンから新しいボックスを作成してください。</p>
                         </div>
                     ) : (
-                        boxes.map((box) => (
+                        sortedBoxes.map((box) => (
                             <Card key={box.id} className="flex flex-col overflow-hidden relative">
                                 <Button
                                     variant="ghost"

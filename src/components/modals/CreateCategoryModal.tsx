@@ -27,6 +27,7 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // フォームのバリデーションルールをzodで定義
 const categorySchema = z.object({
@@ -84,39 +85,54 @@ export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProp
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>カテゴリー作成モーダル</DialogTitle>
-                    <DialogDescription>
-                        新しいカテゴリー名を入力してください。
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>カテゴリー名</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="例: プログラミング, 英語学習" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose}>
-                                キャンセル
-                            </Button>
-                            <Button type="submit" disabled={mutation.isPending}>
-                                {/* mutationの実行中はボタンを無効化し、テキストを変更 */}
-                                {mutation.isPending ? '作成中...' : '作成'}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
+            <DialogContent className="w-[95vw] max-w-lg h-[250px] max-h-[95vh] flex flex-col">
+                <div className="h-full flex flex-col ">
+                    <div className="flex-1 flex flex-col ">
+                        <DialogHeader>
+                            <DialogTitle>カテゴリー作成モーダル</DialogTitle>
+                            <DialogDescription>
+                                新しいカテゴリー名を入力してください。
+                            </DialogDescription>
+                        </DialogHeader>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                                <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-200px)]">
+                                    <div className="space-y-4 py-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="inline-block pointer-events-none select-none">カテゴリー名</FormLabel>
+                                                    <div className="w-full pb-8">
+                                                        <FormControl>
+                                                            <Input placeholder="例: プログラミング, 英語学習" {...field} />
+                                                        </FormControl>
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                                </ScrollArea>
+                                <DialogFooter>
+                                    <div className="flex gap-2 w-full justify-end">
+                                        <div className="flex gap-2 absolute right-3 bottom-3">
+                                            <Button type="button" variant="outline" onClick={onClose}>
+                                                キャンセル
+                                            </Button>
+                                            <Button type="submit" disabled={mutation.isPending}>
+                                                {/* mutationの実行中はボタンを無効化し、テキストを変更 */}
+                                                {mutation.isPending ? '作成中...' : '作成'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </DialogFooter>
+                            </form>
+                        </Form>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );

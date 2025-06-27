@@ -4,8 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusCircleIcon, TrashIcon } from '@heroicons/react/24/outline';
-
+import { NumberInput } from "@heroui/number-input";
 import { createPattern } from '@/api/patternApi';
 import { usePatternStore } from '@/store';
 import { CreatePatternRequest, TargetWeight } from '@/types';
@@ -16,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FaPlusCircle, FaTrashAlt } from "react-icons/fa";
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // フォームのバリデーションルール
 const patternSchema = z.object({
@@ -24,8 +25,8 @@ const patternSchema = z.object({
     // `steps`はオブジェクトの配列として定義する
     steps: z.array(z.object({
         // `coerce`を使い、入力された文字列を数値に変換してからバリデーションする
-        interval_days: z.coerce.number().min(1, '復習間隔は1日以上である必要があります。'),
-    })).min(1, '少なくとも1つのステップが必要です。'),
+        interval_days: z.coerce.number().min(1),
+    })).min(1),
 });
 
 type CreatePatternModalProps = {
@@ -52,10 +53,15 @@ export const CreatePatternModal = ({ isOpen, onClose }: CreatePatternModalProps)
     });
 
     // 動的なフォームフィールド（ステップ）を管理するためのフック
-    const { fields, append, remove } = useFieldArray({
+    const { fields, append, remove, insert } = useFieldArray({
         control: form.control,
         name: "steps", // 'steps'という名前のフィールド配列を操作する
     });
+
+    // ステップ間に追加する関数
+    function insertStepBetween(index: number) {
+        insert(index + 1, { interval_days: 1 });
+    }
 
     // パターン作成APIを呼び出すためのmutation
     const mutation = useMutation({
@@ -94,57 +100,117 @@ export const CreatePatternModal = ({ isOpen, onClose }: CreatePatternModalProps)
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent className="w-screen max-w-none sm:max-w-none min-w-0 h-[700px] max-h-full flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>復習パターン作成モーダル</DialogTitle>
+                    <DialogTitle className=" border-b pb-2">復習パターン作成モーダル</DialogTitle>
                     <DialogDescription>
                         新しい復習スケジュールのパターンを作成します。
                     </DialogDescription>
                 </DialogHeader>
-
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
-                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>パターン名</FormLabel><FormControl><Input {...field} placeholder="例: 短期集中プラン" /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="target_weight" render={({ field }) => (
-                            <FormItem><FormLabel>重み</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="heavy">Heavy</SelectItem>
-                                        <SelectItem value="normal">Normal</SelectItem>
-                                        <SelectItem value="light">Light</SelectItem>
-                                        <SelectItem value="unset">Unset</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 space-y-2 min-h-0">
+                        <FormField control={form.control} name="name" render={({ field }) => (
+                            <FormItem className="w-full">
+                                <FormLabel className="inline-block pointer-events-none select-none">パターン名</FormLabel>
+                                <div className="w-full">
+                                    <FormControl>
+                                        <Input {...field} placeholder="例: 短期集中プラン" />
+                                    </FormControl>
+                                </div>
                                 <FormMessage />
                             </FormItem>
                         )} />
-                        <div className="space-y-2">
-                            <FormLabel>復習ステップ (日数)</FormLabel>
-                            {/* 動的フィールドをループして、各ステップの入力欄を生成 */}
-                            {fields.map((field, index) => (
-                                <FormField key={field.id} control={form.control} name={`steps.${index}.interval_days`} render={({ field: stepField }) => (
-                                    <FormItem className="flex items-center gap-2">
-                                        <FormControl><Input type="number" {...stepField} /></FormControl>
-                                        {/* 2つ以上のステップがある場合のみ削除ボタンを表示 */}
-                                        {fields.length > 1 && (
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><TrashIcon className="h-4 w-4 text-destructive" /></Button>
-                                        )}
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                            ))}
-                            <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ interval_days: 1 })}>
-                                <PlusCircleIcon className="mr-2 h-4 w-4" />
-                                ステップを追加
+                        <FormField control={form.control} name="target_weight" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="inline-block pointer-events-none select-none">重み</FormLabel>
+                                <div className="w-full">
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="heavy">Heavy</SelectItem>
+                                            <SelectItem value="normal">Normal</SelectItem>
+                                            <SelectItem value="light">Light</SelectItem>
+                                            <SelectItem value="unset">Unset</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <div className="flex items-center gap-2 mb-2">
+                            <FormLabel className="whitespace-nowrap inline-block pointer-events-none select-none">復習ステップ設定</FormLabel>
+                            <Button type="button" variant="outline" size="sm" className="flex items-center gap-1" onClick={() => append({ interval_days: 1 })}>
+                                <FaPlusCircle className="h-4 w-4" /> 追加
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" className="flex items-center gap-1" onClick={() => { if (fields.length > 1) remove(fields.length - 1); }}>
+                                <FaTrashAlt className="h-4 w-4" /> 削除
                             </Button>
                         </div>
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
-                            <Button type="submit" disabled={mutation.isPending}>
-                                {mutation.isPending ? '作成中...' : '作成'}
-                            </Button>
-                        </DialogFooter>
+                        <div className="flex-1 min-h-0">
+                            <ScrollArea className="w-full h-full border-t">
+                                <div className="space-y-2 pt-2">
+                                    <div className="max-w-full">
+                                        <div className="flex flex-wrap gap-x-0 mb-0 pr-0 pl-0 mr-0 ml-0 gap-y-4 pb-4">
+                                            {fields.map((field, index) => {
+                                                const stepperBetween = index !== 0 ? (
+                                                    <div key={`between-${field.id}`} className="flex flex-col items-center justify-center min-w-[24px]">
+                                                        <Button type="button" variant="ghost" size="icon" className="mb-0 pr-0 pl-0 mr-0 ml-0" onClick={() => insertStepBetween(index - 1)}>
+                                                            <FaPlusCircle className="h-4 w-4  text-primary" />
+                                                        </Button>
+                                                        <div className="h-6" />
+                                                    </div>
+                                                ) : null;
+                                                const stepBox = (
+                                                    <div key={field.id} className="flex flex-col items-center relative min-w-[60px]">
+                                                        <div className="pr-6 text-xs text-gray-400">{index + 1}</div>
+                                                        <FormField control={form.control} name={`steps.${index}.interval_days`} render={({ field: stepField }) => (
+                                                            <FormItem>
+                                                                <FormLabel className="hidden" />
+                                                                <FormControl>
+                                                                    <NumberInput
+                                                                        {...stepField}
+                                                                        value={typeof stepField.value === 'number' ? stepField.value : undefined}
+                                                                        placeholder="未入力"
+                                                                        min={1}
+                                                                        onChange={val => {
+                                                                            if (typeof val === 'number' && val >= 1) stepField.onChange(val);
+                                                                            else if (val === undefined) stepField.onChange(undefined);
+                                                                        }}
+                                                                        classNames={{
+                                                                            input: "text-center w-16 h-10 bg-gray-800 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary placeholder:text-gray-500",
+                                                                            stepperButton: "p-0 h-5 w-6 text-white",
+                                                                            stepperWrapper: "flex flex-col justify-center",
+                                                                            innerWrapper: "flex items-center",
+                                                                        }}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )} />
+                                                        <Button type="button" variant="ghost" size="icon" className="mr-6 mt-1" onClick={() => fields.length > 1 && remove(index)}>
+                                                            <FaTrashAlt className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    </div>
+                                                );
+                                                return [stepperBetween, stepBox];
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                                <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                            </ScrollArea>
+                        </div>
+                        <div className="bottom-0 right-0">
+                            <DialogFooter>
+                                <div className="flex gap-3 absolute right-3 bottom-3">
+
+                                    <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                    <Button type="submit" disabled={mutation.isPending}>
+                                        {mutation.isPending ? '作成中...' : '作成'}
+                                    </Button>
+                                </div>
+                            </DialogFooter>
+                        </div>
                     </form>
                 </Form>
             </DialogContent>

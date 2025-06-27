@@ -26,9 +26,9 @@ export const SortDropdown = ({ options, value, onValueChange, className }: SortD
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" className={`flex items-center gap-2 ${className}`}>
-                    <span>{currentLabel}</span>
-                    <ChevronDownIcon className="h-4 w-4" />
+                <Button variant="outline" className={`flex items-center justify-between px-3 ${className}`}>
+                    <span className="flex-1 text-left truncate">{currentLabel}</span>
+                    <ChevronDownIcon className="ml-2 h-4 w-4 flex-shrink-0" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

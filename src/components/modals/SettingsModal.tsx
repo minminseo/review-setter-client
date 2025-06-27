@@ -17,6 +17,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { SettingPasswordModl } from './SettingPasswordModl';
 
 // ユーザー設定フォームのバリデーションルール
 const settingsSchema = z.object({
@@ -73,67 +75,92 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         updateMutation.mutate(values);
     };
 
+    // パスワード変更モーダルの開閉状態
+    const [isPasswordModalOpen, setPasswordModalOpen] = React.useState(false);
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>設定</DialogTitle>
-                    <DialogDescription>ユーザー情報や表示設定を変更できます。</DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        <FormField name="email" control={form.control} render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                {/* Emailは表示のみとし、編集不可とするのが一般的。編集機能は別途専用ページで実装するのが望ましい。 */}
-                                <FormControl><Input {...field} readOnly /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField name="theme_color" control={form.control} render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>テーマ</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>{THEME_COLORS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField name="language" control={form.control} render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>言語</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>{LANGUAGES.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField name="timezone" control={form.control} render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>タイムゾーン</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>{TIMEZONES.map(tz => <SelectItem key={tz} value={tz}>{tz}</SelectItem>)}</SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <Separator />
-                        <div>
-                            <h4 className="text-sm font-medium">パスワード</h4>
-                            {/* パスワード変更は別のモーダルやページで行うのが一般的。ここではボタンのみ配置。 */}
-                            <Button type="button" variant="outline" className="mt-2">パスワードを変更</Button>
-                        </div>
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
-                            <Button type="submit" disabled={updateMutation.isPending}>
-                                {updateMutation.isPending ? '保存中...' : '保存'}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
+            <DialogContent className="w-[95vw] max-w-lg h-[550px] max-h-[95vh] flex flex-col">
+                <div className="h-full flex flex-col ">
+                    <div className="flex-1 flex flex-col ">
+                        <DialogHeader>
+                            <DialogTitle>設定</DialogTitle>
+                            <DialogDescription>ユーザー情報や表示設定を変更できます。</DialogDescription>
+                        </DialogHeader>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                                {/* FormFieldを正しく使用してフォームフィールドを実装 */}
+                                <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-200px)]">
+                                    <div className="space-y-4 py-4">
+                                        <FormField name="email" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">Email</FormLabel>
+                                                <div className="w-full">
+                                                    <FormControl><Input {...field} readOnly /></FormControl>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="theme_color" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">テーマ</FormLabel>
+                                                <div className="w-full">
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>{THEME_COLORS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="language" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">言語</FormLabel>
+                                                <div className="w-full">
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>{LANGUAGES.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="timezone" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">タイムゾーン</FormLabel>
+                                                <div className="w-full">
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>{TIMEZONES.map(tz => <SelectItem key={tz} value={tz}>{tz}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <Separator />
+                                        <div>
+                                            <h4 className="text-sm font-medium">パスワード</h4>
+                                            <Button type="button" variant="outline" className="mt-2" onClick={() => setPasswordModalOpen(true)}>
+                                                パスワードを変更
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                                </ScrollArea>
+                                <DialogFooter className="justify-end">
+                                    <div className="flex gap-3 absolute right-3 bottom-3">
+                                        <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                        <Button type="submit" disabled={updateMutation.isPending}>
+                                            {updateMutation.isPending ? '保存中...' : '保存'}
+                                        </Button>
+                                    </div>
+                                </DialogFooter>
+                            </form>
+                        </Form>
+                    </div>
+                </div>
+                {/* パスワード変更モーダル */}
+                <SettingPasswordModl isOpen={isPasswordModalOpen} onClose={() => setPasswordModalOpen(false)} />
             </DialogContent>
         </Dialog>
     );

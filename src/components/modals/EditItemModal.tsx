@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 const itemSchema = z.object({
     name: z.string().min(1, "復習物名は必須です。"),
@@ -85,14 +86,14 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     const arePatternIntervalsEqual = (pattern1: any, pattern2: any): boolean => {
         if (!pattern1 || !pattern2) return false;
         if (!pattern1.steps || !pattern2.steps) return false;
-        
+
         const intervals1 = pattern1.steps
             .sort((a: any, b: any) => a.step_number - b.step_number)
             .map((step: any) => step.interval_days);
         const intervals2 = pattern2.steps
             .sort((a: any, b: any) => a.step_number - b.step_number)
             .map((step: any) => step.interval_days);
-            
+
         if (intervals1.length !== intervals2.length) return false;
         return intervals1.every((interval: number, index: number) => interval === intervals2[index]);
     };
@@ -108,12 +109,12 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         if (!hasCompletedReviews()) {
             return boxes;
         }
-        
+
         if (!item.pattern_id || patterns.length === 0) return boxes; // パターンが未設定またはパターンが存在しない場合は全ボックス表示
-        
+
         const currentPattern = patterns.find(p => p.id === item.pattern_id);
         if (!currentPattern) return boxes;
-        
+
         return boxes.filter(box => {
             if (!box.pattern_id) return false; // パターンが未設定のボックスは除外
             const boxPattern = patterns.find(p => p.id === box.pattern_id);
@@ -123,7 +124,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
     // 選択されたボックスの情報を取得（フィルタリング後のリストから）
     const selectedBox = watchedBoxId ? filteredBoxes.find(box => box.id === watchedBoxId) : null;
-    
+
     // ボックスが選択されている場合は復習パターン選択を無効化（未分類は除く）
     const watchedBoxIdValue = form.watch('box_id');
     const isPatternDisabled = !!selectedBox && watchedBoxIdValue !== 'UNCLASSIFIED';
@@ -131,7 +132,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     // ボックス選択時に自動で復習パターンを設定する
     React.useEffect(() => {
         const watchedBoxIdValue = form.watch('box_id');
-        
+
         // 通常のボックスが選択された場合のみ、そのボックスのパターンに変更
         if (selectedBox && selectedBox.pattern_id && watchedBoxIdValue !== 'UNCLASSIFIED') {
             form.setValue('pattern_id', selectedBox.pattern_id);
@@ -153,28 +154,28 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
             console.log('Are review_dates included in response?', !!updatedItem.review_dates);
             console.log('Review dates count in response:', updatedItem.review_dates?.length || 0);
             console.log('=====================================================');
-            
+
             toast.success("アイテムを更新しました！");
-            
+
             // 重要：APIレスポンスにreview_datesが不完全な場合、元のデータで補完
             const enrichedUpdatedItem = {
                 ...updatedItem,
-                review_dates: updatedItem.review_dates && updatedItem.review_dates.length > 0 
-                    ? updatedItem.review_dates 
+                review_dates: updatedItem.review_dates && updatedItem.review_dates.length > 0
+                    ? updatedItem.review_dates
                     : item.review_dates // 元のreview_datesを保持
             };
-            
+
             console.log('=== Enriched Updated Item Debug ===');
             console.log('Original API response review_dates:', updatedItem.review_dates);
             console.log('Original item review_dates:', item.review_dates);
             console.log('Final enriched review_dates:', enrichedUpdatedItem.review_dates);
             console.log('===================================');
-            
+
             const oldBoxId = item.box_id;
             const newBoxId = variables.box_id;
             const oldCategoryId = item.category_id;
             const newCategoryId = variables.category_id;
-            
+
             // キャッシュキーを正しく生成する関数
             const getQueryKey = (boxId: string | null | undefined, categoryId: string | null | undefined) => {
                 if (!boxId || boxId === 'unclassified') {
@@ -182,7 +183,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                 }
                 return ['items', boxId, categoryId];
             };
-            
+
             // Zustandストアのキー計算関数
             const getStoreBoxId = (boxId: string | null | undefined, categoryId: string | null | undefined) => {
                 if (!boxId || boxId === 'unclassified') {
@@ -197,7 +198,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
             // 1. Zustandストアを即座にサーバーレスポンスで更新
             const oldStoreBoxId = getStoreBoxId(oldBoxId, oldCategoryId);
             const newStoreBoxId = getStoreBoxId(newBoxId, newCategoryId);
-            
+
             if (oldStoreBoxId !== newStoreBoxId) {
                 // ボックス間移動の場合
                 console.log('[EditItemModal] Moving item between boxes:', {
@@ -205,7 +206,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     newStoreBoxId,
                     itemId: item.item_id
                 });
-                
+
                 if (oldStoreBoxId) {
                     removeItemFromBox(oldStoreBoxId, item.item_id);
                 }
@@ -218,7 +219,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     storeBoxId: oldStoreBoxId,
                     itemId: item.item_id
                 });
-                
+
                 if (oldStoreBoxId) {
                     console.log('=== Zustand updateItemInBox Debug ===');
                     console.log('oldStoreBoxId:', oldStoreBoxId);
@@ -228,11 +229,11 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     updateItemInBox(oldStoreBoxId, enrichedUpdatedItem);
                 }
             }
-            
+
             // 2. TanStack Queryのキャッシュも直接更新
             const oldQueryKey = getQueryKey(oldBoxId, oldCategoryId);
             const newQueryKey = getQueryKey(newBoxId, newCategoryId);
-            
+
             // 元のクエリキーからアイテムを削除（移動またはカテゴリ変更の場合）
             if (oldBoxId !== newBoxId || oldCategoryId !== newCategoryId) {
                 queryClient.setQueryData(oldQueryKey, (oldData: any) => {
@@ -244,7 +245,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     });
                     return oldData.filter((i: any) => i.item_id !== enrichedUpdatedItem.item_id);
                 });
-                
+
                 // 移動先のキャッシュが存在しない場合は無効化して再取得
                 const existingNewData = queryClient.getQueryData(newQueryKey);
                 if (!existingNewData) {
@@ -258,9 +259,9 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                             existingDataLength: oldData?.length || 0,
                             itemId: enrichedUpdatedItem.item_id
                         });
-                        
+
                         if (!oldData) return [enrichedUpdatedItem];
-                        
+
                         const existingIndex = oldData.findIndex((i: any) => i.item_id === enrichedUpdatedItem.item_id);
                         if (existingIndex >= 0) {
                             // 既存アイテムを更新
@@ -276,7 +277,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                 // 同じボックス内での更新の場合
                 queryClient.setQueryData(newQueryKey, (oldData: any) => {
                     if (!oldData) return [enrichedUpdatedItem];
-                    
+
                     const existingIndex = oldData.findIndex((i: any) => i.item_id === enrichedUpdatedItem.item_id);
                     if (existingIndex >= 0) {
                         const newData = [...oldData];
@@ -286,12 +287,12 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     return oldData;
                 });
             }
-            
+
             // 3. 関連データの無効化
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
             queryClient.invalidateQueries({ queryKey: ['finishedItems'] });
-            
+
             onClose();
         },
         onError: (err: any) => toast.error(`更新に失敗しました: ${err.message}`),
@@ -314,12 +315,12 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         mutationFn: () => markItemAsFinished(item.item_id),
         onSuccess: () => {
             toast.success("アイテムを完了済みにしました。");
-            
+
             // 完了済みアイテムは通常のアイテムリストから削除する
             if (item.box_id) {
                 removeItemFromBox(item.box_id, item.item_id);
             }
-            
+
             // React Queryのキャッシュから直接削除
             if (item.box_id && item.box_id !== 'unclassified') {
                 // 通常のボックス
@@ -340,12 +341,12 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     return oldData.filter((i: any) => i.item_id !== item.item_id);
                 });
             }
-            
+
             // 関連データの無効化
             queryClient.invalidateQueries({ queryKey: ['finishedItems'] });
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
-            
+
             onClose();
         },
         onError: (err: any) => toast.error(`処理に失敗しました: ${err.message}`),
@@ -364,137 +365,205 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         updateMutation.mutate(data);
     };
 
+    const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="w-[95vw] max-w-lg max-h-[95vh] overflow-hidden flex flex-col">
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="absolute top-4 right-16">削除</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>本当に削除しますか？</AlertDialogTitle></AlertDialogHeader>
-                        <AlertDialogDescription>この操作は取り消せません。</AlertDialogDescription>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
-                                {deleteMutation.isPending ? '削除中...' : '削除する'}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+            <DialogContent className="w-[95vw] max-w-lg h-[700px] max-h-[95vh] flex flex-col">
+                <div className="h-full flex flex-col overflow-hidden">
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        <DialogHeader>
+                            <div className="pb-2">
+                                <DialogTitle>復習物編集モーダル</DialogTitle>
+                            </div>
+                        </DialogHeader>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                                <ScrollArea className="flex-1 border-t min-h-0 max-h-[calc(100vh-200px)]">
+                                    <div className="space-y-4 py-4">
+                                        <FormField name="name" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">復習物名</FormLabel>
+                                                <div className=" w-full">
+                                                    <FormControl>
+                                                        <Input {...field} />
+                                                    </FormControl>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="detail" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">詳細 (任意)</FormLabel>
+                                                <div className=" w-full">
+                                                    <FormControl>
+                                                        <Textarea {...field} />
+                                                    </FormControl>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="learned_date" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">学習日</FormLabel>
+                                                <div>
+                                                    <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                                                        <PopoverTrigger asChild>
+                                                            <FormControl>
+                                                                <Button variant={"outline"} className={cn("w-[200px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                                    {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
+                                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                </Button>
+                                                            </FormControl>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0" align="start">
+                                                            <Calendar
+                                                                mode="single"
+                                                                selected={field.value}
+                                                                onSelect={(date) => {
+                                                                    if (!date) {
+                                                                        setIsCalendarOpen(false);
+                                                                        return;
+                                                                    }
+                                                                    field.onChange(date);
+                                                                    setIsCalendarOpen(false);
+                                                                }}
+                                                                disabled={(date) => date > new Date()}
+                                                                initialFocus
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="category_id" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">カテゴリー</FormLabel>
+                                                <div className="w-full">
+                                                    <Select onValueChange={(value) => {
+                                                        field.onChange(value);
+                                                        // カテゴリー変更時はボックスを未分類に設定
+                                                        form.setValue('box_id', 'UNCLASSIFIED');
+                                                    }} value={field.value ?? "UNCLASSIFIED"}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full min-w-0 max-w-[450px]">
+                                                                <SelectValue placeholder="カテゴリーを選択 (任意)" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent className="w-full min-w-0 max-w-[450px]">
+                                                            <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
+                                                            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="box_id" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">
+                                                    ボックス
+                                                    {item.pattern_id && filteredBoxes.length < boxes.length && hasCompletedReviews() && (
+                                                        <span className="text-xs text-muted-foreground ml-1">
+                                                            (同じ復習パターンのボックスのみ)
+                                                        </span>
+                                                    )}
+                                                </FormLabel>
+                                                <div className="w-full w-full">
+                                                    <Select onValueChange={field.onChange} value={field.value ?? "UNCLASSIFIED"}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full min-w-0 max-w-[450px]">
+                                                                <SelectValue placeholder="ボックスを選択 (任意)" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent className="w-full min-w-0 max-w-[450px]">
+                                                            <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
+                                                            {filteredBoxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <FormMessage />
+                                                {item.pattern_id && filteredBoxes.length === 0 && hasCompletedReviews() && (
+                                                    <p className="text-xs text-orange-600">
+                                                        この復習パターンと一致するボックスがありません
+                                                    </p>
+                                                )}
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="pattern_id" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">復習パターン{isPatternDisabled && " (ボックスの設定を使用)"}</FormLabel>
+                                                <div className="w-full w-full">
+                                                    <Select
+                                                        onValueChange={field.onChange}
+                                                        value={field.value ?? ""}
+                                                        disabled={isPatternDisabled}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger className={cn("w-full w-full overflow-hidden", isPatternDisabled ? "bg-muted text-muted-foreground" : "")}>
+                                                                <SelectValue
+                                                                    placeholder={isPatternDisabled ?
+                                                                        (selectedBox?.pattern_id ?
+                                                                            (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
+                                                                            : "未設定")
+                                                                        : "パターンを選択 (任意)"
+                                                                    }
+                                                                />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
+                                                            {patterns.length > 0 ? (
+                                                                patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
+                                                            ) : (
+                                                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                                                    復習パターンがありません
+                                                                </div>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
 
-                <DialogHeader>
-                    <DialogTitle>復習物編集モーダル</DialogTitle>
-                    {/* DialogDescriptionを使用して、どのアイテムを編集しているかを示す */}
-                    <DialogDescription>「{item.name}」の情報を編集します。</DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 flex-1 overflow-y-auto pr-4 min-h-0">
-                        <FormField name="name" control={form.control} render={({ field }) => (<FormItem><FormLabel>復習物名</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField name="detail" control={form.control} render={({ field }) => (<FormItem><FormLabel>詳細 (任意)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField name="learned_date" control={form.control} render={({ field }) => (
-                            <FormItem className="flex flex-col"><FormLabel>学習日</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button variant={"outline"} className={cn("w-[200px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus /></PopoverContent>
-                                </Popover><FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField name="category_id" control={form.control} render={({ field }) => (
-                            <FormItem><FormLabel>カテゴリー</FormLabel>
-                                <Select onValueChange={(value) => { 
-                                    field.onChange(value); 
-                                    // カテゴリー変更時はボックスを未分類に設定
-                                    form.setValue('box_id', 'UNCLASSIFIED'); 
-                                }} value={field.value ?? "UNCLASSIFIED"}>
-                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder="カテゴリーを選択 (任意)" /></SelectTrigger></FormControl>
-                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-                                        <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
-                                        {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select><FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField name="box_id" control={form.control} render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>
-                                    ボックス
-                                    {item.pattern_id && filteredBoxes.length < boxes.length && hasCompletedReviews() && (
-                                        <span className="text-xs text-muted-foreground ml-1">
-                                            (同じ復習パターンのボックスのみ)
-                                        </span>
-                                    )}
-                                </FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value ?? "UNCLASSIFIED"}>
-                                    <FormControl><SelectTrigger className="w-full max-w-full overflow-hidden"><SelectValue placeholder="ボックスを選択 (任意)" /></SelectTrigger></FormControl>
-                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-                                        <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
-                                        {filteredBoxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                {item.pattern_id && filteredBoxes.length === 0 && hasCompletedReviews() && (
-                                    <p className="text-xs text-orange-600">
-                                        この復習パターンと一致するボックスがありません
-                                    </p>
-                                )}
-                            </FormItem>
-                        )} />
-                        <FormField name="pattern_id" control={form.control} render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>復習パターン{isPatternDisabled && " (ボックスの設定を使用)"}</FormLabel>
-                                <Select 
-                                    onValueChange={field.onChange} 
-                                    value={field.value ?? ""} 
-                                    disabled={isPatternDisabled}
-                                >
-                                    <FormControl>
-                                        <SelectTrigger className={cn("w-full max-w-full overflow-hidden", isPatternDisabled ? "bg-muted text-muted-foreground" : "")}>
-                                            <SelectValue 
-                                                placeholder={isPatternDisabled ? 
-                                                    (selectedBox?.pattern_id ? 
-                                                        (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
-                                                        : "未設定") 
-                                                    : "パターンを選択 (任意)"
-                                                } 
-                                            />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent className="w-[var(--radix-select-trigger-width)] min-w-0">
-                                        {patterns.length > 0 ? (
-                                            patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
-                                        ) : (
-                                            <div className="p-2 text-sm text-muted-foreground text-center">
-                                                復習パターンがありません
+                                    </div>
+                                    <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                                </ScrollArea>
+                                <div className=" bottom-0">
+                                    <DialogFooter className="justify-end">
+                                        <div className="flex items-center gap-2 w-full justify-between">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" className="absolute left-3 bottom-3">削除</Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader><AlertDialogTitle>本当に削除しますか？</AlertDialogTitle></AlertDialogHeader>
+                                                    <AlertDialogDescription>この操作は取り消せません。</AlertDialogDescription>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
+                                                            {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                            <div className="flex gap-3 absolute right-3 bottom-3 ">
+                                                <Button type="button" variant="secondary" onClick={() => finishMutation.mutate()} disabled={finishMutation.isPending}>
+                                                    {finishMutation.isPending ? '処理中...' : '途中完了にする'}
+                                                </Button>
+                                                <Button type="button" variant="outline" onClick={onClose}>閉じる</Button>
+                                                <Button type="submit" disabled={updateMutation.isPending}>
+                                                    {updateMutation.isPending ? '保存中...' : '保存'}
+                                                </Button>
                                             </div>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <DialogFooter className="justify-between">
-                            <div>
-                                <Button type="button" variant="secondary" onClick={() => finishMutation.mutate()} disabled={finishMutation.isPending}>
-                                    {finishMutation.isPending ? '処理中...' : '途中完了にする'}
-                                </Button>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button type="button" variant="outline" onClick={onClose}>閉じる</Button>
-                                <Button type="submit" disabled={updateMutation.isPending}>
-                                    {updateMutation.isPending ? '保存中...' : '保存'}
-                                </Button>
-                            </div>
-                        </DialogFooter>
-                    </form>
-                </Form>
+                                        </div>
+                                    </DialogFooter>
+                                </div>
+                            </form>
+                        </Form>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );
