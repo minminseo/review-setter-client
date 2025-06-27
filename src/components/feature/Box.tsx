@@ -16,10 +16,12 @@ import { usePatternStore } from '@/store/patternStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Cog6ToothIcon, InformationCircleIcon, PencilIcon, DocumentTextIcon, ChevronDoubleLeftIcon, InboxIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, InformationCircleIcon, PencilIcon, DocumentTextIcon, ChevronDoubleLeftIcon, InboxIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import NameCell from '@/components/shared/NameCell';
+import { SortDropdown } from '@/components/shared/SortDropdown';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // Modals
 import { ItemDetailModal } from '@/components/modals/ItemDetailModal';
@@ -68,6 +70,23 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     const [isHovering, setIsHovering] = React.useState(false);
     const [startX, setStartX] = React.useState(0);
     const [startWidth, setStartWidth] = React.useState(0);
+
+    // --- State (ソート) ---
+    const [itemSortOrder, setItemSortOrder] = React.useState('registered_at_desc');
+    const itemSortOptions = [
+        { value: 'name_asc', label: '名前 (昇順)' },
+        { value: 'name_desc', label: '名前 (降順)' },
+        { value: 'learned_date_desc', label: '学習日 (新しい順)' },
+        { value: 'learned_date_asc', label: '学習日 (古い順)' },
+        { value: 'registered_at_desc', label: '作成順 (新しい順)' },
+        { value: 'registered_at_asc', label: '作成順 (古い順)' },
+        { value: 'edited_at_desc', label: '更新順 (新しい順)' },
+        { value: 'edited_at_asc', label: '更新順 (古い順)' },
+    ];
+
+    // --- State (絞り込み) ---
+    const [filterType, setFilterType] = React.useState<'all' | 'today'>('all');
+    const filterTypeLabel = filterType === 'all' ? '全て' : '今日の復習';
 
     // --- Mutations ---
     const deleteMutation = useMutation({
@@ -149,7 +168,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     // --- アイテムリストの取得ロジック ---
     console.log('=== Box Component storeBoxId calculation ===');
     console.log('[Box] Input params:', { boxId, categoryId });
-    
+
     let storeBoxId = boxId;
     if ((boxId === 'unclassified' || !boxId) && categoryId && categoryId !== 'unclassified') {
         console.log('[Box] → Condition: Category unclassified');
@@ -160,7 +179,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     } else {
         console.log('[Box] → Condition: Normal box');
     }
-    
+
     console.log('[Box] Calculated storeBoxId:', storeBoxId);
     const zustandItems = getItemsForBox(storeBoxId || '');
     console.log('[Box] Retrieved zustandItems count:', zustandItems?.length || 0);
@@ -195,7 +214,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     React.useEffect(() => {
         console.log('=== Box displayItems useEffect Debug ===');
         console.log('[Box] displayItems length:', displayItems?.length || 0);
-        
+
         if (displayItems && displayItems.length > 0) {
             console.log('[Box] displayItems source:', zustandItems && zustandItems.length > 0 ? 'zustand' : 'props');
             console.log('[Box] displayItems count:', displayItems.length);
@@ -224,23 +243,23 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         if (!currentBox?.pattern_id) return null;
         return patterns.find((p) => p.id === currentBox.pattern_id) || null;
     }, [patterns, currentBox?.pattern_id]);
-    
+
     // 未分類ボックスの場合、アイテムの最大review_dates数を使用
     const maxColumns = React.useMemo(() => {
         if (pattern) {
             return pattern.steps.length;
         }
-        
+
         // 未分類ボックスの場合：全アイテムの最大review_dates数を計算
         if (displayItems && displayItems.length > 0) {
             const maxReviewDates = Math.max(...displayItems.map(item => item.review_dates?.length || 0));
             console.log('[Box] Calculated maxColumns from items:', maxReviewDates);
             return maxReviewDates;
         }
-        
+
         return 0;
     }, [pattern, displayItems]);
-    
+
     console.log('=== Box Table Configuration Debug ===');
     console.log('[Box] currentBox:', currentBox);
     console.log('[Box] pattern:', pattern);
@@ -374,12 +393,12 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                     reviewDate: reviewDate,
                     index: index
                 });
-                
+
                 if (!reviewDate) {
                     console.log(`[Box] No review date at index ${index} for item "${row.original.name}"`);
                     return <span className="text-muted-foreground flex justify-center">-</span>;
                 }
-                
+
                 const isToday = format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
                 const isClickable = isToday && !reviewDate.is_completed;
                 return (
@@ -404,6 +423,44 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         })),
     ], [zustandItems, items, maxColumns, completeReviewMutation, incompleteReviewMutation]);
 
+    // --- フィルタリング処理 ---
+    const filteredDisplayItems = React.useMemo(() => {
+        if (filterType === 'all') return displayItems;
+        // 今日の復習: 今日のscheduled_dateを持つreview_dateが1つでもあるアイテムのみ
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
+        return displayItems.filter(item =>
+            item.review_dates.some(rd =>
+                format(new Date(rd.scheduled_date), 'yyyy-MM-dd') === todayStr
+            )
+        );
+    }, [displayItems, filterType]);
+
+    // --- ソート済み復習物リスト ---
+    const sortedDisplayItems = React.useMemo(() => {
+        if (!filteredDisplayItems) return [];
+        const arr = [...filteredDisplayItems];
+        switch (itemSortOrder) {
+            case 'name_asc':
+                return arr.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+            case 'name_desc':
+                return arr.sort((a, b) => b.name.localeCompare(a.name, 'ja'));
+            case 'learned_date_desc':
+                return arr.sort((a, b) => new Date(b.learned_date).getTime() - new Date(a.learned_date).getTime());
+            case 'learned_date_asc':
+                return arr.sort((a, b) => new Date(a.learned_date).getTime() - new Date(b.learned_date).getTime());
+            case 'registered_at_desc':
+                return arr.sort((a, b) => new Date(b.registered_at).getTime() - new Date(a.registered_at).getTime());
+            case 'registered_at_asc':
+                return arr.sort((a, b) => new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime());
+            case 'edited_at_desc':
+                return arr.sort((a, b) => new Date(b.edited_at).getTime() - new Date(a.edited_at).getTime());
+            case 'edited_at_asc':
+                return arr.sort((a, b) => new Date(a.edited_at).getTime() - new Date(b.edited_at).getTime());
+            default:
+                return arr;
+        }
+    }, [filteredDisplayItems, itemSortOrder]);
+
     return (
         <div className="h-screen flex flex-col overflow-hidden ">
             <div className="flex-1 flex flex-col overflow-hidden p-0">
@@ -419,7 +476,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                             : "未分類ボックス"}
                     </h1>
                     <div className="flex items-center gap-2">
-                        {currentBox && (
+                        {(currentBox || boxId === 'unclassified' || (boxId && boxId.startsWith('unclassified-'))) && (
                             <Button variant="default" onClick={() => setCreateItemModalOpen(true)}>
                                 復習物を作成
                             </Button>
@@ -427,6 +484,29 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                         <Button variant="outline" onClick={() => setFinishedItemsModalOpen(true)}>
                             完了済みを確認
                         </Button>
+                        {/* DropdownMenuで絞り込み */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="w-[125px] flex items-center justify-between px-3">
+                                    <span className="flex-1 text-left truncate">{filterTypeLabel}</span>
+                                    <ChevronDownIcon className="ml-2 h-4 w-4 flex-shrink-0" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setFilterType('all')} className={filterType === 'all' ? 'font-bold text-primary' : ''}>
+                                    全て
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setFilterType('today')} className={filterType === 'today' ? 'font-bold text-primary' : ''}>
+                                    今日の復習
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <SortDropdown
+                            options={itemSortOptions}
+                            value={itemSortOrder}
+                            onValueChange={setItemSortOrder}
+                            className="w-[175px]"
+                        />
                         {currentBox && (
                             <>
                                 <Button variant="ghost" size="icon" onClick={() => setSummaryModalOpen(true)}>
@@ -450,7 +530,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                             ) : (
                                 <DataTable
                                     columns={columns}
-                                    data={displayItems}
+                                    data={sortedDisplayItems}
                                     enablePagination={false}
                                     maxHeight="100%"
                                     fixedColumns={5}
@@ -497,12 +577,12 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 {currentCategory && currentBox && <EditBoxModal isOpen={isEditBoxModalOpen} onClose={() => setEditBoxModalOpen(false)} category={currentCategory} box={currentBox} />}
                 <FinishedItemsModal isOpen={isFinishedItemsModalOpen} onClose={() => setFinishedItemsModalOpen(false)} boxId={boxId} categoryId={categoryId} />
                 {/* 復習物作成モーダル */}
-                {currentBox && (
+                {(currentBox || boxId === 'unclassified' || (boxId && boxId.startsWith('unclassified-'))) && (
                     <CreateItemModal
                         isOpen={isCreateItemModalOpen}
                         onClose={() => setCreateItemModalOpen(false)}
-                        defaultCategoryId={currentBox.category_id}
-                        defaultBoxId={currentBox.id}
+                        defaultCategoryId={currentBox ? currentBox.category_id : categoryId || ''}
+                        defaultBoxId={currentBox ? currentBox.id : boxId || ''}
                     />
                 )}
             </div>

@@ -43,6 +43,8 @@ import { Input } from '@/components/ui/input';
 
 // Nested Modal
 import { SelectPatternModal } from './SelectPatternModal';
+import NameCell from '@/components/shared/NameCell';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // フォームのバリデーションルール
 const boxSchema = z.object({
@@ -136,55 +138,75 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="w-[95vw] max-w-lg max-h-[95vh] overflow-hidden flex flex-col">
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="absolute top-4 right-16">削除</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>本当に削除しますか？</AlertDialogTitle></AlertDialogHeader>
-                            <AlertDialogDescription>この操作は取り消せません。ボックスに属する全ての復習物が削除されます。</AlertDialogDescription>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
-                                    {deleteMutation.isPending ? '削除中...' : '削除する'}
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                <DialogContent className="w-[95vw] max-w-lg h-[350px] max-h-[95vh] flex flex-col">
+                    <div className="h-full flex flex-col ">
+                        <div className="flex-1 flex flex-col ">
 
-                    <DialogHeader>
-                        <DialogTitle>復習物ボックス編集モーダル</DialogTitle>
-                        <DialogDescription>「{category.name}」内の「{box.name}」を編集します。</DialogDescription>
-                    </DialogHeader>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 flex-1 overflow-y-auto pr-4 min-h-0">
-                            {/* FormFieldを正しく使用してフォームフィールドを実装 */}
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>ボックス名</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormItem>
-                                <FormLabel>復習パターン</FormLabel>
-                                <Button type="button" variant="outline" className="w-full max-w-full overflow-hidden justify-start font-normal truncate" onClick={() => setPatternModalOpen(true)}>
-                                    {selectedPatternName}
-                                </Button>
-                            </FormItem>
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
-                                <Button type="submit" disabled={updateMutation.isPending}>
-                                    {updateMutation.isPending ? '保存中...' : '保存'}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
+                            <DialogHeader>
+                                <DialogTitle className="border-b pb-2">復習物ボックス編集モーダル</DialogTitle>
+                                <DialogDescription>
+                                    <div className="mb-1 font-semibold text-white">カテゴリー名</div>
+                                    <div className="mb-2 text-lg">
+                                        <NameCell name={category.name} maxWidth={500} />
+                                    </div>
+                                </DialogDescription>
+                            </DialogHeader>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                                    {/* FormFieldを正しく使用してフォームフィールドを実装 */}
+                                    <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-200px)]">
+                                        <div className="space-y-4 py-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="name"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="inline-block pointer-events-none select-none">ボックス名</FormLabel>
+                                                        <div className="w-full">
+                                                            <FormControl><Input {...field} /></FormControl>
+                                                        </div>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">復習パターン</FormLabel>
+                                                <Button type="button" variant="outline" className="w-full mb-3 max-w-full  justify-start font-normal truncate" onClick={() => setPatternModalOpen(true)}>
+                                                    {selectedPatternName}
+                                                </Button>
+                                            </FormItem>
+                                        </div>
+                                        <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                                    </ScrollArea>
+                                    <DialogFooter className="justify-end ">
+                                        <div className="flex items-center gap-2 w-full justify-between">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" className="absolute left-3 bottom-3">削除</Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader><AlertDialogTitle>本当に削除しますか？</AlertDialogTitle></AlertDialogHeader>
+                                                    <AlertDialogDescription>この操作は取り消せません。ボックスに属する全ての復習物は、このカテゴリーの未分類ボックスに移動されます。</AlertDialogDescription>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
+                                                            {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                            <div className="flex gap-3 absolute right-3 bottom-3">
+                                                <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                                <Button type="submit" disabled={updateMutation.isPending}>
+                                                    {updateMutation.isPending ? '保存中...' : '保存'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </DialogFooter>
+                                </form>
+                            </Form>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
 

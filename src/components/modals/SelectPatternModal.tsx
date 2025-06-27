@@ -15,9 +15,9 @@ import {
     DialogFooter,
     DialogDescription,
 } from '@/components/ui/dialog';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
 import { CreatePatternModal } from './CreatePatternModal'; // 追加
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // このモーダルが親コンポーネントから受け取るPropsの型を定義
 type SelectPatternModalProps = {
@@ -69,37 +69,48 @@ export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternM
                 </DialogHeader>
 
                 {/* パターンリストのコンテナ */}
-                <div className="max-h-[60vh] overflow-y-auto space-y-3 p-1">
-                    {isLoading ? (
-                        <CardListSkeleton count={6} />
-                    ) : patterns.length === 0 ? (
-                        <div className="text-center py-8">
-                            <p className="text-muted-foreground">復習パターンがありません。</p>
-                            <p className="text-sm text-muted-foreground mt-2">先に復習パターンを作成してください。</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {patterns.map((pattern) => (
-                                <Card
-                                    key={pattern.id}
-                                    className="cursor-pointer hover:bg-accent transition-colors"
-                                    onClick={() => handleSelect(pattern)}
-                                >
-                                    <CardHeader>
-                                        <CardTitle className="text-base">{pattern.name}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm">重み: {pattern.target_weight}</p>
-                                        <p className="text-xs text-muted-foreground mt-2">
-                                            ステップ: {pattern.steps.map(s => s.interval_days).join(' | ')}
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <ScrollArea className="w-full h-full max-h-[calc(100vh-240px)] border-t border-b">
 
+                    <div className="max-h-[60vh]  space-y-3 p-1">
+                        {isLoading ? (
+                            <CardListSkeleton count={6} />
+                        ) : patterns.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-muted-foreground">復習パターンがありません。</p>
+                                <p className="text-sm text-muted-foreground mt-2">先に復習パターンを作成してください。</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                {patterns.map((pattern) => (
+                                    <div
+                                        key={pattern.id}
+                                        className="cursor-pointer hover:bg-accent transition-colors"
+                                        onClick={() => handleSelect(pattern)}
+                                    >
+                                        <div className="rounded-md border bg-muted p-2 space-y-2 text-sm">
+                                            <div className="flex">
+                                                <span className="w-28 font-semibold">復習パターン名</span>
+                                                <span className="mx-2">:</span>
+                                                <span>{pattern.name}</span>
+                                            </div>
+                                            <div className="flex">
+                                                <span className="w-28 font-semibold">重み</span>
+                                                <span className="mx-2">:</span>
+                                                <span>{pattern.target_weight}</span>
+                                            </div>
+                                            <div className="flex">
+                                                <span className="w-28 font-semibold">復習ステップ</span>
+                                                <span className="mx-2">:</span>
+                                                <span>{pattern.steps.map(s => s.interval_days).join(' | ')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                </ScrollArea>
                 <DialogFooter>
                     <div className="w-full flex flex-row items-center justify-between">
                         <Button type="button" variant="secondary" onClick={() => setCreateOpen(true)}>

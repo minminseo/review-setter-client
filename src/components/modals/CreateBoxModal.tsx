@@ -32,6 +32,8 @@ import { Input } from '@/components/ui/input';
 
 // このモーダルから呼び出す、別のモーダルをインポート
 import { SelectPatternModal } from './SelectPatternModal';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import NameCell from '../shared/NameCell';
 
 
 // フォームのバリデーションルールをzodで定義
@@ -109,50 +111,75 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>復習物ボックス作成モーダル</DialogTitle>
-                        <DialogDescription>
-                            「{categoryName}」内に新しいボックスを作成します。
-                        </DialogDescription>
-                    </DialogHeader>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-muted-foreground">カテゴリー（指定不可）</p>
-                                <p className="font-semibold">{categoryName}</p>
-                            </div>
+                <DialogContent className="w-[95vw] max-w-lg h-[350px] max-h-[95vh] flex flex-col">
+                    <div className="h-full flex flex-col ">
+                        <div className="flex-1 flex flex-col ">
+                            <DialogHeader>
+                                <DialogTitle className="border-b pb-2">復習物ボックス作成モーダル</DialogTitle>
+                                <DialogDescription>
 
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>復習物ボックス名</FormLabel>
-                                        <FormControl><Input placeholder="例: 基本文法, 応用問題" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                                    <div className="mb-1 font-semibold text-white">カテゴリー（指定不可）</div>
+                                    <div className="mb-2 text-lg">
+                                        <NameCell name={categoryName} maxWidth={500} />
+                                    </div>
 
-                            <FormItem>
-                                <FormLabel>復習パターン</FormLabel>
-                                <Button type="button" variant="outline" className="w-full justify-start font-normal" onClick={() => setPatternModalOpen(true)}>
-                                    {selectedPatternName}
-                                </Button>
-                                <FormDescription>
-                                    指定しない場合、復習物は未分類として扱われます。
-                                </FormDescription>
-                            </FormItem>
+                                </DialogDescription>
+                            </DialogHeader>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                                    <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-200px)]">
+                                        <div className="space-y-4 py-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="name"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="inline-block pointer-events-none select-none">復習物ボックス名</FormLabel>
+                                                        <div className="w-full ">
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="例: 基本文法, 応用問題"
+                                                                    {...field}
+                                                                    className="w-full  text-ellipsis  whitespace-nowrap"
+                                                                />
+                                                            </FormControl>
+                                                        </div>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
 
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
-                                <Button type="submit" disabled={mutation.isPending}>
-                                    {mutation.isPending ? '作成中...' : '作成'}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">復習パターン</FormLabel>
+                                                <div className="w-full">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="w-full mb-3 justify-start font-normal text-ellipsis  whitespace-nowrap"
+                                                        onClick={() => setPatternModalOpen(true)}
+                                                    >
+                                                        {selectedPatternName}
+                                                    </Button>
+                                                </div>
+                                            </FormItem>
+
+                                        </div>
+                                        <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                                    </ScrollArea>
+                                    <DialogFooter>
+                                        <div className="flex gap-2 w-full justify-end">
+                                            <div className="flex gap-2 absolute right-3 bottom-3">
+                                                <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                                <Button type="submit" disabled={mutation.isPending}>
+                                                    {mutation.isPending ? '作成中...' : '作成'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </DialogFooter>
+                                </form>
+                            </Form>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
 

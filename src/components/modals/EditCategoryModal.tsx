@@ -38,6 +38,7 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 
 // フォームのバリデーションルール
@@ -97,63 +98,79 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>カテゴリー編集: {category.name}</DialogTitle>
-                    <DialogDescription>
-                        カテゴリー名の変更、またはカテゴリーの削除ができます。
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>新しいカテゴリー名</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        {/* フッターエリア：削除ボタンと保存・キャンセルボタンを左右に配置 */}
-                        <DialogFooter className="justify-between">
-                            {/* 削除ボタン：誤操作を防ぐため、AlertDialogで確認を挟む */}
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button type="button" variant="destructive">削除</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            この操作は取り消せません。カテゴリーに属する全てのボックスと復習物が削除されます。
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                                        {/* 削除実行ボタン */}
-                                        <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
-                                            {deleteMutation.isPending ? '削除中...' : '削除する'}
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+            <DialogContent className="w-[95vw] max-w-lg h-[350px] max-h-[95vh] flex flex-col">
+                <div className="h-full flex flex-col ">
+                    <div className="flex-1 flex flex-col ">
+                        <DialogHeader className=" text-ellipsis  whitespace-nowrap">
+                            <DialogTitle className=" border-b pb-2">カテゴリー編集</DialogTitle>
+                        </DialogHeader>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onSubmit)}
+                                className="flex flex-col h-full"
+                                style={{ minWidth: 0 }}>
+                                <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-200px)]">
+                                    <div className="space-y-4 py-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="inline-block pointer-events-none select-none">カテゴリー名</FormLabel>
+                                                    <div className="w-full pb-10">
+                                                        <FormControl>
+                                                            <Input {...field} className=" text-ellipsis overflow-hidden whitespace-nowrap" />
+                                                        </FormControl>
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                                </ScrollArea>
+                                {/* フッターエリア：削除ボタンと保存・キャンセルボタンを左右に配置 */}
+                                <DialogFooter className="justify-end">
+                                    <div className="flex items-center gap-2 w-full justify-between">
+                                        {/* 削除ボタン：誤操作を防ぐため、AlertDialogで確認を挟む */}
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    className="absolute left-3 bottom-3"
+                                                >削除</Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        この操作は取り消せません。カテゴリーに属する全てのボックスが削除され、復習物は未分類復習物ボックスへ移動されます。
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                                    {/* 削除実行ボタン */}
+                                                    <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
+                                                        {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
 
-                            <div className="flex gap-2">
-                                <Button type="button" variant="outline" onClick={onClose}>
-                                    キャンセル
-                                </Button>
-                                <Button type="submit" disabled={updateMutation.isPending}>
-                                    {updateMutation.isPending ? '保存中...' : '保存'}
-                                </Button>
-                            </div>
-                        </DialogFooter>
-                    </form>
-                </Form>
+                                        <div className="flex gap-3 absolute right-3 bottom-3">
+                                            <Button type="button" variant="outline" onClick={onClose}>
+                                                キャンセル
+                                            </Button>
+                                            <Button type="submit" disabled={updateMutation.isPending}>
+                                                {updateMutation.isPending ? '保存中...' : '保存'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </DialogFooter>
+                            </form>
+                        </Form>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );

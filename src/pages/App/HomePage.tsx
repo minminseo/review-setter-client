@@ -29,6 +29,7 @@ import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
 import { UNCLASSIFIED_ID } from '@/constants';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { ClockIcon, Cog8ToothIcon, DocumentIcon, InboxIcon, InboxStackIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
+import { SortDropdown } from '@/components/shared/SortDropdown';
 
 /**
  * ログイン後のホームページ（ダッシュボード）。
@@ -42,6 +43,7 @@ const HomePage = () => {
     const [isCreateCategoryModalOpen, setCreateCategoryModalOpen] = React.useState(false);
     const [editingCategory, setEditingCategory] = React.useState<GetCategoryOutput | null>(null);
     const [creatingBoxInCategory, setCreatingBoxInCategory] = React.useState<GetCategoryOutput | null>(null);
+    const [categorySortOrder, setCategorySortOrder] = React.useState('name_asc');
 
     // useQueriesを使い、ホームページに必要なデータを並列で取得
     const results = useQueries({
@@ -110,6 +112,28 @@ const HomePage = () => {
         });
     }, [categoriesQuery.data, itemCountByBoxQuery.data, dailyReviewCountByBoxQuery.data, unclassifiedItemCountByCategoryQuery.data, dailyUnclassifiedReviewCountByCategoryQuery.data]);
 
+    // カテゴリー並び順に応じてcategoriesWithStatsをソート
+    const sortedCategoriesWithStats = React.useMemo(() => {
+        if (!categoriesWithStats) return [];
+        const arr = [...categoriesWithStats];
+        switch (categorySortOrder) {
+            case 'name_asc':
+                return arr.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+            case 'name_desc':
+                return arr.sort((a, b) => b.name.localeCompare(a.name, 'ja'));
+            case 'registered_at_desc':
+                return arr.sort((a, b) => new Date(b.registered_at).getTime() - new Date(a.registered_at).getTime());
+            case 'registered_at_asc':
+                return arr.sort((a, b) => new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime());
+            case 'edited_at_desc':
+                return arr.sort((a, b) => new Date(b.edited_at).getTime() - new Date(a.edited_at).getTime());
+            case 'edited_at_asc':
+                return arr.sort((a, b) => new Date(a.edited_at).getTime() - new Date(b.edited_at).getTime());
+            default:
+                return arr;
+        }
+    }, [categoriesWithStats, categorySortOrder]);
+
     // 復習パターン一覧取得
     const { data: patterns, isLoading: isPatternLoading } = useQuery({
         queryKey: ['patterns'],
@@ -158,18 +182,40 @@ const HomePage = () => {
                     <div className="flex-1 flex flex-col overflow-hidden p-0 ">
                         <Card >
                             <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle>カテゴリー一覧</CardTitle>
-                                <Button size="sm" variant="outline" onClick={() => setCreateCategoryModalOpen(true)}>
-                                    <PlusIcon className="h-4 w-4 mr-2" />
-                                    カテゴリー作成
-                                </Button>
+                                <CardTitle>
+                                    <InboxStackIcon className="inline-block mr-2 h-6 w-6" />
+                                    カテゴリー
+                                    {!isLoading && (
+                                        <span className="ml-2 text-base text-muted-foreground font-normal">
+                                            ({sortedCategoriesWithStats.length})
+                                        </span>
+                                    )}
+                                </CardTitle>
+                                <div className="flex items-center gap-2">
+                                    <Button size="sm" variant="outline" onClick={() => setCreateCategoryModalOpen(true)}>
+                                        <PlusIcon className="h-4 w-4 mr-2" />
+                                        カテゴリー作成
+                                    </Button>
+                                    <SortDropdown
+                                        options={[
+                                            { value: 'name_asc', label: '名前 (昇順)' },
+                                            { value: 'name_desc', label: '名前 (降順)' },
+                                            { value: 'registered_at_desc', label: '作成順 (新しい順)' },
+                                            { value: 'registered_at_asc', label: '作成順 (古い順)' },
+                                            { value: 'edited_at_desc', label: '更新順 (新しい順)' },
+                                            { value: 'edited_at_asc', label: '更新順 (古い順)' },
+                                        ]}
+                                        value={categorySortOrder}
+                                        onValueChange={setCategorySortOrder}
+                                    />
+                                </div>
                             </CardHeader>
                             <ScrollArea className="w-full h-full max-h-[calc(100vh-240px)] border-t">
                                 <CardContent className="space-y-1 pt-3 px-3">
                                     {isLoading ? (
                                         Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
                                     ) : (
-                                        categoriesWithStats.map(category => (
+                                        sortedCategoriesWithStats.map(category => (
                                             <div
                                                 key={category.id}
                                                 className="flex flex-col sm:flex-row sm:items-center p-2 rounded-md hover:bg-muted gap-2"

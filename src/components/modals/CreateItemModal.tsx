@@ -36,6 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { SelectPatternModal } from './SelectPatternModal';
 
 const itemSchema = z.object({
     name: z.string().min(1, "復習物名は必須です。"),
@@ -237,8 +238,24 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
         }
     }, [isOpen, form, defaultCategoryId, defaultBoxId]);
 
-    const [isCalendarOpen, setIsCalendarOpen] = React.useState(false); //
+    const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+    // 復習パターン選択モーダルの開閉状態
+    const [isPatternModalOpen, setPatternModalOpen] = React.useState(false);
+    // 選択中のパターン名（UI表示用）
+    const [selectedPatternName, setSelectedPatternName] = React.useState('未選択');
 
+    // pattern_idのwatch
+    const watchedPatternId = form.watch('pattern_id');
+
+    // pattern_idが変わったらパターン名を更新
+    React.useEffect(() => {
+        if (watchedPatternId && patterns.length > 0) {
+            const p = patterns.find(p => p.id === watchedPatternId);
+            setSelectedPatternName(p?.name || '未選択');
+        } else {
+            setSelectedPatternName('未選択');
+        }
+    }, [watchedPatternId, patterns]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -246,146 +263,178 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                 <div className="h-full flex flex-col overflow-hidden">
                     <div className="flex-1 flex flex-col overflow-hidden p-0">
                         <DialogHeader>
-                            <DialogTitle>復習物作成モーダル</DialogTitle>
-                            <DialogDescription>新しい復習アイテムの情報を入力してください。</DialogDescription>
+                            <div className="pb-2">
+                                <DialogTitle>復習物作成モーダル</DialogTitle>
+                            </div>
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
                                 <ScrollArea className="flex-1 border-t min-h-0 max-h-[calc(100vh-200px)]">
                                     <div className="space-y-4 py-4">
-                                        <FormField name="name" control={form.control} render={({ field }) => (<FormItem><FormLabel>復習物名</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField name="detail" control={form.control} render={({ field }) => (<FormItem><FormLabel>詳細 (任意)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField name="name" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">復習物名</FormLabel>
+                                                <div className="w-full">
+                                                    <FormControl>
+                                                        <Input {...field} />
+                                                    </FormControl>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="detail" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">詳細 (任意)</FormLabel>
+                                                <div className="w-full">
+                                                    <FormControl>
+                                                        <Textarea {...field} />
+                                                    </FormControl>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
                                         <FormField name="learned_date" control={form.control} render={({ field }) => (
-                                            <FormItem className="flex flex-col"><FormLabel>学習日</FormLabel>
-                                                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                                                    <PopoverTrigger asChild>
-                                                        <FormControl>
-                                                            <Button variant={"outline"} className={cn("w-[200px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                                {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
-                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                            </Button>
-                                                        </FormControl>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value}
-                                                            onSelect={(date) => {
-                                                                field.onChange(date);
-                                                                setIsCalendarOpen(false);
-                                                            }}
-                                                            disabled={(date) => date > new Date()}
-                                                            initialFocus
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover><FormMessage />
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">学習日</FormLabel>
+                                                <div>
+                                                    <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                                                        <PopoverTrigger asChild>
+                                                            <FormControl>
+                                                                <Button variant={"outline"} className={cn("w-[200px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                                    {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
+                                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                </Button>
+                                                            </FormControl>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0" align="start">
+                                                            <Calendar
+                                                                mode="single"
+                                                                selected={field.value}
+                                                                onSelect={(date) => {
+                                                                    if (!date) {
+                                                                        setIsCalendarOpen(false);
+                                                                        return;
+                                                                    }
+                                                                    field.onChange(date);
+                                                                    setIsCalendarOpen(false);
+                                                                }}
+                                                                disabled={(date) => date > new Date()}
+                                                                initialFocus
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </div>
+                                                <FormMessage />
                                             </FormItem>
                                         )} />
                                         <FormField name="category_id" control={form.control} render={({ field }) => (
-                                            <FormItem><FormLabel>カテゴリー</FormLabel>
-                                                <Select onValueChange={(value) => { 
-                                                    field.onChange(value); 
-                                                    // カテゴリー変更時はボックスを未分類に設定
-                                                    form.setValue('box_id', 'UNCLASSIFIED'); 
-                                                }} value={field.value ?? "UNCLASSIFIED"} disabled={categoriesLoading}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="w-full min-w-0 max-w-[450px]">
-                                                            <SelectValue placeholder={categoriesLoading ? "読み込み中..." : "カテゴリーを選択 (任意)"} />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="w-full min-w-0 max-w-[450px]">
-                                                        <SelectItem value="UNCLASSIFIED">
-                                                            未分類
-                                                        </SelectItem>
-                                                        {categories.map(c => (
-                                                            <SelectItem key={c.id} value={c.id}>
-                                                                {c.name}
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">カテゴリー</FormLabel>
+                                                <div className="w-full">
+                                                    <Select onValueChange={(value) => {
+                                                        field.onChange(value);
+                                                        // カテゴリー変更時はボックスを未分類に設定
+                                                        form.setValue('box_id', 'UNCLASSIFIED');
+                                                    }} value={field.value ?? "UNCLASSIFIED"} disabled={categoriesLoading}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full min-w-0 max-w-[450px]">
+                                                                <SelectValue placeholder={categoriesLoading ? "読み込み中..." : "カテゴリーを選択 (任意)"} />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent className="w-full min-w-0 max-w-[450px]">
+                                                            <SelectItem value="UNCLASSIFIED">
+                                                                未分類
                                                             </SelectItem>
-                                                        ))}
-                                                        {categoriesLoading && (
-                                                            <div className="p-2 text-sm text-muted-foreground text-center">
-                                                                読み込み中...
-                                                            </div>
-                                                        )}
-                                                    </SelectContent>
-                                                </Select><FormMessage />
+                                                            {categories.map(c => (
+                                                                <SelectItem key={c.id} value={c.id}>
+                                                                    {c.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                            {categoriesLoading && (
+                                                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                                                    読み込み中...
+                                                                </div>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <FormMessage />
                                             </FormItem>
                                         )} />
                                         <FormField name="box_id" control={form.control} render={({ field }) => (
-                                            <FormItem><FormLabel>ボックス</FormLabel>
-                                                <Select
-                                                    onValueChange={(value) => field.onChange(value)}
-                                                    value={field.value ?? "UNCLASSIFIED"}
-                                                    disabled={boxesLoading}
-                                                >
-                                                    <FormControl>
-                                                        <SelectTrigger className="w-full min-w-0 max-w-[450px]">
-                                                            <SelectValue placeholder={boxesLoading ? "読み込み中..." : "ボックスを選択 (任意)"} />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="w-full min-w-0 max-w-[450px]">
-                                                        <SelectItem value="UNCLASSIFIED">
-                                                            未分類
-                                                        </SelectItem>
-                                                        {boxes.map(b => (
-                                                            <SelectItem key={b.id} value={b.id}>
-                                                                {b.name}
+                                            <FormItem>
+                                                <FormLabel className="inline-block pointer-events-none select-none">ボックス</FormLabel>
+                                                <div className="w-full">
+                                                    <Select
+                                                        onValueChange={(value) => field.onChange(value)}
+                                                        value={field.value ?? "UNCLASSIFIED"}
+                                                        disabled={boxesLoading}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger className="w-full min-w-0 max-w-[450px]">
+                                                                <SelectValue placeholder={boxesLoading ? "読み込み中..." : "ボックスを選択 (任意)"} />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent className="w-full min-w-0 max-w-[450px]">
+                                                            <SelectItem value="UNCLASSIFIED">
+                                                                未分類
                                                             </SelectItem>
-                                                        ))}
-                                                        {boxesLoading && (
-                                                            <div className="p-2 text-sm text-muted-foreground text-center">
-                                                                読み込み中...
-                                                            </div>
-                                                        )}
-                                                    </SelectContent>
-                                                </Select><FormMessage />
+                                                            {boxes.map(b => (
+                                                                <SelectItem key={b.id} value={b.id}>
+                                                                    {b.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                            {boxesLoading && (
+                                                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                                                    読み込み中...
+                                                                </div>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <FormMessage />
                                             </FormItem>
                                         )} />
                                         <FormField name="pattern_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>復習パターン{isPatternDisabled && " (ボックスの設定を使用)"}</FormLabel>
-                                                <Select
-                                                    onValueChange={field.onChange}
-                                                    value={field.value ?? ""}
-                                                    disabled={isPatternDisabled}
-                                                >
-                                                    <FormControl>
-                                                        <SelectTrigger className={cn("w-full min-w-0 max-w-[200px]", isPatternDisabled ? "bg-muted text-muted-foreground" : "")}>
-                                                            <SelectValue
-                                                                placeholder={isPatternDisabled
-                                                                    ? (selectedBox?.pattern_id
-                                                                        ? (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
-                                                                        : "未設定")
-                                                                    : "パターンを選択 (任意)"
-                                                                }
-                                                            />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="w-full min-w-0 max-w-[200px]">
-                                                        {patterns.length > 0 ? (
-                                                            patterns.map(p => (
-                                                                <SelectItem key={p.id} value={p.id}>
-                                                                    {p.name}
-                                                                </SelectItem>
-                                                            ))
-                                                        ) : (
-                                                            <div className="p-2 text-sm text-muted-foreground text-center">
-                                                                復習パターンがありません
-                                                            </div>
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
+                                                <FormLabel className="inline-block pointer-events-none select-none">復習パターン{isPatternDisabled && " (ボックスの設定を使用)"}</FormLabel>
+                                                <div className="w-full">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className={cn("w-full justify-start font-normal", isPatternDisabled ? "bg-muted text-muted-foreground" : "")}
+                                                        onClick={() => !isPatternDisabled && setPatternModalOpen(true)}
+                                                        disabled={isPatternDisabled}
+                                                    >
+                                                        {isPatternDisabled
+                                                            ? (selectedBox?.pattern_id
+                                                                ? (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
+                                                                : "未設定")
+                                                            : selectedPatternName}
+                                                    </Button>
+                                                </div>
                                                 <FormMessage />
+                                                <SelectPatternModal
+                                                    isOpen={isPatternModalOpen}
+                                                    onClose={() => setPatternModalOpen(false)}
+                                                    onSelect={(pattern) => {
+                                                        form.setValue('pattern_id', pattern.id);
+                                                        setPatternModalOpen(false);
+                                                    }}
+                                                />
                                             </FormItem>
                                         )} />
 
                                     </div>
                                     <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
                                 </ScrollArea>
-                                <div className="sticky bottom-0 left-0 right-0 z-10">
-                                    <DialogFooter className="flex-shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 h-16 px-6 py-3 mt-auto ">
-                                        <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
-                                        <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? '作成中...' : '作成'}</Button>
+                                <div className=" bottom-0">
+                                    <DialogFooter className="justify-end">
+                                        <div className="flex gap-3 absolute right-3 bottom-3 ">
+                                            <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                            <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? '作成中...' : '作成'}</Button>
+                                        </div>
+
                                     </DialogFooter>
                                 </div>
                             </form>

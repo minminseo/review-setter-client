@@ -10,6 +10,7 @@ import {
     DialogFooter,
     DialogDescription,
 } from '@/components/ui/dialog';
+import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // このモーダルが親コンポーネントから受け取るPropsの型を定義
 type ItemDetailModalProps = {
@@ -37,22 +38,28 @@ export const ItemDetailModal = ({ isOpen, onClose, item }: ItemDetailModalProps)
                         {item.name}
                     </DialogDescription>
                 </DialogHeader>
+                < div className="space-y-4 py-4 mb-3">
+                    <ScrollArea className="flex-1 border-t min-h-0 max-h-[calc(100vh-200px)]">
+                        {/* 詳細情報を表示するメインコンテンツエリア */}
+                        <div className="py-4 mb-3">
+                            <h4 className="text-sm font-semibold mb-2">詳細</h4>
+                            <div className="p-4 bg-muted rounded-md min-h-[100px] text-sm text-muted-foreground whitespace-pre-wrap">
+                                {/* item.detailが存在すればそれを表示し、なければプレースホルダーテキストを表示 */}
+                                {item.detail || '詳細情報はありません。'}
+                            </div>
+                        </div>
+                        <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+                    </ScrollArea>
 
-                {/* 詳細情報を表示するメインコンテンツエリア */}
-                <div className="py-4">
-                    <h4 className="text-sm font-semibold mb-2">詳細</h4>
-                    <div className="p-4 bg-muted rounded-md min-h-[100px] text-sm text-muted-foreground whitespace-pre-wrap">
-                        {/* item.detailが存在すればそれを表示し、なければプレースホルダーテキストを表示 */}
-                        {item.detail || '詳細情報はありません。'}
-                    </div>
+                    <DialogFooter className="justify-end">
+                        <div className="flex gap-3 absolute right-3 bottom-3">
+
+                            <Button type="button" variant="outline" onClick={onClose}>
+                                閉じる
+                            </Button>
+                        </div>
+                    </DialogFooter>
                 </div>
-
-                <DialogFooter>
-                    {/* デザイン案では「作成」となっていたが、表示用モーダルのため「閉じる」ボタンを配置 */}
-                    <Button type="button" variant="outline" onClick={onClose}>
-                        閉じる
-                    </Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
