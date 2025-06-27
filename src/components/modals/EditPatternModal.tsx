@@ -8,6 +8,7 @@ import { FaPlusCircle, FaTrashAlt } from "react-icons/fa";
 
 import { updatePattern, deletePattern } from '@/api/patternApi';
 import { usePatternStore } from '@/store';
+import { useItemStore } from '@/store/itemStore';
 import { PatternResponse, UpdatePatternRequest, TargetWeight, UpdatePatternStepField } from '@/types';
 
 // UI Components
@@ -43,6 +44,7 @@ type EditPatternModalProps = {
 export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalProps) => {
     const queryClient = useQueryClient();
     const { updatePattern: updateInStore, removePattern: removeFromStore } = usePatternStore();
+    const { itemsByBoxId } = useItemStore();
 
     // フォームの初期化。propsで渡されたpatternデータで初期値を設定する
     const form = useForm<z.infer<typeof patternSchema>>({
@@ -69,10 +71,17 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
         onSuccess: (updatedPattern) => {
             queryClient.invalidateQueries({ queryKey: ['patterns'] });
             updateInStore(updatedPattern);
-            toast.success('Pattern updated successfully!');
+            toast.success('パターンを更新しました！');
             onClose();
         },
-        onError: (error) => toast.error(`Update failed: ${error.message}`),
+        onError: (error: any) => {
+            // 500ステータスコードの場合は、パターンが使用されているエラーとして扱う
+            if (error?.response?.status === 500) {
+                toast.error('このパターンが適用されている復習物が存在するため変更できません。');
+            } else {
+                toast.error(`Update failed: ${error.message}`);
+            }
+        },
     });
 
     // パターン削除のmutation
@@ -84,11 +93,31 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
             toast.success('Pattern deleted successfully!');
             onClose();
         },
-        onError: (error) => toast.error(`Delete failed: ${error.message}`),
+        onError: (error: any) => {
+            // 500ステータスコードの場合は、パターンが使用されているエラーとして扱う
+            if (error?.response?.status === 500) {
+                toast.error('このパターンが適用されている復習物が存在するため削除できません。');
+            } else {
+                toast.error(`Delete failed: ${error.message}`);
+            }
+        },
     });
 
     // 保存ボタンが押されたときの処理
     const onSubmit = (values: z.infer<typeof patternSchema>) => {
+        // 変更有無判定
+        const isNameChanged = values.name !== pattern.name;
+        const isWeightChanged = values.target_weight !== pattern.target_weight;
+        // ステップ比較（数・順序・値）
+        const origSteps = pattern.steps.map(s => s.interval_days);
+        const newSteps = values.steps.map(s => s.interval_days);
+        const isStepChanged = origSteps.length !== newSteps.length || origSteps.some((v, i) => v !== newSteps[i]);
+
+        if (!isNameChanged && !isWeightChanged && !isStepChanged) {
+            toast.info('変更がありません');
+            return;
+        }
+
         // APIが要求する形式にデータを整形
         const data: UpdatePatternRequest = {
             name: values.name,

@@ -14,11 +14,7 @@ export const LANGUAGES: { value: Language; label: string }[] = [
 // サインアップ画面で選択可能なタイムゾーンのリスト
 // 将来的にユーザーが選択肢を増やせるように、ここで一元管理する
 export const TIMEZONES = [
-    "UTC",
     "Asia/Tokyo",
-    "America/New_York",
-    "America/Los_Angeles",
-    "Europe/London"
 ];
 
 // 未分類カテゴリーやボックスを識別するための一意なID

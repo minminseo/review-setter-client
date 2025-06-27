@@ -67,7 +67,7 @@ export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProp
             // 2. Zustandストアにも新しいカテゴリーを追加し、UIに即時反映（楽観的更新）
             addCategoryToStore(newCategory);
 
-            toast.success('Category created successfully!');
+            toast.success('新しいカテゴリーを作成しました！');
             onClose(); // モーダルを閉じる
             form.reset(); // 次回開いた時のためにフォームをリセット
         },

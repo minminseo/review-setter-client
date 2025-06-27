@@ -144,17 +144,6 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     const updateMutation = useMutation({
         mutationFn: (data: UpdateItemRequest) => updateItem({ itemId: item.item_id, data }),
         onSuccess: (updatedItem, variables) => {
-            // Debug logs to analyze the API response structure
-            console.log('=== EditItemModal updateItem API Response Debug ===');
-            console.log('Original item:', item);
-            console.log('Updated item from API:', updatedItem);
-            console.log('Update variables sent:', variables);
-            console.log('updatedItem.review_dates:', updatedItem.review_dates);
-            console.log('Original item.review_dates:', item.review_dates);
-            console.log('Are review_dates included in response?', !!updatedItem.review_dates);
-            console.log('Review dates count in response:', updatedItem.review_dates?.length || 0);
-            console.log('=====================================================');
-
             toast.success("アイテムを更新しました！");
 
             // 重要：APIレスポンスにreview_datesが不完全な場合、元のデータで補完
@@ -164,12 +153,6 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     ? updatedItem.review_dates
                     : item.review_dates // 元のreview_datesを保持
             };
-
-            console.log('=== Enriched Updated Item Debug ===');
-            console.log('Original API response review_dates:', updatedItem.review_dates);
-            console.log('Original item review_dates:', item.review_dates);
-            console.log('Final enriched review_dates:', enrichedUpdatedItem.review_dates);
-            console.log('===================================');
 
             const oldBoxId = item.box_id;
             const newBoxId = variables.box_id;
@@ -201,12 +184,6 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
             if (oldStoreBoxId !== newStoreBoxId) {
                 // ボックス間移動の場合
-                console.log('[EditItemModal] Moving item between boxes:', {
-                    oldStoreBoxId,
-                    newStoreBoxId,
-                    itemId: item.item_id
-                });
-
                 if (oldStoreBoxId) {
                     removeItemFromBox(oldStoreBoxId, item.item_id);
                 }
@@ -215,17 +192,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                 }
             } else {
                 // 同じボックス内での更新
-                console.log('[EditItemModal] Updating item in same box:', {
-                    storeBoxId: oldStoreBoxId,
-                    itemId: item.item_id
-                });
-
                 if (oldStoreBoxId) {
-                    console.log('=== Zustand updateItemInBox Debug ===');
-                    console.log('oldStoreBoxId:', oldStoreBoxId);
-                    console.log('enrichedUpdatedItem being stored:', enrichedUpdatedItem);
-                    console.log('enrichedUpdatedItem.review_dates being stored:', enrichedUpdatedItem.review_dates);
-                    console.log('====================================');
                     updateItemInBox(oldStoreBoxId, enrichedUpdatedItem);
                 }
             }
@@ -238,28 +205,16 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
             if (oldBoxId !== newBoxId || oldCategoryId !== newCategoryId) {
                 queryClient.setQueryData(oldQueryKey, (oldData: any) => {
                     if (!oldData) return oldData;
-                    console.log('[EditItemModal] Removing item from old cache:', {
-                        oldQueryKey,
-                        itemId: enrichedUpdatedItem.item_id,
-                        oldDataLength: oldData.length
-                    });
                     return oldData.filter((i: any) => i.item_id !== enrichedUpdatedItem.item_id);
                 });
 
                 // 移動先のキャッシュが存在しない場合は無効化して再取得
                 const existingNewData = queryClient.getQueryData(newQueryKey);
                 if (!existingNewData) {
-                    console.log('[EditItemModal] Target cache does not exist, invalidating:', newQueryKey);
                     queryClient.invalidateQueries({ queryKey: newQueryKey });
                 } else {
                     // 移動先のキャッシュが存在する場合のみ直接更新
                     queryClient.setQueryData(newQueryKey, (oldData: any) => {
-                        console.log('[EditItemModal] Updating existing target cache:', {
-                            newQueryKey,
-                            existingDataLength: oldData?.length || 0,
-                            itemId: enrichedUpdatedItem.item_id
-                        });
-
                         if (!oldData) return [enrichedUpdatedItem];
 
                         const existingIndex = oldData.findIndex((i: any) => i.item_id === enrichedUpdatedItem.item_id);
@@ -295,7 +250,13 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
             onClose();
         },
-        onError: (err: any) => toast.error(`更新に失敗しました: ${err.message}`),
+        onError: (err: any) => {
+            if (err?.response?.status === 400) {
+                toast.error('完了済みの復習日が存在するため変更できません。');
+            } else {
+                toast.error(`更新に失敗しました: ${err.message}`);
+            }
+        },
     });
 
     const deleteMutation = useMutation({

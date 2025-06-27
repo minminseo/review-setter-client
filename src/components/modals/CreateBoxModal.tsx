@@ -82,7 +82,7 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
             queryClient.invalidateQueries({ queryKey: ['boxes', categoryId] });
             // Zustandストアにも新しいボックスを追加し、UIに即時反映させる
             addBoxToStore(categoryId, newBox);
-            toast.success('Box created successfully!');
+            toast.success('新しいボックスを作成しました！');
             onClose(); // このモーダルを閉じる
         },
         onError: (error) => toast.error(`Failed to create box: ${error.message}`),
@@ -97,6 +97,11 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
 
     // フォームの送信処理
     const onSubmit = (values: z.infer<typeof boxSchema>) => {
+        // パターンが未選択の場合はバリデーションエラーを表示
+        if (!values.pattern_id) {
+            toast.error('パターン選択は必須です。');
+            return;
+        }
         mutation.mutate(values);
     };
 
@@ -111,7 +116,7 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onClose}>
-                <DialogContent className="w-[95vw] max-w-lg h-[350px] max-h-[95vh] flex flex-col">
+                <DialogContent className="w-[95vw] max-w-lg h-[400px] max-h-[95vh] flex flex-col">
                     <div className="h-full flex flex-col ">
                         <div className="flex-1 flex flex-col ">
                             <DialogHeader>
@@ -135,7 +140,7 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel className="inline-block pointer-events-none select-none">復習物ボックス名</FormLabel>
-                                                        <div className="w-full ">
+                                                        <div className="w-full">
                                                             <FormControl>
                                                                 <Input
                                                                     placeholder="例: 基本文法, 応用問題"

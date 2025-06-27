@@ -108,10 +108,17 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
         onSuccess: (updatedBox) => {
             queryClient.invalidateQueries({ queryKey: ['boxes', category.id] });
             updateInStore(category.id, updatedBox);
-            toast.success('Box updated successfully!');
+            toast.success('ボックスを更新しました！');
             onClose();
         },
-        onError: (error: any) => toast.error(`Update failed: ${error.message}`),
+        onError: (error: any) => {
+            // 500ステータスコードの場合は、完了済み復習日があるエラーとして扱う
+            if (error?.response?.status === 500) {
+                toast.error('ボックス内に復習物が存在するためパターンを変更できません。');
+            } else {
+                toast.error(`Update failed: ${error.message}`);
+            }
+        },
     });
 
     const deleteMutation = useMutation({

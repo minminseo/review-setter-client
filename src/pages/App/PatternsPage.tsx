@@ -19,8 +19,6 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
  * ホームページやサイドバーから遷移してくる。
  */
 const PatternsPage = () => {
-    console.log('PatternsPage component rendered'); // デバッグ用ログ
-
     // グローバルなZustandストアからパターンリストとセッター関数を取得
     const { patterns, setPatterns } = usePatternStore();
 
@@ -38,8 +36,6 @@ const PatternsPage = () => {
         refetchOnMount: true, // マウント時に必ず実行
         refetchOnWindowFocus: false, // ウィンドウフォーカス時の再取得を無効化
     });
-
-    console.log('PatternsPage state:', { isLoading, isSuccess, error, fetchedPatterns, patterns }); // デバッグ用ログ
 
     // データ取得成功時に、Zustandストアの状態を更新する
     React.useEffect(() => {
