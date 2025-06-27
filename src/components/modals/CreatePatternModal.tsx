@@ -78,6 +78,26 @@ export const CreatePatternModal = ({ isOpen, onClose }: CreatePatternModalProps)
 
     // 保存ボタンが押されたときの処理
     const onSubmit = (values: z.infer<typeof patternSchema>) => {
+        // ステップの数値を配列で取得
+        const stepValues = values.steps.map(step => step.interval_days);
+        
+        // 重複チェック
+        const hasDuplicates = stepValues.some((value, index) => stepValues.indexOf(value) !== index);
+        if (hasDuplicates) {
+            toast.error('ステップが重複しています。');
+            return;
+        }
+        
+        // 昇順チェック
+        const isAscending = stepValues.every((value, index) => {
+            if (index === 0) return true;
+            return value > stepValues[index - 1];
+        });
+        if (!isAscending) {
+            toast.error('ステップの順序が正しくありません。');
+            return;
+        }
+        
         // APIが要求する形式にデータを整形する
         const data: CreatePatternRequest = {
             ...values,

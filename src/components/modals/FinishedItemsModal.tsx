@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 // API関数
-import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate, fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory, fetchItemsByBox } from '@/api/itemApi';
+import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate, fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory, fetchItemsByBox, deleteItem } from '@/api/itemApi';
 import { UNCLASSIFIED_ID } from '@/constants';
 import { useItemStore } from '@/store';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ import { ItemResponse } from '@/types';
 // UIコンポーネント
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronDoubleLeftIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { DataTable } from '@/components/shared/DataTable/DataTable';
@@ -158,6 +159,21 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         onError: (err) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
     });
 
+    const deleteMutation = useMutation({
+        mutationFn: (itemId: string) => deleteItem(itemId),
+        onSuccess: async () => {
+            toast.success("復習物を削除しました。");
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
+                queryClient.invalidateQueries({ queryKey: ['items', boxId], exact: true }),
+                queryClient.invalidateQueries({ queryKey: ['todaysReviews'], exact: true }),
+                queryClient.invalidateQueries({ queryKey: ['summary'], exact: true })
+            ]);
+            await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
+        },
+        onError: (err: any) => toast.error(`削除に失敗しました: ${err.message}`),
+    });
+
     // --- リサイズ機能 ---
     const handleResizeStart = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -212,7 +228,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
     }, [finishedItems.length]);
 
     // テーブル全体の幅を動的に計算
-    const baseWidth = 50 + nameColumnWidth + 50 + 100; // 操作+復習物名+詳細+学習日
+    const baseWidth = 60 + 60 + nameColumnWidth + 50 + 100; // 状態+操作+復習物名+詳細+学習日
     const reviewColumnWidth = maxColumns * 130;
     const tableWidth = baseWidth + reviewColumnWidth;
 
@@ -281,6 +297,53 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                         </Button>
                     );
                 }
+            }
+        },
+        {
+            id: 'operations',
+            header: () => (
+                <span className="block w-full text-center">操作</span>
+            ),
+            size: 60,
+            cell: ({ row }) => {
+                const item = row.original;
+                // AlertDialogのopen状態をローカルで管理
+                const [open, setOpen] = React.useState(false);
+                return (
+                    <div className="flex items-center justify-center">
+                        <AlertDialog open={open} onOpenChange={setOpen}>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="h-8 w-10 p-0 bg-red-600 hover:bg-red-800 text-white hover:text-gray-400 transition-all duration-200"
+                                    disabled={deleteMutation.isPending}
+                                    title="削除"
+                                    onClick={() => setOpen(true)}
+                                >
+                                    削除
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
+                                </AlertDialogHeader>
+                                <AlertDialogDescription>
+                                    この操作は取り消せません。復習物「{item.name}」を完全に削除します。
+                                </AlertDialogDescription>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => deleteMutation.mutate(item.item_id)}
+                                        disabled={deleteMutation.isPending}
+                                    >
+                                        {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                );
             }
         },
         {
@@ -386,10 +449,10 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                                             data={finishedItems}
                                             enablePagination={false}
                                             maxHeight="100%"
-                                            fixedColumns={4}
+                                            fixedColumns={5}
                                             tableWidth={tableWidth}
                                             resizableColumn={{
-                                                index: 1, // 復習物名列（0: 状態, 1: 操作, 2: 復習物名）
+                                                index: 2, // 復習物名列（0: 状態, 1: 操作, 2: 復習物名）
                                                 onResizeStart: handleResizeStart,
                                                 isResizing: isResizing,
                                                 isHovering: isHovering,

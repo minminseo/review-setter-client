@@ -142,75 +142,76 @@ const HomePage = () => {
     });
 
     return (
-        <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-            {/* 左ペイン */}
-            <div className="grid auto-rows-max items-start gap-4 md:gap-8 xl:col-span-1">
-                <Card>
-                    <CardHeader><CardTitle>今日の復習</CardTitle></CardHeader>
-                    <CardContent>
-                        {isLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold"><ClockIcon className="inline-block mr-2 h-6 w-6" />
-                            {totalDailyReviewCountQuery.data?.count ?? 0}</div>}
-                        <Button className="mt-4 w-full" onClick={() => navigate('/today')}>今日の復習を開始</Button>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader><CardTitle>復習暦</CardTitle></CardHeader>
-                    <CardContent><p className="text-xs text-muted-foreground">今後実装予定</p></CardContent>
-                </Card>
-            </div>
-
-            {/* 右ペイン */}
-            <div className="grid auto-rows-max items-start gap-4 md:gap-4 xl:col-span-2">
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate(`/categories/${UNCLASSIFIED_ID}/boxes/${UNCLASSIFIED_ID}`)}>
-                        <CardHeader><CardTitle><InboxIcon className="inline-block mr-2 h-6 w-6" />未分類復習物ボックス</CardTitle></CardHeader>
+        <ScrollArea className="w-full h-full">
+            <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+                {/* 左ペイン */}
+                <div className="grid auto-rows-max items-start gap-4 md:gap-8 xl:col-span-1">
+                    <Card>
+                        <CardHeader><CardTitle>今日の復習</CardTitle></CardHeader>
                         <CardContent>
-                            {isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold"><DocumentIcon className="inline-block mr-2 h-6 w-6" />
-                                {unclassifiedItemCountQuery.data?.count ?? 0}</p>}
+                            {isLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold"><ClockIcon className="inline-block mr-2 h-6 w-6" />
+                                {totalDailyReviewCountQuery.data?.count ?? 0}</div>}
+                            <Button className="mt-4 w-full" onClick={() => navigate('/today')}>今日の復習を開始</Button>
                         </CardContent>
                     </Card>
-                    <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate('/patterns')}>
-                        <CardHeader><CardTitle>復習パターン一覧</CardTitle></CardHeader>
-                        <CardContent>
-                            {(isLoading || isPatternLoading) ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold"><Squares2X2Icon className="inline-block mr-2 h-6 w-6" />
-                                {patterns ? patterns.length : 0}</p>}
-                        </CardContent>
+                    <Card>
+                        <CardHeader><CardTitle>復習暦</CardTitle></CardHeader>
+                        <CardContent><p className="text-xs text-muted-foreground">今後実装予定</p></CardContent>
                     </Card>
                 </div>
-                <div className="h-screen flex flex-col overflow-hidden  ">
-                    <div className="flex-1 flex flex-col overflow-hidden p-0 ">
-                        <Card >
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle>
-                                    <InboxStackIcon className="inline-block mr-2 h-6 w-6" />
-                                    カテゴリー
-                                    {!isLoading && (
-                                        <span className="ml-2 text-base text-muted-foreground font-normal">
-                                            ({sortedCategoriesWithStats.length})
-                                        </span>
-                                    )}
-                                </CardTitle>
-                                <div className="flex items-center gap-2">
-                                    <Button size="sm" variant="outline" onClick={() => setCreateCategoryModalOpen(true)}>
-                                        <PlusIcon className="h-4 w-4 mr-2" />
-                                        カテゴリー作成
-                                    </Button>
-                                    <SortDropdown
-                                        options={[
-                                            { value: 'name_asc', label: '名前 (昇順)' },
-                                            { value: 'name_desc', label: '名前 (降順)' },
-                                            { value: 'registered_at_desc', label: '作成順 (新しい順)' },
-                                            { value: 'registered_at_asc', label: '作成順 (古い順)' },
-                                            { value: 'edited_at_desc', label: '更新順 (新しい順)' },
-                                            { value: 'edited_at_asc', label: '更新順 (古い順)' },
-                                        ]}
-                                        value={categorySortOrder}
-                                        onValueChange={setCategorySortOrder}
-                                    />
-                                </div>
-                            </CardHeader>
-                            <ScrollArea className="w-full h-full max-h-[calc(100vh-240px)] border-t">
+
+                {/* 右ペイン */}
+                <div className="grid auto-rows-max items-start gap-4 md:gap-4 xl:col-span-2">
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate(`/categories/${UNCLASSIFIED_ID}/boxes/${UNCLASSIFIED_ID}`)}>
+                            <CardHeader><CardTitle><InboxIcon className="inline-block mr-2 h-6 w-6" />未分類復習物ボックス</CardTitle></CardHeader>
+                            <CardContent>
+                                {isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold"><DocumentIcon className="inline-block mr-2 h-6 w-6" />
+                                    {unclassifiedItemCountQuery.data?.count ?? 0}</p>}
+                            </CardContent>
+                        </Card>
+                        <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate('/patterns')}>
+                            <CardHeader><CardTitle>復習パターン一覧</CardTitle></CardHeader>
+                            <CardContent>
+                                {(isLoading || isPatternLoading) ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold"><Squares2X2Icon className="inline-block mr-2 h-6 w-6" />
+                                    {patterns ? patterns.length : 0}</p>}
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <div className="h-screen flex flex-col">
+                        <div className="flex-1 flex flex-col p-0">
+                            <Card >
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle>
+                                        <InboxStackIcon className="inline-block mr-2 h-6 w-6" />
+                                        カテゴリー
+                                        {!isLoading && (
+                                            <span className="ml-2 text-base text-muted-foreground font-normal">
+                                                ({sortedCategoriesWithStats.length})
+                                            </span>
+                                        )}
+                                    </CardTitle>
+                                    <div className="flex items-center gap-2">
+                                        <Button size="sm" variant="outline" onClick={() => setCreateCategoryModalOpen(true)}>
+                                            <PlusIcon className="h-4 w-4 mr-2" />
+                                            カテゴリー作成
+                                        </Button>
+                                        <SortDropdown
+                                            options={[
+                                                { value: 'name_asc', label: '名前 (昇順)' },
+                                                { value: 'name_desc', label: '名前 (降順)' },
+                                                { value: 'registered_at_desc', label: '作成順 (新しい順)' },
+                                                { value: 'registered_at_asc', label: '作成順 (古い順)' },
+                                                { value: 'edited_at_desc', label: '更新順 (新しい順)' },
+                                                { value: 'edited_at_asc', label: '更新順 (古い順)' },
+                                            ]}
+                                            value={categorySortOrder}
+                                            onValueChange={setCategorySortOrder}
+                                        />
+                                    </div>
+                                </CardHeader>
+
                                 <CardContent className="space-y-1 pt-3 px-3">
                                     {isLoading ? (
                                         Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
@@ -257,18 +258,19 @@ const HomePage = () => {
                                         ))
                                     )}
                                 </CardContent>
-                                <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
-                            </ScrollArea>
-                        </Card>
+
+                            </Card>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* モーダル群 */}
-            <CreateCategoryModal isOpen={isCreateCategoryModalOpen} onClose={() => setCreateCategoryModalOpen(false)} />
-            {editingCategory && <EditCategoryModal isOpen={!!editingCategory} onClose={() => setEditingCategory(null)} category={editingCategory} />}
-            {creatingBoxInCategory && <CreateBoxModal isOpen={!!creatingBoxInCategory} onClose={() => setCreatingBoxInCategory(null)} categoryId={creatingBoxInCategory.id} categoryName={creatingBoxInCategory.name} />}
-        </div>
+                {/* モーダル群 */}
+                <CreateCategoryModal isOpen={isCreateCategoryModalOpen} onClose={() => setCreateCategoryModalOpen(false)} />
+                {editingCategory && <EditCategoryModal isOpen={!!editingCategory} onClose={() => setEditingCategory(null)} category={editingCategory} />}
+                {creatingBoxInCategory && <CreateBoxModal isOpen={!!creatingBoxInCategory} onClose={() => setCreatingBoxInCategory(null)} categoryId={creatingBoxInCategory.id} categoryName={creatingBoxInCategory.name} />}
+            </div>
+            <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
+        </ScrollArea>
     );
 };
 

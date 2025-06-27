@@ -143,12 +143,10 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     // アイテム作成APIを呼び出すためのmutation
     const mutation = useMutation({
         mutationFn: (data: CreateItemRequest) => {
-            console.log('[CreateItemModal] Sending data:', data);
             return createItem(data);
         },
 
         onSuccess: (createdItem, variables) => {
-            console.log('[CreateItemModal] onSuccess called:', { createdItem, variables });
             toast.success("アイテムを作成しました！");
             // --- invalidate & zustand即時反映 ---
             // 通常ボックス
@@ -177,20 +175,15 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
             }
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
-            console.log('[CreateItemModal] About to call onClose()');
             onClose();
-            console.log('[CreateItemModal] onClose() called');
         },
         onError: (err) => {
-            console.error('[CreateItemModal] onError called:', err);
             toast.error(`作成に失敗しました: ${err.message}`);
         },
     });
 
     // フォーム送信時の処理
     const onSubmit = (values: z.infer<typeof itemSchema>) => {
-        console.log('[CreateItemModal] onSubmit called with values:', values);
-
         // pattern_idがnullまたは空の場合は、リクエストボディから除外
         const processedPatternId = (!values.pattern_id || values.pattern_id === '') ? undefined : values.pattern_id;
 
@@ -208,8 +201,6 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
             // pattern_idが有効な場合のみ含める
             ...(processedPatternId && { pattern_id: processedPatternId }),
         };
-        console.log('[CreateItemModal] Processed data:', data);
-        console.log('[CreateItemModal] About to call mutation.mutate');
         mutation.mutate(data);
     };
 

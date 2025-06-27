@@ -45,28 +45,10 @@ export const useItemStore = create<ItemState>((set, get) => ({
 
     getItemsForBox: (boxId) => {
         const result = get().itemsByBoxId[boxId];
-        console.log('=== getItemsForBox Debug ===');
-        console.log('[itemStore] boxId:', boxId);
-        console.log('[itemStore] result exists:', !!result);
-        console.log('[itemStore] result length:', result?.length || 0);
-        console.log('[itemStore] all stored keys:', Object.keys(get().itemsByBoxId));
-        console.log('[itemStore] all stored data:', get().itemsByBoxId);
-        console.log('============================');
         return result;
     },
 
     setItemsForBox: (boxId, items) => {
-        console.log('=== setItemsForBox Debug ===');
-        console.log('boxId:', boxId);
-        console.log('input items count:', items.length);
-        items.forEach((item, index) => {
-            console.log(`Item ${index + 1} (${item.name}):`);
-            console.log('  - review_dates:', item.review_dates);
-            console.log('  - review_dates length:', item.review_dates?.length || 0);
-            console.log('  - is_finished:', item.is_finished);
-        });
-        console.log('============================');
-
         set((state) => ({
             itemsByBoxId: {
                 ...state.itemsByBoxId,
@@ -95,17 +77,9 @@ export const useItemStore = create<ItemState>((set, get) => ({
     }),
 
     updateItemInBox: (boxId, updatedItem) => set((state) => {
-        console.log('=== Zustand updateItemInBox Method Debug ===');
-        console.log('boxId:', boxId);
-        console.log('updatedItem.item_id:', updatedItem.item_id);
-        console.log('updatedItem.review_dates:', updatedItem.review_dates);
-        console.log('updatedItem.review_dates length:', updatedItem.review_dates?.length);
-        console.log('is_finished:', updatedItem.is_finished);
 
         const existingItems = state.itemsByBoxId[boxId] || [];
         const existingItem = existingItems.find(item => item.item_id === updatedItem.item_id);
-        console.log('existing item review_dates:', existingItem?.review_dates);
-        console.log('============================================');
 
         // 完了済みアイテムに更新された場合は削除
         if (updatedItem.is_finished) {
@@ -125,10 +99,6 @@ export const useItemStore = create<ItemState>((set, get) => ({
                 ...state.itemsByBoxId,
                 [boxId]: (state.itemsByBoxId[boxId] || []).map((item) => {
                     if (item.item_id === updatedItem.item_id) {
-                        console.log('=== Replacing item in Zustand ===');
-                        console.log('old item review_dates:', item.review_dates);
-                        console.log('new item review_dates:', updatedItem.review_dates);
-                        console.log('==============================');
                         return updatedItem;
                     }
                     return item;

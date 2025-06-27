@@ -38,9 +38,9 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
     // サイドバーのピン留め状態
     const [isSidebarPinned, setIsSidebarPinned] = useState(false);
     // Editセクションのトグル状態
-    const [editOpen, setEditOpen] = useState(true);
+    const [editOpen, setEditOpen] = useState(false);
     // Todayセクションのトグル状態
-    const [todayOpen, setTodayOpen] = useState(true);
+    const [todayOpen, setTodayOpen] = useState(false);
     // Todayセクション用の展開カテゴリー
     const [todayExpandedCategoryIds, setTodayExpandedCategoryIds] = useState<string[]>([]);
     // カテゴリーボタンのホバー状態
@@ -52,6 +52,10 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
     const dragRef = useRef<HTMLDivElement>(null);
     // モバイル状態
     const [isMobile, setIsMobile] = useState(false);
+    // Tooltipの表示制御（ホバーで開いた後に閉じる際の一時的な非表示用）
+    const [suppressTooltips, setSuppressTooltips] = useState(false);
+    // TooltipProviderのリセット用キー
+    const [tooltipKey, setTooltipKey] = useState(0);
 
     // 画面サイズの監視
     useEffect(() => {
@@ -64,6 +68,17 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
 
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
+
+    // サイドバーが閉じた状態に戻った時のTooltip抑制を解除
+    useEffect(() => {
+        if (!open) {
+            // サイドバーが閉じてから少し待ってTooltip抑制を解除
+            const timer = setTimeout(() => {
+                setSuppressTooltips(false);
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, [open]);
 
     // 現在のcategoryId, boxIdをパスから抽出（正規表現を使わず分割で）
     const pathParts = location.pathname.split('/');
@@ -156,13 +171,24 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
             className={`fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex ${!isDragging ? 'transition-all duration-200' : ''}`}
             style={{ width: open ? sidebarWidth : 56 }}
             onMouseEnter={() => {
-                if (!open && !isSidebarPinned && !isDragging) setOpen(true);
+                if (!open && !isSidebarPinned && !isDragging) {
+                    setOpen(true);
+                }
             }}
             onMouseLeave={() => {
-                if (open && !isSidebarPinned && !isDragging) setOpen(false);
+                if (open && !isSidebarPinned && !isDragging) {
+                    setOpen(false);
+                    // サイドバーが閉じる際にホバー状態をリセット
+                    setHoveredCategoryId(null);
+                    setTodayHoveredCategoryId(null);
+                    // ホバーで開いて閉じる際のTooltip表示を一時的に抑制
+                    setSuppressTooltips(true);
+                    // TooltipProviderをリセットして全てのhover状態をクリア
+                    setTooltipKey(prev => prev + 1);
+                }
             }}
         >
-            <TooltipProvider>
+            <TooltipProvider key={tooltipKey}>
                 {/* 上部固定エリア */}
                 <div className="flex-shrink-0 ">
                     {/* 開閉トグルボタン（左側に固定） */}
@@ -236,7 +262,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     </span>
                                 </NavLink>
                             </TooltipTrigger>
-                            <TooltipContent side="right">ホーム</TooltipContent>
+                            {!open && !suppressTooltips && <TooltipContent side="right">ホーム</TooltipContent>}
                         </Tooltip>
                     </nav>
                 </div>
@@ -416,7 +442,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     onClick={() => setTodayOpen((prev) => !prev)}
                                 >
                                     {todayOpen ? <ChevronDown className="w-4 h-4 mr-1" /> : <ChevronRightIcon className="w-4 h-4 mr-1" />}
-                                    <span className="text-sm font-bold text-muted-foreground ml-1 transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis"
+                                    <span className="text-sm font-bold text-muted-foreground ml-1 transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-left"
                                         style={{
                                             flex: open ? 1 : 0,
                                             opacity: open ? 1 : 0,
@@ -628,10 +654,10 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             復習物追加
                                         </span>
                                     </span>
-                                    <span className="sr-only">復習物を追加</span>
+                                    <span className="sr-only">復習物追加</span>
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="right">復習物を追加</TooltipContent>
+                            {!open && !suppressTooltips && <TooltipContent side="right">復習物追加</TooltipContent>}
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -649,10 +675,10 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             パターン作成
                                         </span>
                                     </span>
-                                    <span className="sr-only">復習パターンを作成</span>
+                                    <span className="sr-only">パターン作成</span>
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="right">復習パターンを作成</TooltipContent>
+                            {!open && !suppressTooltips && <TooltipContent side="right">パターン作成</TooltipContent>}
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -674,7 +700,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     <span className="sr-only">ログアウト</span>
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="right">ログアウト</TooltipContent>
+                            {!open && !suppressTooltips && <TooltipContent side="right">ログアウト</TooltipContent>}
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -695,7 +721,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     <span className="sr-only">設定</span>
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="right">設定</TooltipContent>
+                            {!open && !suppressTooltips && <TooltipContent side="right">設定</TooltipContent>}
                         </Tooltip>
                     </nav>
                 </div>

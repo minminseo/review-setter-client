@@ -73,7 +73,7 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
             // 成功した場合、キャッシュを無効化し、Zustandストアを更新する
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             updateInStore(updatedCategory);
-            toast.success('Category updated successfully!');
+            toast.success('カテゴリーを更新しました！');
             onClose();
         },
         onError: (error) => toast.error(`Update failed: ${error.message}`),
