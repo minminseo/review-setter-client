@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/hooks/useAuth';
 import { updateUser } from '@/api/authApi';
@@ -19,13 +20,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { SettingPasswordModl } from './SettingPasswordModl';
+import { TFunction } from 'i18next';
 
 // ユーザー設定フォームのバリデーションルール
-const settingsSchema = z.object({
-    email: z.string().email("無効なメールアドレスです。"),
+const settingsSchema = (t: TFunction) => z.object({
+    email: z.string().email(t('validation.invalidEmail')),
     theme_color: z.enum(['dark', 'light']),
     language: z.enum(['ja', 'en']),
-    timezone: z.string().min(1, "タイムゾーンを選択してください。"),
+    timezone: z.string().min(1, t('auth.selectTimezone')),
 });
 
 type SettingsModalProps = {
@@ -39,10 +41,13 @@ type SettingsModalProps = {
 export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     const queryClient = useQueryClient();
     const { user } = useAuth(); // 現在のユーザー情報をuseAuthフックから取得
+    const { t } = useTranslation();
+
+    const schema = settingsSchema(t);
 
     // フォームの状態管理
-    const form = useForm<z.infer<typeof settingsSchema>>({
-        resolver: zodResolver(settingsSchema),
+    const form = useForm<z.infer<typeof schema>>({
+        resolver: zodResolver(schema),
     });
 
     // モーダルが開かれたとき、またはユーザー情報が更新されたときに、
@@ -62,16 +67,17 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     const updateMutation = useMutation({
         mutationFn: (data: UpdateUserInput) => updateUser(data),
         onSuccess: () => {
-            toast.success("設定を更新しました。");
+            // toast.success('設定を更新しました。');
+            toast.success(t('notification.userUpdated'));
             // ['user']クエリを無効化し、useAuthフックに最新のユーザー情報を再取得させる
             queryClient.invalidateQueries({ queryKey: ['user'] });
             onClose();
         },
-        onError: (err) => toast.error(`更新に失敗しました: ${err.message}`),
+        onError: (err) => toast.error(t('error.updateFailed', { message: err.message })),
     });
 
     // 保存ボタンが押されたときの処理
-    const onSubmit = (values: z.infer<typeof settingsSchema>) => {
+    const onSubmit = (values: z.infer<typeof schema>) => {
         updateMutation.mutate(values);
     };
 
@@ -84,12 +90,11 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                 <div className="h-full flex flex-col ">
                     <div className="flex-1 flex flex-col ">
                         <DialogHeader>
-                            <DialogTitle>設定</DialogTitle>
-                            <DialogDescription>ユーザー情報や表示設定を変更できます。</DialogDescription>
+                            <DialogTitle>{t('sidebar.settings')}</DialogTitle>
+                            <DialogDescription>{t('settings.description')}</DialogDescription>
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                                {/* FormFieldを正しく使用してフォームフィールドを実装 */}
                                 <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-200px)]">
                                     <div className="space-y-4 py-4">
                                         <FormField name="email" control={form.control} render={({ field }) => (
@@ -103,11 +108,11 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                         )} />
                                         <FormField name="theme_color" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">テーマ</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('settings.theme')}</FormLabel>
                                                 <div className="w-full">
                                                     <Select onValueChange={field.onChange} value={field.value}>
                                                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                                        <SelectContent>{THEME_COLORS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                                                        <SelectContent>{THEME_COLORS.map(tcol => <SelectItem key={tcol.value} value={tcol.value}>{tcol.label}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 </div>
                                                 <FormMessage />
@@ -115,7 +120,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                         )} />
                                         <FormField name="language" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">言語</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('settings.language')}</FormLabel>
                                                 <div className="w-full">
                                                     <Select onValueChange={field.onChange} value={field.value}>
                                                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
@@ -127,7 +132,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                         )} />
                                         <FormField name="timezone" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">タイムゾーン</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('settings.timezone')}</FormLabel>
                                                 <div className="w-full">
                                                     <Select onValueChange={field.onChange} value={field.value}>
                                                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
@@ -139,9 +144,9 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                         )} />
                                         <Separator />
                                         <div>
-                                            <h4 className="text-sm font-medium">パスワード</h4>
+                                            <h4 className="text-sm font-medium">{t('settings.password')}</h4>
                                             <Button type="button" variant="outline" className="mt-2" onClick={() => setPasswordModalOpen(true)}>
-                                                パスワードを変更
+                                                {t('settings.changePassword')}
                                             </Button>
                                         </div>
                                     </div>
@@ -149,9 +154,9 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                                 </ScrollArea>
                                 <DialogFooter className="justify-end">
                                     <div className="flex gap-3 absolute right-3 bottom-3">
-                                        <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                        <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
                                         <Button type="submit" disabled={updateMutation.isPending}>
-                                            {updateMutation.isPending ? '保存中...' : '保存'}
+                                            {updateMutation.isPending ? t('loading.saving') : t('common.save')}
                                         </Button>
                                     </div>
                                 </DialogFooter>
@@ -159,7 +164,6 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                         </Form>
                     </div>
                 </div>
-                {/* パスワード変更モーダル */}
                 <SettingPasswordModl isOpen={isPasswordModalOpen} onClose={() => setPasswordModalOpen(false)} />
             </DialogContent>
         </Dialog>

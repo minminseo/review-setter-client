@@ -2,6 +2,7 @@ import { PatternResponse } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation } from 'react-i18next';
 
 type PatternDetailProps = {
     pattern: PatternResponse;
@@ -15,22 +16,23 @@ type PatternDetailProps = {
  * @param onEdit - (オプション) 編集ボタンを押した際の処理
  */
 export const PatternDetail = ({ pattern, onEdit, className }: PatternDetailProps) => {
+    const { t } = useTranslation();
     return (
         <Card className={cn("flex flex-col", className)}>
             <CardHeader>
                 <CardTitle>{pattern.name}</CardTitle>
-                <CardDescription>Weight: {pattern.target_weight}</CardDescription>
+                <CardDescription>{t('pattern.weight')}: {t(`pattern.${pattern.target_weight}`)}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
                 <p className="text-sm text-muted-foreground">
-                    Steps (days): {pattern.steps.map(s => s.interval_days).join(' | ')}
+                    {t('pattern.steps')} ({t('common.all')}): {pattern.steps.map(s => s.interval_days).join(' | ')}
                 </p>
             </CardContent>
             {/* onEdit関数が渡された場合のみ編集ボタンを表示 */}
             {onEdit && (
                 <div className="p-4 pt-0">
                     <Button variant="outline" size="sm" className="w-full" onClick={() => onEdit(pattern)}>
-                        Edit
+                        {t('common.edit')}
                     </Button>
                 </div>
             )}

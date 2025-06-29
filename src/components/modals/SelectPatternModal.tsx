@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { fetchPatterns } from '@/api/patternApi';
 import { usePatternStore } from '@/store';
@@ -31,6 +32,7 @@ type SelectPatternModalProps = {
  * このモーダル自身も、データ取得のためにuseQueryを利用する。
  */
 export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternModalProps) => {
+    const { t } = useTranslation();
     // グローバルなZustandストアから、キャッシュされたパターンリストとセッター関数を取得
     const { patterns, setPatterns } = usePatternStore();
 
@@ -62,22 +64,19 @@ export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternM
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>復習パターン一覧モーダル</DialogTitle>
+                    <DialogTitle>{t('pattern.selectPatternModalTitle')}</DialogTitle>
                     <DialogDescription>
-                        適用する復習パターンを選択してください。
+                        {t('pattern.selectPatternModalDescription')}
                     </DialogDescription>
                 </DialogHeader>
-
-                {/* パターンリストのコンテナ */}
                 <ScrollArea className="w-full h-full max-h-[calc(100vh-240px)] border-t border-b">
-
                     <div className="max-h-[60vh]  space-y-3 p-1">
                         {isLoading ? (
                             <CardListSkeleton count={6} />
                         ) : patterns.length === 0 ? (
                             <div className="text-center py-8">
-                                <p className="text-muted-foreground">復習パターンがありません。</p>
-                                <p className="text-sm text-muted-foreground mt-2">先に復習パターンを作成してください。</p>
+                                <p className="text-muted-foreground">{t('pattern.noPatterns')}</p>
+                                <p className="text-sm text-muted-foreground mt-2">{t('pattern.createPatternFirst')}</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-4">
@@ -89,17 +88,17 @@ export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternM
                                     >
                                         <div className="rounded-md border bg-muted p-2 space-y-2 text-sm">
                                             <div className="flex">
-                                                <span className="w-28 font-semibold">復習パターン名</span>
+                                                <span className="w-28 font-semibold">{t('pattern.name')}</span>
                                                 <span className="mx-2">:</span>
                                                 <span>{pattern.name}</span>
                                             </div>
                                             <div className="flex">
-                                                <span className="w-28 font-semibold">重み</span>
+                                                <span className="w-28 font-semibold">{t('pattern.weight')}</span>
                                                 <span className="mx-2">:</span>
                                                 <span>{pattern.target_weight}</span>
                                             </div>
                                             <div className="flex">
-                                                <span className="w-28 font-semibold">復習ステップ</span>
+                                                <span className="w-28 font-semibold">{t('pattern.steps')}</span>
                                                 <span className="mx-2">:</span>
                                                 <span>{pattern.steps.map(s => s.interval_days).join(' | ')}</span>
                                             </div>
@@ -114,14 +113,14 @@ export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternM
                 <DialogFooter>
                     <div className="w-full flex flex-row items-center justify-between">
                         <Button type="button" variant="secondary" onClick={() => setCreateOpen(true)}>
-                            復習パターン作成
+                            {t('pattern.create')}
                         </Button>
                         <Button type="button" variant="outline" onClick={onClose}>
-                            閉じる
+                            {t('common.close')}
                         </Button>
                     </div>
                 </DialogFooter>
-                <CreatePatternModal isOpen={isCreateOpen} onClose={() => setCreateOpen(false)} /> {/* 追加 */}
+                <CreatePatternModal isOpen={isCreateOpen} onClose={() => setCreateOpen(false)} />
             </DialogContent>
         </Dialog>
     );

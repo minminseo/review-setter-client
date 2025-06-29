@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { NumberInput } from "@heroui/number-input";
 import { FaPlusCircle, FaTrashAlt } from "react-icons/fa";
+import { useTranslation } from 'react-i18next';
 
 import { updatePattern, deletePattern } from '@/api/patternApi';
 import { usePatternStore } from '@/store';
@@ -45,6 +46,7 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
     const queryClient = useQueryClient();
     const { updatePattern: updateInStore, removePattern: removeFromStore } = usePatternStore();
     const { itemsByBoxId } = useItemStore();
+    const { t } = useTranslation();
 
     // フォームの初期化。propsで渡されたpatternデータで初期値を設定する
     const form = useForm<z.infer<typeof patternSchema>>({
@@ -71,15 +73,14 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
         onSuccess: (updatedPattern) => {
             queryClient.invalidateQueries({ queryKey: ['patterns'] });
             updateInStore(updatedPattern);
-            toast.success('パターンを更新しました！');
+            toast.success(t('notification.patternUpdated'));
             onClose();
         },
         onError: (error: any) => {
-            // 500ステータスコードの場合は、パターンが使用されているエラーとして扱う
             if (error?.response?.status === 500) {
-                toast.error('このパターンが適用されている復習物が存在するため変更できません。');
+                toast.error(t('notification.itemUpdatedError'));
             } else {
-                toast.error(`Update failed: ${error.message}`);
+                toast.error(t('error.updateFailed', { message: error.message }));
             }
         },
     });
@@ -90,15 +91,14 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['patterns'] });
             removeFromStore(pattern.id);
-            toast.success('Pattern deleted successfully!');
+            toast.success(t('notification.patternDeleted'));
             onClose();
         },
         onError: (error: any) => {
-            // 500ステータスコードの場合は、パターンが使用されているエラーとして扱う
             if (error?.response?.status === 500) {
-                toast.error('このパターンが適用されている復習物が存在するため削除できません。');
+                toast.error(t('notification.itemUpdatedError'));
             } else {
-                toast.error(`Delete failed: ${error.message}`);
+                toast.error(t('error.deleteFailed', { message: error.message }));
             }
         },
     });
@@ -114,7 +114,7 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
         const isStepChanged = origSteps.length !== newSteps.length || origSteps.some((v, i) => v !== newSteps[i]);
 
         if (!isNameChanged && !isWeightChanged && !isStepChanged) {
-            toast.info('変更がありません');
+            toast.info(t('common.noChanges'));
             return;
         }
 
@@ -135,14 +135,14 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="w-screen max-w-none sm:max-w-none min-w-0 h-[700px] max-h-full flex flex-col">
                 <DialogHeader>
-                    <DialogTitle className=" border-b pb-2">復習パターン変更モーダル</DialogTitle>
+                    <DialogTitle className=" border-b pb-2">{t('pattern.edit')}</DialogTitle>
                     <DialogDescription>{pattern.name}</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 space-y-2 min-h-0">
                         <FormField control={form.control} name="name" render={({ field }) => (
                             <FormItem className="w-full">
-                                <FormLabel className="inline-block pointer-events-none select-none">パターン名</FormLabel>
+                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.name')}</FormLabel>
                                 <div className="w-full">
                                     <FormControl>
                                         <Input {...field} />
@@ -153,15 +153,15 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
                         )} />
                         <FormField control={form.control} name="target_weight" render={({ field }) => (
                             <FormItem>
-                                <FormLabel className="inline-block pointer-events-none select-none">重み</FormLabel>
+                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.weight')}</FormLabel>
                                 <div className="w-full">
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            <SelectItem value="heavy">Heavy</SelectItem>
-                                            <SelectItem value="normal">Normal</SelectItem>
-                                            <SelectItem value="light">Light</SelectItem>
-                                            <SelectItem value="unset">Unset</SelectItem>
+                                            <SelectItem value="heavy">{t('pattern.heavy')}</SelectItem>
+                                            <SelectItem value="normal">{t('pattern.normal')}</SelectItem>
+                                            <SelectItem value="light">{t('pattern.light')}</SelectItem>
+                                            <SelectItem value="unset">{t('pattern.unset')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -169,12 +169,12 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
                             </FormItem>
                         )} />
                         <div className="flex items-center gap-2 mb-2">
-                            <FormLabel className="whitespace-nowrap inline-block pointer-events-none select-none">復習ステップ設定</FormLabel>
+                            <FormLabel className="whitespace-nowrap inline-block pointer-events-none select-none">{t('pattern.steps')}</FormLabel>
                             <Button type="button" variant="outline" size="sm" className="flex items-center gap-1" onClick={() => append({ interval_days: 1 })}>
-                                <FaPlusCircle className="h-4 w-4" /> 追加
+                                <FaPlusCircle className="h-4 w-4" /> {t('common.create')}
                             </Button>
                             <Button type="button" variant="outline" size="sm" className="flex items-center gap-1" onClick={() => { if (fields.length > 1) remove(fields.length - 1); }}>
-                                <FaTrashAlt className="h-4 w-4" /> 削除
+                                <FaTrashAlt className="h-4 w-4" /> {t('common.delete')}
                             </Button>
                         </div>
                         <div className="flex-1 min-h-0">
@@ -202,7 +202,7 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
                                                                     <NumberInput
                                                                         {...stepField}
                                                                         value={typeof stepField.value === 'number' ? stepField.value : undefined}
-                                                                        placeholder="未入力"
+                                                                        placeholder={t('common.unset')}
                                                                         min={1}
                                                                         onChange={val => {
                                                                             if (typeof val === 'number' && val >= 1) stepField.onChange(val);
@@ -236,24 +236,22 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
                             <DialogFooter>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" className="absolute left-3 bottom-3">削除</Button>
+                                        <Button variant="destructive" className="absolute left-3 bottom-3">{t('common.delete')}</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>本当に削除しますか？</AlertDialogTitle></AlertDialogHeader>
-                                        <AlertDialogDescription>この操作は取り消せません。このパターンを使用しているボックスのスケジュールに影響が出る可能性があります。</AlertDialogDescription>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
-                                                {deleteMutation.isPending ? '削除中...' : '削除する'}
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
+                                        <AlertDialogHeader><AlertDialogTitle>{t('common.confirmDelete', { name: pattern.name, defaultValue: t('box.deleteCompletely', { name: pattern.name, defaultValue: `本当に「${pattern.name}」を削除しますか？` }) })}</AlertDialogTitle></AlertDialogHeader>
+                                        <AlertDialogDescription>{t('pattern.deleteDescription')}</AlertDialogDescription>
+                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
+                                            {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
+                                        </AlertDialogAction>
                                     </AlertDialogContent>
                                 </AlertDialog>
                                 <div className="flex gap-3 absolute right-3 bottom-3">
 
-                                    <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                    <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
                                     <Button type="submit" disabled={updateMutation.isPending}>
-                                        {updateMutation.isPending ? '保存中...' : '保存'}
+                                        {updateMutation.isPending ? t('loading.saving') : t('common.save')}
                                     </Button>
                                 </div>
 

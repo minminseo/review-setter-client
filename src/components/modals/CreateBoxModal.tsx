@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { createBox } from '@/api/boxApi';
 import { useBoxStore } from '@/store';
@@ -65,7 +66,8 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
     // ネストされた「パターン選択モーダル」の開閉状態を管理
     const [isPatternModalOpen, setPatternModalOpen] = React.useState(false);
     // 選択されたパターンの名前をUIに表示するために管理
-    const [selectedPatternName, setSelectedPatternName] = React.useState('未選択');
+    const { t } = useTranslation();
+    const [selectedPatternName, setSelectedPatternName] = React.useState(t('common.unclassified'));
 
     // react-hook-formを使ってフォームの状態とバリデーションを管理
     const form = useForm<z.infer<typeof boxSchema>>({
@@ -82,7 +84,8 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
             queryClient.invalidateQueries({ queryKey: ['boxes', categoryId] });
             // Zustandストアにも新しいボックスを追加し、UIに即時反映させる
             addBoxToStore(categoryId, newBox);
-            toast.success('新しいボックスを作成しました！');
+            // toast.success('新しいボックスを作成しました！');
+            toast.success(t('notification.boxCreated'));
             onClose(); // このモーダルを閉じる
         },
         onError: (error) => toast.error(`Failed to create box: ${error.message}`),
@@ -99,7 +102,8 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
     const onSubmit = (values: z.infer<typeof boxSchema>) => {
         // パターンが未選択の場合はバリデーションエラーを表示
         if (!values.pattern_id) {
-            toast.error('パターン選択は必須です。');
+            // toast.error('パターン選択は必須です。');
+            toast.error(t('validation.selectValidPattern'));
             return;
         }
         mutation.mutate(values);
@@ -109,7 +113,7 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
     React.useEffect(() => {
         if (!isOpen) {
             form.reset();
-            setSelectedPatternName('未選択');
+            setSelectedPatternName(t('box.Unselected'));
         }
     }, [isOpen, form]);
 
@@ -120,14 +124,12 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                     <div className="h-full flex flex-col ">
                         <div className="flex-1 flex flex-col ">
                             <DialogHeader>
-                                <DialogTitle className="border-b pb-2">復習物ボックス作成モーダル</DialogTitle>
+                                <DialogTitle className="border-b pb-2">{t('box.create')}</DialogTitle>
                                 <DialogDescription>
-
-                                    <div className="mb-1 font-semibold text-white">カテゴリー（指定不可）</div>
+                                    <div className="mb-1 font-semibold text-white">{t('category.name')}（{t('common.unclassified')}）</div>
                                     <div className="mb-2 text-lg">
                                         <NameCell name={categoryName} maxWidth={500} />
                                     </div>
-
                                 </DialogDescription>
                             </DialogHeader>
                             <Form {...form}>
@@ -139,11 +141,11 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                                                 name="name"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="inline-block pointer-events-none select-none">復習物ボックス名</FormLabel>
+                                                        <FormLabel className="inline-block pointer-events-none select-none">{t('box.name')}</FormLabel>
                                                         <div className="w-full">
                                                             <FormControl>
                                                                 <Input
-                                                                    placeholder="例: 基本文法, 応用問題"
+                                                                    placeholder={t('box.name')}
                                                                     {...field}
                                                                     className="w-full  text-ellipsis  whitespace-nowrap"
                                                                 />
@@ -155,7 +157,7 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                                             />
 
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">復習パターン</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.name')}</FormLabel>
                                                 <div className="w-full">
                                                     <Button
                                                         type="button"
@@ -174,9 +176,11 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                                     <DialogFooter>
                                         <div className="flex gap-2 w-full justify-end">
                                             <div className="flex gap-2 absolute right-3 bottom-3">
-                                                <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                                <Button type="button" variant="outline" onClick={onClose}>
+                                                    {t('common.cancel')}
+                                                </Button>
                                                 <Button type="submit" disabled={mutation.isPending}>
-                                                    {mutation.isPending ? '作成中...' : '作成'}
+                                                    {mutation.isPending ? t('loading.creating') : t('common.create')}
                                                 </Button>
                                             </div>
                                         </div>

@@ -10,12 +10,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
 
-const passwordSchema = z.object({
-    newPassword: z.string().min(6, 'パスワードは6文字以上で入力してください'),
-    confirm: z.string().min(6, '確認用パスワードも6文字以上で入力してください'),
+const passwordSchema = (t: TFunction) => z.object({
+    newPassword: z.string().min(6, t('validation.passwordMinLength')),
+    confirm: z.string().min(6, t('validation.confirmPasswordMinLength')),
 }).refine((data) => data.newPassword === data.confirm, {
-    message: 'パスワードが一致しません',
+    message: t('validation.passwordsDoNotMatch'),
     path: ['confirm'],
 });
 
@@ -25,8 +27,10 @@ type SettingPasswordModlProps = {
 };
 
 export const SettingPasswordModl = ({ isOpen, onClose }: SettingPasswordModlProps) => {
-    const form = useForm<z.infer<typeof passwordSchema>>({
-        resolver: zodResolver(passwordSchema),
+    const { t } = useTranslation();
+    const schema = passwordSchema(t);
+    const form = useForm<z.infer<typeof schema>>({
+        resolver: zodResolver(schema),
         defaultValues: { newPassword: '', confirm: '' },
         mode: 'onSubmit', // バリデーションはsubmit時のみ
         reValidateMode: 'onSubmit',
@@ -48,19 +52,19 @@ export const SettingPasswordModl = ({ isOpen, onClose }: SettingPasswordModlProp
             await updatePassword({ password: data.newPassword });
         },
         onSuccess: () => {
-            toast.success('パスワードを変更しました');
+            toast.success(t('notification.passwordUpdated'));
             onClose();
         },
         onError: (err: any) => {
-            toast.error(`変更に失敗しました: ${err.message}`);
+            toast.error(t('error.updateFailed', { message: err.message }));
         },
     });
 
-    const onSubmit = async (values: z.infer<typeof passwordSchema>) => {
+    const onSubmit = async (values: z.infer<typeof schema>) => {
         setSubmitError(null);
         const valid = await form.trigger();
         if (!valid) {
-            setSubmitError('パスワードの条件を満たしてください');
+            setSubmitError(t('validation.passwordRequirements'));
             return;
         }
         mutation.mutate({ newPassword: values.newPassword });
@@ -77,8 +81,8 @@ export const SettingPasswordModl = ({ isOpen, onClose }: SettingPasswordModlProp
                 <div className="h-full flex flex-col ">
                     <div className="flex-1 flex flex-col ">
                         <DialogHeader>
-                            <DialogTitle>パスワードを変更</DialogTitle>
-                            <DialogDescription>新しいパスワードを入力してください。</DialogDescription>
+                            <DialogTitle>{t('settings.changePassword')}</DialogTitle>
+                            <DialogDescription>{t('settings.enterNewPassword')}</DialogDescription>
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
@@ -86,12 +90,12 @@ export const SettingPasswordModl = ({ isOpen, onClose }: SettingPasswordModlProp
                                     <div className="space-y-4 py-4">
                                         <FormField name="newPassword" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">新しいパスワード</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('settings.newPassword')}</FormLabel>
                                                 <div className="w-full relative flex items-center">
                                                     <FormControl>
-                                                        <Input 
-                                                            {...field} 
-                                                            type={showPassword ? 'text' : 'password'} 
+                                                        <Input
+                                                            {...field}
+                                                            type={showPassword ? 'text' : 'password'}
                                                             autoComplete="new-password"
                                                             onChange={(e) => {
                                                                 field.onChange(e);
@@ -114,12 +118,12 @@ export const SettingPasswordModl = ({ isOpen, onClose }: SettingPasswordModlProp
                                         )} />
                                         <FormField name="confirm" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">確認</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('settings.confirmPassword')}</FormLabel>
                                                 <div className="w-full relative flex items-center">
                                                     <FormControl>
-                                                        <Input 
-                                                            {...field} 
-                                                            type={showConfirm ? 'text' : 'password'} 
+                                                        <Input
+                                                            {...field}
+                                                            type={showConfirm ? 'text' : 'password'}
                                                             autoComplete="new-password"
                                                             onChange={(e) => {
                                                                 field.onChange(e);
@@ -145,9 +149,9 @@ export const SettingPasswordModl = ({ isOpen, onClose }: SettingPasswordModlProp
                                 </ScrollArea>
                                 <DialogFooter className="justify-end">
                                     <div className="flex gap-3 absolute right-3 bottom-3">
-                                        <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                        <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
                                         <Button type="submit" disabled={isDisabled}>
-                                            {mutation.isPending ? '変更中...' : '変更'}
+                                            {mutation.isPending ? t('loading.updating') : t('common.edit')}
                                         </Button>
                                     </div>
                                 </DialogFooter>

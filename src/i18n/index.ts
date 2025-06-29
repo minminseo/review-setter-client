@@ -1,14 +1,12 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import LanguageDetector from "i18next-browser-languagedetector";
 import en from "./locales/en.json";
 import ja from "./locales/ja.json";
+import type { Language } from "@/types";
 
 i18n
     // react-i18nextをi18nextに接続
     .use(initReactI18next)
-    // ブラウザの言語設定を自動で検知するプラグイン
-    .use(LanguageDetector)
     .init({
         // 翻訳リソース
         resources: {
@@ -23,11 +21,13 @@ i18n
             // ReactはデフォルトでXSS対策済みなので、エスケープは不要
             escapeValue: false,
         },
-        // 言語検出の順序とキャッシュ場所
-        detection: {
-            order: ['localStorage', 'navigator'],
-            caches: ['localStorage'],
-        },
+        // 言語検出を無効にし、手動で制御
+        lng: "ja", // デフォルト言語
     });
+
+// Zustandから言語を設定するためのヘルパー関数
+export const setLanguage = (language: Language) => {
+    i18n.changeLanguage(language);
+};
 
 export default i18n;

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon, PencilIcon, ChevronDoubleLeftIcon } from '@heroicons/react/24/outline';
 import { MoreHorizontal } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // API & Store & Types
 import {
@@ -80,6 +81,7 @@ const TodaysReviewPage = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    const { t } = useTranslation();
     const { categories, setCategories } = useCategoryStore();
     const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
     const { todaysReviews: zustandTodaysReviews, setTodaysReviews } = useItemStore();
@@ -246,7 +248,7 @@ const TodaysReviewPage = () => {
         {
             id: 'is_completed',
             header: () => (
-                <span className="block w-full text-center">状態</span>
+                <span className="block w-full text-center">{t('common.status')}</span>
             ),
             cell: ({ row }) => {
                 const isCompleted = row.original.is_completed;
@@ -264,7 +266,7 @@ const TodaysReviewPage = () => {
                             disabled={incompleteMutation.isPending}
                         >
 
-                            取消
+                            {t('common.reviewCalsel')}
                         </Button>
                     </div>
                 ) : (
@@ -280,18 +282,18 @@ const TodaysReviewPage = () => {
                             }}
                             disabled={completeMutation.isPending}
                         >
-                            完了
+                            {t('common.finish')}
                         </Button>
                     </div>
                 );
             },
-            size: 60,
+            size: 70,
         },
         // 操作カラム（歯車アイコン）
         {
             id: 'actions',
             header: () => (
-                <span className="block w-full text-center">操作</span>
+                <span className="block w-full text-center">{t('common.actions')}</span>
             ),
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
@@ -307,13 +309,13 @@ const TodaysReviewPage = () => {
             accessorKey: 'item_name',
             header: () => (
                 <div className="flex items-center justify-center relative">
-                    <span className="block w-full text-center">復習物名</span>
+                    <span className="block w-full text-center">{t('item.name')}</span>
                     <Button
                         variant="ghost"
                         size="icon"
                         className="absolute right-1 h-4 w-4 p-0 hover:bg-gray-200"
                         onClick={handleResetWidth}
-                        title="幅を初期化"
+                        title={t('common.resetWidth', '幅を初期化')}
                     >
                         <ChevronDoubleLeftIcon className="h-3 w-3" />
                     </Button>
@@ -326,7 +328,7 @@ const TodaysReviewPage = () => {
         {
             id: 'detail',
             header: () => (
-                <span className="block w-full text-center">詳細</span>
+                <span className="block w-full text-center">{t('common.details')}</span>
             ),
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
@@ -341,7 +343,7 @@ const TodaysReviewPage = () => {
         {
             id: 'target_weight',
             header: () => (
-                <span className="block w-full text-center">重さ</span>
+                <span className="block w-full text-center">{t('item.weight')}</span>
             ),
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
@@ -355,7 +357,7 @@ const TodaysReviewPage = () => {
         {
             accessorKey: 'step_number',
             header: () => (
-                <span className="block w-full text-center">ステップ</span>
+                <span className="block w-full text-center">{t('pattern.step', 'ステップ')}</span>
             ),
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
@@ -368,7 +370,7 @@ const TodaysReviewPage = () => {
         {
             id: 'learned_date',
             header: () => (
-                <span className="block w-full text-center">学習日</span>
+                <span className="block w-full text-center">{t('item.learningDate')}</span>
             ),
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
@@ -547,14 +549,14 @@ const TodaysReviewPage = () => {
                     boxShadow: '0 2px 8px -4px rgba(0,0,0,0.08)',
                 }}
             >
-                <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: "今日の復習" }]} />
+                <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: t('common.daily') }]} />
                 <div
                     className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-4 gap-y-2 items-stretch w-full max-w-full"
                     style={{ minWidth: 'min-content' }}
                 >
                     {/* カテゴリーラベル */}
                     <div className="flex items-center">
-                        <span className="text-sm font-semibold shrink-0">カテゴリー:</span>
+                        <span className="text-sm font-semibold shrink-0">{t('category.label')}:</span>
                     </div>
                     {/* カテゴリータブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
@@ -568,8 +570,8 @@ const TodaysReviewPage = () => {
                                             maxWidth: '100%'
                                         }}
                                     >
-                                        <TabsTrigger value="all" className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
-                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                        <TabsTrigger value="all" className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">{t('common.all')}</TabsTrigger>
+                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">{t('common.unclassified')}</TabsTrigger>
                                         {displayedCategories.map((cat) => (
                                             <TabsTrigger key={cat.id} value={cat.id} className="w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                 {cat.name}
@@ -594,7 +596,7 @@ const TodaysReviewPage = () => {
                     </div>
                     {/* ボックスラベル */}
                     <div className="flex items-center">
-                        <span className="text-sm font-semibold shrink-0">ボックス:</span>
+                        <span className="text-sm font-semibold shrink-0">{t('box.label')}:</span>
                     </div>
                     {/* ボックスタブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
@@ -608,9 +610,9 @@ const TodaysReviewPage = () => {
                                             maxWidth: '100%',
                                         }}
                                     >
-                                        <TabsTrigger value="all" className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
+                                        <TabsTrigger value="all" className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">{t('common.all')}</TabsTrigger>
                                         {selectedCategoryId !== 'all' && (
-                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">{t('common.unclassified')}</TabsTrigger>
                                         )}
                                         {displayedBoxes.map((box) => (
                                             <TabsTrigger key={box.id} value={box.id} className="w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
@@ -641,7 +643,7 @@ const TodaysReviewPage = () => {
                 <div className="flex items-center justify-end p-3 gap-2">
                     <Button onClick={handleNavigate} variant="secondary">
                         <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-2" />
-                        このレイヤーへ移動
+                        {t('common.moveToBox')}
                     </Button>
                     <Card className="min-w-[5rem] py-2 bg-green-900">
                         <CardHeader className="p-0">

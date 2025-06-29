@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
 
 import * as React from 'react';
 
@@ -33,19 +35,19 @@ import { Calendar } from '@/components/ui/calendar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
-const itemSchema = z.object({
-    name: z.string().min(1, "復習物名は必須です。"),
+const createItemSchema = (t: TFunction) => z.object({
+    name: z.string().min(1, t('validation.itemNameRequired')),
     detail: z.string().optional(),
-    learned_date: z.date({ required_error: "学習日は必須です。" }),
+    learned_date: z.date({ required_error: t('validation.learningDateRequired') }),
     category_id: z.union([
-        z.string().uuid("正しいカテゴリーを選択してください。"),
+        z.string().uuid(t('validation.selectValidCategory')),
         z.literal("UNCLASSIFIED")
     ]).nullable().optional(),
     box_id: z.union([
-        z.string().uuid("正しいボックスを選択してください。"),
+        z.string().uuid(t('validation.selectValidBox')),
         z.literal("UNCLASSIFIED")
     ]).nullable().optional(),
-    pattern_id: z.string().uuid("正しいパターンを選択してください。").nullable().optional(),
+    pattern_id: z.string().uuid(t('validation.selectValidPattern')).nullable().optional(),
 });
 
 type EditItemModalProps = {
@@ -55,6 +57,9 @@ type EditItemModalProps = {
 };
 
 export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => {
+    const { t } = useTranslation();
+    const itemSchema = React.useMemo(() => createItemSchema(t), [t]);
+
     const queryClient = useQueryClient();
     const { updateItemInBox, removeItemFromBox, addItemToBox } = useItemStore();
 
@@ -144,7 +149,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     const updateMutation = useMutation({
         mutationFn: (data: UpdateItemRequest) => updateItem({ itemId: item.item_id, data }),
         onSuccess: (updatedItem, variables) => {
-            toast.success("アイテムを更新しました！");
+            toast.success(t('notification.itemUpdated'));
 
             // 重要：APIレスポンスにreview_datesが不完全な場合、元のデータで補完
             const enrichedUpdatedItem = {
@@ -252,9 +257,11 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         },
         onError: (err: any) => {
             if (err?.response?.status === 400) {
-                toast.error('完了済みの復習日が存在するため変更できません。');
+                toast.error(t('notification.itemUpdatedError'));
             } else {
-                toast.error(`更新に失敗しました: ${err.message}`);
+                toast.error(
+                    t('error.updateFailed', { message: err?.message || '' })
+                );
             }
         },
     });
@@ -262,20 +269,24 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     const deleteMutation = useMutation({
         mutationFn: () => deleteItem(item.item_id),
         onSuccess: () => {
-            toast.success("アイテムを削除しました。");
+            toast.success(t('notification.itemDeleted'));
             queryClient.invalidateQueries({ queryKey: ['items', item.box_id] });
             if (item.box_id) {
                 removeItemFromBox(item.box_id, item.item_id);
             }
             onClose();
         },
-        onError: (err: any) => toast.error(`削除に失敗しました: ${err.message}`),
+        onError: (err: any) => {
+            toast.error(
+                t('error.deleteFailed', { message: err?.message || '' })
+            );
+        },
     });
 
     const finishMutation = useMutation({
         mutationFn: () => markItemAsFinished(item.item_id),
         onSuccess: () => {
-            toast.success("アイテムを完了済みにしました。");
+            toast.success(t('notification.markItemAsFinished'));
 
             // 完了済みアイテムは通常のアイテムリストから削除する
             if (item.box_id) {
@@ -310,7 +321,11 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
             onClose();
         },
-        onError: (err: any) => toast.error(`処理に失敗しました: ${err.message}`),
+        onError: (err: any) => {
+            toast.error(
+                t('error.updateFailed', { message: err?.message || '' })
+            );
+        },
     });
 
     const onSubmit = (values: z.infer<typeof itemSchema>) => {
@@ -335,7 +350,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                     <div className="flex-1 flex flex-col overflow-hidden">
                         <DialogHeader>
                             <div className="pb-2">
-                                <DialogTitle>復習物編集モーダル</DialogTitle>
+                                <DialogTitle>{t('item.edit')}</DialogTitle>
                             </div>
                         </DialogHeader>
                         <Form {...form}>
@@ -344,7 +359,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                     <div className="space-y-4 py-4">
                                         <FormField name="name" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">復習物名</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('item.name')}</FormLabel>
                                                 <div className=" w-full">
                                                     <FormControl>
                                                         <Input {...field} />
@@ -355,7 +370,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         )} />
                                         <FormField name="detail" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">詳細 (任意)</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('item.detailOptional')}</FormLabel>
                                                 <div className=" w-full">
                                                     <FormControl>
                                                         <Textarea {...field} />
@@ -366,13 +381,13 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         )} />
                                         <FormField name="learned_date" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">学習日</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('item.learningDate')}</FormLabel>
                                                 <div>
                                                     <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                                                         <PopoverTrigger asChild>
                                                             <FormControl>
                                                                 <Button variant={"outline"} className={cn("w-[200px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                                    {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
+                                                                    {field.value ? format(field.value, "PPP") : <span>{t('item.selectDate')}</span>}
                                                                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                                                 </Button>
                                                             </FormControl>
@@ -400,7 +415,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         )} />
                                         <FormField name="category_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">カテゴリー</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('category.caategory')}</FormLabel>
                                                 <div className="w-full">
                                                     <Select onValueChange={(value) => {
                                                         field.onChange(value);
@@ -409,11 +424,11 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                     }} value={field.value ?? "UNCLASSIFIED"}>
                                                         <FormControl>
                                                             <SelectTrigger className="w-full min-w-0 max-w-[450px]">
-                                                                <SelectValue placeholder="カテゴリーを選択 (任意)" />
+                                                                <SelectValue placeholder={t('category.selectCategoryOptional')} />
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent className="w-full min-w-0 max-w-[450px]">
-                                                            <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
+                                                            <SelectItem value="UNCLASSIFIED">{t('common.unclassified')}</SelectItem>
                                                             {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
@@ -424,10 +439,10 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         <FormField name="box_id" control={form.control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel className="inline-block pointer-events-none select-none">
-                                                    ボックス
+                                                    {t('box.box')}
                                                     {item.pattern_id && filteredBoxes.length < boxes.length && hasCompletedReviews() && (
                                                         <span className="text-xs text-muted-foreground ml-1">
-                                                            (同じ復習パターンのボックスのみ)
+                                                            {t('pattern.useBoxSetting')}
                                                         </span>
                                                     )}
                                                 </FormLabel>
@@ -435,11 +450,11 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                     <Select onValueChange={field.onChange} value={field.value ?? "UNCLASSIFIED"}>
                                                         <FormControl>
                                                             <SelectTrigger className="w-full min-w-0 max-w-[450px]">
-                                                                <SelectValue placeholder="ボックスを選択 (任意)" />
+                                                                <SelectValue placeholder={t('box.selectBox')} />
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent className="w-full min-w-0 max-w-[450px]">
-                                                            <SelectItem value="UNCLASSIFIED">未分類</SelectItem>
+                                                            <SelectItem value="UNCLASSIFIED">{t('common.unclassified')}</SelectItem>
                                                             {filteredBoxes.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
@@ -447,14 +462,14 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                 <FormMessage />
                                                 {item.pattern_id && filteredBoxes.length === 0 && hasCompletedReviews() && (
                                                     <p className="text-xs text-orange-600">
-                                                        この復習パターンと一致するボックスがありません
+                                                        {t('box.noBoxMatchPattern')}
                                                     </p>
                                                 )}
                                             </FormItem>
                                         )} />
                                         <FormField name="pattern_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">復習パターン{isPatternDisabled && " (ボックスの設定を使用)"}</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.selectPattern')}{isPatternDisabled && ` (${t('pattern.useBoxSetting')})`}</FormLabel>
                                                 <div className="w-full w-full">
                                                     <Select
                                                         onValueChange={field.onChange}
@@ -466,9 +481,9 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                                 <SelectValue
                                                                     placeholder={isPatternDisabled ?
                                                                         (selectedBox?.pattern_id ?
-                                                                            (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
-                                                                            : "未設定")
-                                                                        : "パターンを選択 (任意)"
+                                                                            (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || t('pattern.useBoxSetting') : t('pattern.useBoxSetting'))
+                                                                            : t('pattern.unset'))
+                                                                        : t('pattern.selectPattern')
                                                                     }
                                                                 />
                                                             </SelectTrigger>
@@ -478,7 +493,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                                 patterns.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
                                                             ) : (
                                                                 <div className="p-2 text-sm text-muted-foreground text-center">
-                                                                    復習パターンがありません
+                                                                    {t('pattern.noPatterns')}
                                                                 </div>
                                                             )}
                                                         </SelectContent>
@@ -496,26 +511,26 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         <div className="flex items-center gap-2 w-full justify-between">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="destructive" className="absolute left-3 bottom-3">削除</Button>
+                                                    <Button variant="destructive" className="absolute left-3 bottom-3">{t('common.delete')}</Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>本当に削除しますか？</AlertDialogTitle></AlertDialogHeader>
-                                                    <AlertDialogDescription>この操作は取り消せません。</AlertDialogDescription>
+                                                    <AlertDialogHeader><AlertDialogTitle>{t('common.confirmDelete', { name: item.name, defaultValue: t('box.deleteCompletely', { name: item.name, defaultValue: `本当に「${item.name}」を削除しますか？` }) })}</AlertDialogTitle></AlertDialogHeader>
+                                                    <AlertDialogDescription>{t('item.itemDescription')}</AlertDialogDescription>
                                                     <AlertDialogFooter>
-                                                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
-                                                            {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                                            {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
                                             <div className="flex gap-3 absolute right-3 bottom-3 ">
                                                 <Button type="button" variant="secondary" onClick={() => finishMutation.mutate()} disabled={finishMutation.isPending}>
-                                                    {finishMutation.isPending ? '処理中...' : '途中完了にする'}
+                                                    {finishMutation.isPending ? t('loading.loading') : t('common.finish')}
                                                 </Button>
-                                                <Button type="button" variant="outline" onClick={onClose}>閉じる</Button>
+                                                <Button type="button" variant="outline" onClick={onClose}>{t('common.close')}</Button>
                                                 <Button type="submit" disabled={updateMutation.isPending}>
-                                                    {updateMutation.isPending ? '保存中...' : '保存'}
+                                                    {updateMutation.isPending ? t('loading.saving') : t('common.save')}
                                                 </Button>
                                             </div>
                                         </div>

@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { createCategory } from '@/api/categoryApi';
 import { useCategoryStore } from '@/store';
@@ -46,6 +47,7 @@ type CreateCategoryModalProps = {
  * ホーム画面やカテゴリー内部画面から呼び出されることを想定。
  */
 export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProps) => {
+    const { t } = useTranslation();
     // React Queryのキャッシュを操作するためのクライアント
     const queryClient = useQueryClient();
     // Zustandストアからカテゴリーを追加するアクションを取得
@@ -67,7 +69,7 @@ export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProp
             // 2. Zustandストアにも新しいカテゴリーを追加し、UIに即時反映（楽観的更新）
             addCategoryToStore(newCategory);
 
-            toast.success('新しいカテゴリーを作成しました！');
+            toast.success(t('notification.categoryCreated'));
             onClose(); // モーダルを閉じる
             form.reset(); // 次回開いた時のためにフォームをリセット
         },
@@ -89,9 +91,9 @@ export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProp
                 <div className="h-full flex flex-col ">
                     <div className="flex-1 flex flex-col ">
                         <DialogHeader>
-                            <DialogTitle>カテゴリー作成モーダル</DialogTitle>
+                            <DialogTitle>{t('category.create')}</DialogTitle>
                             <DialogDescription>
-                                新しいカテゴリー名を入力してください。
+                                {t('category.createDescription')}
                             </DialogDescription>
                         </DialogHeader>
                         <Form {...form}>
@@ -103,10 +105,10 @@ export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProp
                                             name="name"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="inline-block pointer-events-none select-none">カテゴリー名</FormLabel>
+                                                    <FormLabel className="inline-block pointer-events-none select-none">{t('category.name')}</FormLabel>
                                                     <div className="w-full pb-8">
                                                         <FormControl>
-                                                            <Input placeholder="例: プログラミング, 英語学習" {...field} />
+                                                            <Input placeholder={t('category.nameExample')} {...field} />
                                                         </FormControl>
                                                     </div>
                                                     <FormMessage />
@@ -120,11 +122,10 @@ export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProp
                                     <div className="flex gap-2 w-full justify-end">
                                         <div className="flex gap-2 absolute right-3 bottom-3">
                                             <Button type="button" variant="outline" onClick={onClose}>
-                                                キャンセル
+                                                {t('common.cancel')}
                                             </Button>
                                             <Button type="submit" disabled={mutation.isPending}>
-                                                {/* mutationの実行中はボタンを無効化し、テキストを変更 */}
-                                                {mutation.isPending ? '作成中...' : '作成'}
+                                                {mutation.isPending ? t('loading.creating') : t('common.create')}
                                             </Button>
                                         </div>
                                     </div>

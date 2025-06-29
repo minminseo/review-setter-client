@@ -8,6 +8,7 @@ import { useCategoryStore, useBoxStore } from '@/store';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // 親コンポーネントから受け取るPropsの型を定義
 type SidebarProps = {
@@ -29,6 +30,7 @@ type SidebarProps = {
  * @param onOpenSettings - 設定モーダルを開くためのコールバック関数
  */
 const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, setOpen, sidebarWidth, setSidebarWidth, onDragStateChange }: SidebarProps) => {
+    const { t } = useTranslation();
     const { logout, isLoggingOut } = useAuth();
     const { categories } = useCategoryStore();
     const { boxesByCategoryId } = useBoxStore();
@@ -208,7 +210,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     setIsSidebarPinned(true);
                                 }
                             }}
-                            aria-label={open ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+                            aria-label={open ? t('sidebar.closeSidebar') : t('sidebar.openSidebar')}
                             tabIndex={0}
                         >
                             {open ? (
@@ -227,7 +229,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                         setOpen(false);
                                         setIsSidebarPinned(true); // このトグルで閉じた場合はピン留めON（ホバーで開かない）
                                     }}
-                                    aria-label="サイドバーを閉じる（ホバーで開かない）"
+                                    aria-label={t('sidebar.closeSidebarNoHover')}
                                     tabIndex={0}
                                     disabled={!open}
                                 >
@@ -257,12 +259,12 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             className={`ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1' : 'max-w-0 opacity-0'} pl-0`}
                                             style={{ height: '20px', display: 'flex', alignItems: 'center' }}
                                         >
-                                            ホーム
+                                            {t('sidebar.home')}
                                         </span>
                                     </span>
                                 </NavLink>
                             </TooltipTrigger>
-                            {!open && !suppressTooltips && <TooltipContent side="right">ホーム</TooltipContent>}
+                            {!open && !suppressTooltips && <TooltipContent side="right">{t('sidebar.home')}</TooltipContent>}
                         </Tooltip>
                     </nav>
                 </div>
@@ -293,7 +295,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             display: 'inline-block',
                                         }}
                                     >
-                                        Edit
+                                        {t('sidebar.edit')}
                                     </span>
                                 </button>
                                 <div
@@ -322,7 +324,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                     display: 'inline-block',
                                                 }}
                                             >
-                                                未分類-未分類
+                                                {t('common.unclassified')}
                                             </span>
                                         </button>
                                         {categories.map(category => {
@@ -393,7 +395,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                                     display: 'inline-block',
                                                                 }}
                                                             >
-                                                                未分類
+                                                                {t('common.unclassified')}
                                                             </span>
                                                         </button>
                                                         {/* 通常ボックス */}
@@ -450,7 +452,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             display: 'inline-block',
                                         }}
                                     >
-                                        Today
+                                        {t('sidebar.today')}
                                     </span>
                                 </button>
                                 <div
@@ -481,7 +483,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                     display: 'inline-block',
                                                 }}
                                             >
-                                                全て
+                                                {t('common.all')}
                                             </span>
                                         </NavLink>
                                         {/* 未分類ボックスの今日の復習 */}
@@ -503,7 +505,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                     display: 'inline-block',
                                                 }}
                                             >
-                                                未分類-未分類
+                                                {t('common.unclassified')}
                                             </span>
                                         </button>
                                         {categories.map(category => {
@@ -574,7 +576,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                                                     display: 'inline-block',
                                                                 }}
                                                             >
-                                                                未分類
+                                                                {t('common.unclassified')}
                                                             </span>
                                                         </button>
                                                         {/* 通常ボックス */}
@@ -651,13 +653,13 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <DocumentPlusIcon className="h-6 w-6" />
                                         </span>
                                         <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
-                                            復習物追加
+                                            {t('sidebar.createItem')}
                                         </span>
                                     </span>
-                                    <span className="sr-only">復習物追加</span>
+                                    <span className="sr-only">{t('sidebar.createItem')}</span>
                                 </Button>
                             </TooltipTrigger>
-                            {!open && !suppressTooltips && <TooltipContent side="right">復習物追加</TooltipContent>}
+                            {!open && !suppressTooltips && <TooltipContent side="right">{t('sidebar.createItem')}</TooltipContent>}
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -672,13 +674,13 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <SquaresPlusIcon className="h-6 w-6" />
                                         </span>
                                         <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
-                                            パターン作成
+                                            {t('sidebar.createPattern')}
                                         </span>
                                     </span>
-                                    <span className="sr-only">パターン作成</span>
+                                    <span className="sr-only">{t('sidebar.createPattern')}</span>
                                 </Button>
                             </TooltipTrigger>
-                            {!open && !suppressTooltips && <TooltipContent side="right">パターン作成</TooltipContent>}
+                            {!open && !suppressTooltips && <TooltipContent side="right">{t('sidebar.createPattern')}</TooltipContent>}
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -694,13 +696,13 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <ArrowRightOnRectangleIcon className="h-6 w-6" />
                                         </span>
                                         <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
-                                            ログアウト
+                                            {t('auth.logout')}
                                         </span>
                                     </span>
-                                    <span className="sr-only">ログアウト</span>
+                                    <span className="sr-only">{t('auth.logout')}</span>
                                 </Button>
                             </TooltipTrigger>
-                            {!open && !suppressTooltips && <TooltipContent side="right">ログアウト</TooltipContent>}
+                            {!open && !suppressTooltips && <TooltipContent side="right">{t('auth.logout')}</TooltipContent>}
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -715,13 +717,13 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                             <UserCircleIcon className="h-6 w-6" />
                                         </span>
                                         <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'}`}>
-                                            設定
+                                            {t('sidebar.settings')}
                                         </span>
                                     </span>
-                                    <span className="sr-only">設定</span>
+                                    <span className="sr-only">{t('sidebar.settings')}</span>
                                 </Button>
                             </TooltipTrigger>
-                            {!open && !suppressTooltips && <TooltipContent side="right">設定</TooltipContent>}
+                            {!open && !suppressTooltips && <TooltipContent side="right">{t('sidebar.settings')}</TooltipContent>}
                         </Tooltip>
                     </nav>
                 </div>

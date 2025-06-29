@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { InboxIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 import { fetchBoxes } from '@/api/boxApi';
 import { useBoxStore } from '@/store';
@@ -32,6 +33,7 @@ type SelectBoxModalProps = {
  * このモーダルの表示内容は、propsで渡される`categoryId`に依存して動的に変わる。
  */
 export const SelectBoxModal = ({ isOpen, onClose, onSelect, categoryId }: SelectBoxModalProps) => {
+    const { t } = useTranslation();
     // グローバルなZustandストアから、特定のカテゴリーに属するボックスリストを取得するセレクター関数と、
     // ボックスリストを更新するためのセッター関数を取得する
     const { getBoxesForCategory, setBoxesForCategory } = useBoxStore();
@@ -64,9 +66,9 @@ export const SelectBoxModal = ({ isOpen, onClose, onSelect, categoryId }: Select
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>ボックス一覧</DialogTitle>
+                    <DialogTitle>{t('box.selectBoxModalTitle')}</DialogTitle>
                     <DialogDescription>
-                        操作対象のボックスを選択してください。
+                        {t('box.selectBoxModalDescription')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="overflow-hidden">
@@ -75,7 +77,7 @@ export const SelectBoxModal = ({ isOpen, onClose, onSelect, categoryId }: Select
                             {!categoryId ? (
                                 // カテゴリーがまだ選択されていない場合の表示
                                 <p className="text-sm text-muted-foreground text-center py-4">
-                                    先にカテゴリーを選択してください。
+                                    {t('box.selectCategoryFirst')}
                                 </p>
                             ) : isLoading ? (
                                 // データ取得中のスケルトン表示
@@ -108,7 +110,7 @@ export const SelectBoxModal = ({ isOpen, onClose, onSelect, categoryId }: Select
                 </div>
                 <DialogFooter className="w-full justify-end">
                     <Button type="button" variant="secondary" onClick={onClose}>
-                        閉じる
+                        {t('common.close')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

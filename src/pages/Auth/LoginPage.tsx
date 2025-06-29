@@ -30,9 +30,9 @@ import {
 import { Input } from '@/components/ui/input';
 
 // ログインフォームのバリデーションルールをzodで定義
-const loginSchema = z.object({
-    email: z.string().email("無効なメールアドレスです。"),
-    password: z.string().min(1, "パスワードは必須です。"), // ログイン時は空でないことだけをチェック
+const createLoginSchema = (t: (key: string) => string) => z.object({
+    email: z.string().email(t('validation.invalidEmail')),
+    password: z.string().min(1, t('validation.passwordRequired')), // ログイン時は空でないことだけをチェック
 });
 
 /**
@@ -46,6 +46,9 @@ const LoginPage = () => {
     const { login, isLoggingIn } = useAuth();
     // パスワード表示/非表示を切り替えるためのstate
     const [showPassword, setShowPassword] = React.useState(false);
+
+    // 翻訳関数を使用してバリデーションスキーマを作成
+    const loginSchema = createLoginSchema(t);
 
     // react-hook-formを初期化
     const form = useForm<z.infer<typeof loginSchema>>({
