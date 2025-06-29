@@ -55,7 +55,9 @@
         "selectBoxModalDescription": "Please select a box to operate.",
         "selectCategoryFirst": "Please select a category first.",
         "Unselected": "Unselected",
-        "all": "All"
+        "all": "All",
+        "noBoxes": "No boxes available.",
+        "createBoxHint": "You can create a new box from the 'Create Box' button."
     },
     "item": {
         "item": "Review Item",
@@ -99,7 +101,6 @@
         "normal": "Normal",
         "light": "Light",
         "deleteDescription": "This action cannot be undone. It may affect the schedule of boxes using this pattern.",
-        "apiEmpty": "API call succeeded, but data is empty.",
         "createPatternHint": "You can create a new pattern from the 'Create Pattern' button in the sidebar."
     },
     "settings": {
@@ -151,7 +152,7 @@
         "patternDeleted": "Pattern deleted successfully!",
         "reviewCompleted": "Review completed.",
         "reviewMarkedIncomplete": "Review marked as incomplete.",
-        "itemUpdatedError": "Cannot be changed because completed review dates exist.",
+        "itemUpdatedError": "Cannot be changed because applied review items or boxes exist.",
         "markItemAsFinished": "Item has been marked as finished.",
         "reviewDateUpdated": "Review date updated."
     },

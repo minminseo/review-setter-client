@@ -78,9 +78,6 @@ export const useItemStore = create<ItemState>((set, get) => ({
 
     updateItemInBox: (boxId, updatedItem) => set((state) => {
 
-        const existingItems = state.itemsByBoxId[boxId] || [];
-        const existingItem = existingItems.find(item => item.item_id === updatedItem.item_id);
-
         // 完了済みアイテムに更新された場合は削除
         if (updatedItem.is_finished) {
             return {

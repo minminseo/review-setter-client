@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { GetBoxOutput, GetCategoryOutput, PatternResponse, ItemCountGroupedByBoxResponse, DailyCountGroupedByBoxResponse } from '@/types';
-import { useModal } from '@/contexts/ModalContext';
+import { GetBoxOutput, GetCategoryOutput, ItemCountGroupedByBoxResponse, DailyCountGroupedByBoxResponse } from '@/types';
 import { useQueries } from '@tanstack/react-query';
 import { fetchPatterns } from '@/api/patternApi';
 import { fetchItemCountByBox, fetchDailyReviewCountByBox } from '@/api/itemApi';
@@ -17,7 +16,7 @@ import { SortDropdown } from '@/components/shared/SortDropdown';
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
 import { EditBoxModal } from '@/components/modals/EditBoxModal';
 import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
-import { ClockIcon, Cog6ToothIcon, Cog8ToothIcon, DocumentIcon, InboxStackIcon, PlusCircleIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
+import { ClockIcon, Cog6ToothIcon, Cog8ToothIcon, DocumentIcon, InboxStackIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 // Categoryコンポーネントが受け取るPropsの型定義
@@ -36,8 +35,6 @@ interface CategoryProps {
  */
 export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassifiedPage }: CategoryProps) => {
     const { t } = useTranslation();
-
-    const { openCreateItemModal } = useModal();
 
     // 必要なデータを並列で取得
     const results = useQueries({
@@ -165,6 +162,8 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                     ) : sortedBoxes.length === 0 && !isUnclassifiedPage ? (
                         <div className="col-span-full text-center py-8">
                             <p className="text-muted-foreground">{t('box.noBoxes')}</p>
+                            <p className="text-xs text-gray-400 mt-1">{t('box.createBoxHint')}</p>
+
                         </div>
                     ) : (
                         sortedBoxes.map((box) => (

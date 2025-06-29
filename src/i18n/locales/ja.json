@@ -55,7 +55,9 @@
         "selectBoxModalTitle": "ボックス一覧",
         "selectBoxModalDescription": "操作対象のボックスを選択してください。",
         "selectCategoryFirst": "先にカテゴリーを選択してください。",
-        "Unselected": "未選択"
+        "Unselected": "未選択",
+        "noBoxes": "ボックスがありません。",
+        "createBoxHint": "「ボックスを作成」ボタンから新しいボックスを作成できます。"
     },
     "item": {
         "item": "復習物",
@@ -99,7 +101,6 @@
         "normal": "Normal",
         "light": "Light",
         "deleteDescription": "この操作は取り消せません。このパターンを使用しているボックスのスケジュールに影響が出る可能性があります。",
-        "apiEmpty": "API呼び出しが成功したが、データが空です。",
         "createPatternHint": "サイドバーの「復習パターンを作成」ボタンから新しいパターンを作成できます。"
     },
     "settings": {
@@ -151,7 +152,7 @@
         "patternDeleted": "パターンを削除しました！",
         "reviewCompleted": "復習を完了しました。",
         "reviewMarkedIncomplete": "復習を未完了に戻しました。",
-        "itemUpdatedError": "完了済みの復習日が存在するため変更できません。",
+        "itemUpdatedError": "適用されている復習物、もしくはボックスが存在するため変更できません。",
         "markItemAsFinished": "復習物を完了させました。",
         "reviewDateUpdated": "復習日を更新しました。"
     },
