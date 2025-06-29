@@ -108,7 +108,7 @@ export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProp
                                                     <FormLabel className="inline-block pointer-events-none select-none">{t('category.name')}</FormLabel>
                                                     <div className="w-full pb-8">
                                                         <FormControl>
-                                                            <Input placeholder={t('category.nameExample')} {...field} />
+                                                            <Input {...field} />
                                                         </FormControl>
                                                     </div>
                                                     <FormMessage />

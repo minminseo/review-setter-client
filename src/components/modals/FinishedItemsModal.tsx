@@ -332,6 +332,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                                     <AlertDialogAction
                                         onClick={() => deleteMutation.mutate(item.item_id)}
                                         disabled={deleteMutation.isPending}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     >
                                         {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                     </AlertDialogAction>

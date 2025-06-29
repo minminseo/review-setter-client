@@ -150,7 +150,11 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                                     {/* 削除実行ボタン */}
-                                                    <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
+                                                    <AlertDialogAction
+                                                        onClick={() => deleteMutation.mutate()}
+                                                        disabled={deleteMutation.isPending}
+                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                    >
                                                         {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
