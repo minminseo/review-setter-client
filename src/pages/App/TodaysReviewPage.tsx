@@ -645,7 +645,7 @@ const TodaysReviewPage = () => {
                         <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-2" />
                         {t('common.moveToBox')}
                     </Button>
-                    <Card className="min-w-[5rem] py-2 bg-green-900">
+                    <Card className="min-w-[5rem] py-2 bg-green-700 text-white">
                         <CardHeader className="p-0">
                             <CardTitle className="text-sm text-center flex items-center justify-center gap-1">
                                 <CheckCircleIcon className="h-6 w-6" />

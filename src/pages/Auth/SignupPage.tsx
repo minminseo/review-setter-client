@@ -3,8 +3,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { useAuthTexts, useAuthLanguageStore } from '@/store/authLanguageStore';
+import { AuthThemeProvider } from '@/components/AuthThemeProvider';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -34,19 +35,22 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { LANGUAGES, THEME_COLORS, TIMEZONES } from '@/constants';
 
-const formSchema = z.object({
-    email: z.string().email({ message: 'Invalid email address.' }),
-    password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-    timezone: z.string().min(1, { message: 'Please select a timezone.' }),
+const createFormSchema = (texts: { invalidEmail: string; passwordRequirements: string; timezoneRequired: string }) => z.object({
+    email: z.string().email({ message: texts.invalidEmail }),
+    password: z.string().min(6, { message: texts.passwordRequirements }),
+    timezone: z.string().min(1, { message: texts.timezoneRequired }),
     theme_color: z.enum(['dark', 'light']),
     language: z.enum(['ja', 'en']),
 });
 
 const SignupPage = () => {
-    const { t } = useTranslation();
-    // const navigate = useNavigate();
+    // 未ログイン時専用の言語・テーマ状態管理を使用
+    const texts = useAuthTexts();
+    const { language, theme, setLanguage, setTheme } = useAuthLanguageStore();
     const { signup, isSigningUp } = useAuth();
     const [showPassword, setShowPassword] = React.useState(false);
+
+    const formSchema = createFormSchema(texts);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -54,21 +58,31 @@ const SignupPage = () => {
             email: '',
             password: '',
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            theme_color: 'dark',
-            language: 'ja',
+            theme_color: theme, // Zustand状態からデフォルト値を取得
+            language: language, // Zustand状態からデフォルト値を取得
         },
     });
+
+    // 言語状態が変更されたらフォームの値も更新
+    React.useEffect(() => {
+        form.setValue('language', language);
+    }, [language, form]);
+
+    // テーマ状態が変更されたらフォームの値も更新
+    React.useEffect(() => {
+        form.setValue('theme_color', theme);
+    }, [theme, form]);
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         signup(values);
     };
 
     return (
-
-        <Card className="w-full">
+        <AuthThemeProvider>
+            <Card className="w-full">
             <CardHeader>
                 <CardTitle className="text-2xl">Review Setter</CardTitle>
-                <CardDescription>{t('auth.signup')}</CardDescription>
+                <CardDescription>{texts.signupDescription}</CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
@@ -78,7 +92,7 @@ const SignupPage = () => {
                             name="email"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t('auth.email')}</FormLabel>
+                                    <FormLabel>{texts.email}</FormLabel>
                                     <FormControl>
                                         <Input placeholder="name@example.com" {...field} />
                                     </FormControl>
@@ -91,7 +105,7 @@ const SignupPage = () => {
                             name="password"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t('auth.password')}</FormLabel>
+                                    <FormLabel>{texts.password}</FormLabel>
                                     <div className="relative">
                                         <FormControl>
                                             <Input type={showPassword ? 'text' : 'password'} {...field} />
@@ -115,11 +129,11 @@ const SignupPage = () => {
                             name="timezone"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t('auth.timezone')}</FormLabel>
+                                    <FormLabel>{texts.timezone}</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select a timezone" />
+                                                <SelectValue placeholder={texts.selectTimezone} />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -137,16 +151,23 @@ const SignupPage = () => {
                             name="theme_color"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t('auth.themeColor')}</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormLabel>{texts.themeColor}</FormLabel>
+                                    <Select 
+                                        onValueChange={(value) => {
+                                            field.onChange(value);
+                                            // テーマ選択時に未ログイン時専用の状態を更新
+                                            setTheme(value as 'dark' | 'light');
+                                        }} 
+                                        value={field.value}
+                                    >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select a theme" />
+                                                <SelectValue placeholder={texts.selectTheme} />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {THEME_COLORS.map(theme => (
-                                                <SelectItem key={theme.value} value={theme.value}>{theme.label}</SelectItem>
+                                            {THEME_COLORS.map(themeOption => (
+                                                <SelectItem key={themeOption.value} value={themeOption.value}>{themeOption.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -159,11 +180,18 @@ const SignupPage = () => {
                             name="language"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>{t('auth.language')}</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormLabel>{texts.language}</FormLabel>
+                                    <Select 
+                                        onValueChange={(value) => {
+                                            field.onChange(value);
+                                            // 言語選択時に未ログイン時専用の状態を更新
+                                            setLanguage(value as 'ja' | 'en');
+                                        }} 
+                                        value={field.value}
+                                    >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select a language" />
+                                                <SelectValue placeholder={texts.selectLanguage} />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -177,20 +205,21 @@ const SignupPage = () => {
                             )}
                         />
                         <Button type="submit" className="w-full" disabled={isSigningUp}>
-                            {isSigningUp ? t('common.loading') : t('auth.signup')}
+                            {isSigningUp ? texts.loading : texts.signup}
                         </Button>
                     </form>
                 </Form>
             </CardContent>
             <CardFooter>
                 <div className="text-center text-sm w-full">
-                    {t('auth.haveAccount')}?{' '}
+                    {texts.haveAccount}?{' '}
                     <Link to="/login" className="underline">
-                        {t('auth.login')}
+                        {texts.login}
                     </Link>
                 </div>
             </CardFooter>
         </Card>
+        </AuthThemeProvider>
     );
 };
 

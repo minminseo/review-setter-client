@@ -2,18 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
+
 
 import { login, logout, signup, fetchUser, verifyEmail } from '@/api/authApi';
 import { useUserStore } from '@/store';
 // import { CreateUserInput, LoginUserInput, VerifyEmailRequest } from '@/types';
 
 /**
- * 認証関連のロジックをまとめたカスタムフック
- * APIコール、状態管理、画面遷移をこのフックで一元管理する
+ * Custom hook for authentication logic
+ * Centralizes API calls, state management, and navigation
  */
 export const useAuth = (options: { enabled?: boolean } = {}) => {
-    const { t } = useTranslation();
+
 
     const { enabled = true } = options;
     const navigate = useNavigate();
@@ -47,70 +47,72 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
     const loginMutation = useMutation({
         mutationFn: login,
         onSuccess: () => {
+            // ログイン成功後、['user']クエリを無効化し、useQueryを再実行させる
             queryClient.invalidateQueries({ queryKey: ['user'] });
             navigate('/');
-            toast.success(t('notification.loginSuccess'));
+            toast.success("Logged in successfully.");
         },
         onError: (error: any) => {
-            const message = error.response?.data?.error || t('notification.loginFailed');
-            toast.error(message, { description: t('notification.checkCredentials') });
+            const message = error.response?.data?.error || "Login failed.";
+            toast.error(message, { description: "Please check your email and password." });
         }
     });
 
+    // サインアップ処理
     const signupMutation = useMutation({
         mutationFn: signup,
         onSuccess: (_, variables) => {
             navigate('/verify', { state: { email: variables.email } });
-            toast.success(t('notification.verificationCodeSent'), { description: t('notification.checkEmail') });
+            toast.success("Verification code sent.", { description: "Please check your email." });
         },
         onError: (error: any) => {
-            const message = error.response?.data?.error || t('notification.loginFailed');
-            toast.error(message, { description: t('validation.passwordRequirements') });
+            const message = error.response?.data?.error || "Signup failed.";
+            toast.error(message, { description: "Please check your input." });
         }
     });
 
     const verifyEmailMutation = useMutation({
         mutationFn: verifyEmail,
         onSuccess: () => {
+            // On successful email verification, invalidate ['user'] query to confirm auth state
             queryClient.invalidateQueries({ queryKey: ['user'] });
             navigate('/');
-            toast.success(t('notification.emailVerified'));
+            toast.success("Email verification completed.");
         },
         onError: (error: any) => {
-            const message = error.response?.data?.error || t('notification.loginFailed');
-            toast.error(message, { description: t('validation.invalidEmail') });
+            const message = error.response?.data?.error || "Verification failed.";
+            toast.error(message, { description: "The code is incorrect or has expired." });
         }
     });
 
     const logoutMutation = useMutation({
-
         mutationFn: logout,
         onSuccess: () => {
             clearUser();
-            // ログアウト時は全てのクエリキャッシュをクリア
+            // On logout, clear all query cache
             queryClient.clear();
-            // ユーザークエリを明示的にエラー状態にセット
+            // Explicitly set user query to undefined (error state)
             queryClient.setQueryData(['user'], undefined);
-            // ログインページにリダイレクト
+            // Redirect to login page
             navigate('/login', { replace: true });
-            toast.info(t('notification.loggedOut'));
+            toast.info("Logged out");
         },
         onError: (error: any) => {
-            const message = error.response?.data?.error || t('notification.loginFailed');
+            const message = error.response?.data?.error || "Logout failed";
             toast.error(message);
         }
     });
 
-    // 認証状態の判定: APIクエリが成功してユーザーデータがある場合のみ認証済みとする
-    // エラーが発生した場合は明確に未認証とする
+    // Auth state: Only consider authenticated if API query succeeds and user data exists
+    // If error occurs, clearly mark as unauthenticated
     const actualIsAuthenticated = isSuccess && !!user;
-    // ローディング状態: 初回読み込み中かつエラーが発生していない場合のみ
+    // Loading state: Only when initially loading and no error
     const actualIsUserLoading = isUserLoading;
 
     return {
         user,
-        isUserLoading: actualIsUserLoading, // ローディング状態を適切に管理
-        isAuthenticated: actualIsAuthenticated, // APIクエリの結果に基づく認証状態
+        isUserLoading: actualIsUserLoading, // Properly manage loading state
+        isAuthenticated: actualIsAuthenticated, // Auth state based on API query result
         login: loginMutation.mutate,
         isLoggingIn: loginMutation.isPending,
         signup: signupMutation.mutate,

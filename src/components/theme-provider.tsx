@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react"
+import { useUserStore } from "@/store/userStore"
+import { ThemeColor } from "@/types"
 
 // テーマ（dark/light）の状態とそれを変更する関数を保持するための型
 type ThemeProviderState = {
@@ -29,10 +31,21 @@ export const ThemeProvider = ({
     defaultTheme?: string
     storageKey?: string
 }) => {
+    // Zustandからテーマ状態を取得
+    const zustandTheme = useUserStore((state) => state.theme)
+    
     const [theme, setTheme] = useState(
-        // localStorageから保存されたテーマを読み込むか、なければデフォルト値を使用
-        () => localStorage.getItem(storageKey) || defaultTheme
+        // 初期化時はZustandの値を優先、なければlocalStorage、最後にdefaultTheme
+        () => zustandTheme || localStorage.getItem(storageKey) || defaultTheme
     )
+
+    // Zustandのテーマが変更されたら、ThemeProviderのテーマも同期する
+    useEffect(() => {
+        if (zustandTheme && zustandTheme !== theme) {
+            setTheme(zustandTheme)
+            localStorage.setItem(storageKey, zustandTheme)
+        }
+    }, [zustandTheme, theme, storageKey])
 
     // themeの状態が変更されたら、<html>要素のクラスを更新してCSSを適用する
     useEffect(() => {
@@ -45,7 +58,7 @@ export const ThemeProvider = ({
         theme,
         setTheme: (newTheme: string) => {
             localStorage.setItem(storageKey, newTheme)
-            setTheme(newTheme)
+            setTheme(newTheme as ThemeColor)
         },
     }
 

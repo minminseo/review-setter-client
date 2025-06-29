@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { updateUser } from '@/api/authApi';
 import { UpdateUserInput } from '@/types';
 import { THEME_COLORS, LANGUAGES, TIMEZONES } from '@/constants';
+import { useTheme } from '@/components/theme-provider';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     const queryClient = useQueryClient();
     const { user } = useAuth(); // 現在のユーザー情報をuseAuthフックから取得
     const { t } = useTranslation();
+    const { setTheme } = useTheme(); // テーマ即座変更用
 
     const schema = settingsSchema(t);
 
@@ -78,6 +80,8 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
 
     // 保存ボタンが押されたときの処理
     const onSubmit = (values: z.infer<typeof schema>) => {
+        // テーマを即座に反映
+        setTheme(values.theme_color);
         updateMutation.mutate(values);
     };
 
