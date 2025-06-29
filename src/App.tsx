@@ -78,7 +78,6 @@ const App = () => {
   // CSRFトークンの準備が完了したかどうかを管理するstate
   const [isCsrfReady, setIsCsrfReady] = useState(false);
   const language = useUserStore((state) => state.language);
-  const theme = useUserStore((state) => state.theme);
   const { t } = useTranslation();
 
   // アプリケーション起動時に一度だけ実行される副作用フック

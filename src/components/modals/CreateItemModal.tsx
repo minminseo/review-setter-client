@@ -29,7 +29,7 @@ import { UNCLASSIFIED_ID } from '@/constants';
 
 // UIコンポーネント
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -396,7 +396,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField name="pattern_id" control={form.control} render={({ field }) => (
+                                        <FormField name="pattern_id" control={form.control} render={({ }) => (
                                             <FormItem>
                                                 <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.reviewPattern')}{isPatternDisabled && ` (${t('pattern.useBoxSetting')})`}</FormLabel>
                                                 <div className="w-full">

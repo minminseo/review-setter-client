@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 
 import { updatePattern, deletePattern } from '@/api/patternApi';
 import { usePatternStore } from '@/store';
-import { useItemStore } from '@/store/itemStore';
 import { PatternResponse, UpdatePatternRequest, TargetWeight, UpdatePatternStepField } from '@/types';
 
 // UI Components
@@ -45,7 +44,6 @@ type EditPatternModalProps = {
 export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalProps) => {
     const queryClient = useQueryClient();
     const { updatePattern: updateInStore, removePattern: removeFromStore } = usePatternStore();
-    const { itemsByBoxId } = useItemStore();
     const { t } = useTranslation();
 
     // フォームの初期化。propsで渡されたpatternデータで初期値を設定する
