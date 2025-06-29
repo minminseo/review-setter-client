@@ -105,7 +105,7 @@ const App = () => {
 
   return (
     // アプリケーション全体をThemeProviderで囲み、ダークモード/ライトモードを有効にする
-    <ThemeProvider defaultTheme={theme} storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       {/* react-router-domによるルーティング設定 */}
       <Routes>
         {/* 認証ページのルート設定（認証済みユーザーはホームページにリダイレクト） */}

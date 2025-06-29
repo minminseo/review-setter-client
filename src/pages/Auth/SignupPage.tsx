@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuthTexts, useAuthLanguageStore } from '@/store/authLanguageStore';
+import { useAuth } from '@/hooks/useAuth';
 import { AuthThemeProvider } from '@/components/AuthThemeProvider';
 
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { useAuth } from '@/hooks/useAuth';
 import { LANGUAGES, THEME_COLORS, TIMEZONES } from '@/constants';
 
 const createFormSchema = (texts: { invalidEmail: string; passwordRequirements: string; timezoneRequired: string }) => z.object({
