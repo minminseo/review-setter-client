@@ -35,7 +35,7 @@ export const useOptimisticMutation = <TData, TVariables>(
   const {
     queryKeysToInvalidate = [],
     optimisticUpdate,
-    successMessage = '操作が完了しました',
+    successMessage = 'Operation completed successfully',
     onSuccessCallback,
   } = options;
 
@@ -66,7 +66,7 @@ export const useOptimisticMutation = <TData, TVariables>(
       onSuccessCallback?.(data, variables);
     },
     onError: (error: any) => {
-      toast.error(`操作に失敗しました: ${error.message}`);
+      toast.error(`Operation failed: ${error.message}`);
     },
   });
 };

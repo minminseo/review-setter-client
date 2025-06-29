@@ -78,6 +78,7 @@ const App = () => {
   // CSRFトークンの準備が完了したかどうかを管理するstate
   const [isCsrfReady, setIsCsrfReady] = useState(false);
   const language = useUserStore((state) => state.language);
+  const theme = useUserStore((state) => state.theme);
   const { t } = useTranslation();
 
   // アプリケーション起動時に一度だけ実行される副作用フック
@@ -104,7 +105,7 @@ const App = () => {
 
   return (
     // アプリケーション全体をThemeProviderで囲み、ダークモード/ライトモードを有効にする
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme={theme} storageKey="vite-ui-theme">
       {/* react-router-domによるルーティング設定 */}
       <Routes>
         {/* 認証ページのルート設定（認証済みユーザーはホームページにリダイレクト） */}
