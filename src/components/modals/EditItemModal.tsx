@@ -518,7 +518,11 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                     <AlertDialogDescription>{t('item.itemDescription')}</AlertDialogDescription>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
+                                                        <AlertDialogAction
+                                                            onClick={() => deleteMutation.mutate()}
+                                                            disabled={deleteMutation.isPending}
+                                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                        >
                                                             {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>

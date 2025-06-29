@@ -140,7 +140,7 @@ export const CreatePatternModal = ({ isOpen, onClose }: CreatePatternModalProps)
                                 <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.name')}</FormLabel>
                                 <div className="w-full">
                                     <FormControl>
-                                        <Input {...field} placeholder={t('pattern.name')} />
+                                        <Input {...field} />
                                     </FormControl>
                                 </div>
                                 <FormMessage />

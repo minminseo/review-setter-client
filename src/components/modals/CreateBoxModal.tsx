@@ -145,7 +145,6 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                                                         <div className="w-full">
                                                             <FormControl>
                                                                 <Input
-                                                                    placeholder={t('box.name')}
                                                                     {...field}
                                                                     className="w-full  text-ellipsis  whitespace-nowrap"
                                                                 />

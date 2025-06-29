@@ -239,12 +239,20 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
                                         <Button variant="destructive" className="absolute left-3 bottom-3">{t('common.delete')}</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>{t('common.confirmDelete', { name: pattern.name, defaultValue: t('box.deleteCompletely', { name: pattern.name, defaultValue: `本当に「${pattern.name}」を削除しますか？` }) })}</AlertDialogTitle></AlertDialogHeader>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>{t('common.confirmDelete', { name: pattern.name, defaultValue: t('box.deleteCompletely', { name: pattern.name, defaultValue: `本当に「${pattern.name}」を削除しますか？` }) })}</AlertDialogTitle>
+                                        </AlertDialogHeader>
                                         <AlertDialogDescription>{t('pattern.deleteDescription')}</AlertDialogDescription>
-                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
-                                            {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
-                                        </AlertDialogAction>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => deleteMutation.mutate()}
+                                                disabled={deleteMutation.isPending}
+                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            >
+                                                {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
                                 <div className="flex gap-3 absolute right-3 bottom-3">
