@@ -110,7 +110,6 @@ const PatternsPage = () => {
                 ) : sortedPatterns.length === 0 ? (
                     <div className="text-center py-8">
                         <p className="text-muted-foreground">{t('pattern.noPatterns')}</p>
-                        <p className="text-xs text-gray-400 mt-2">{t('pattern.apiEmpty')}</p>
                         <p className="text-xs text-gray-400 mt-1">{t('pattern.createPatternHint')}</p>
                     </div>
                 ) : (
