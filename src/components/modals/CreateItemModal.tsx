@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // API関数
 import { createItem } from '@/api/itemApi';
@@ -38,19 +39,19 @@ import { Calendar } from '@/components/ui/calendar';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { SelectPatternModal } from './SelectPatternModal';
 
-const itemSchema = z.object({
-    name: z.string().min(1, "復習物名は必須です。"),
+const createItemSchema = (t: (key: string) => string) => z.object({
+    name: z.string().min(1, t('validation.itemNameRequired')),
     detail: z.string().optional(),
-    learned_date: z.date({ required_error: "学習日は必須です。" }),
+    learned_date: z.date({ required_error: t('validation.learningDateRequired') }),
     category_id: z.union([
-        z.string().uuid("正しいカテゴリーを選択してください。"),
+        z.string().uuid(t('validation.selectValidCategory')),
         z.literal("UNCLASSIFIED")
     ]).nullable().optional(),
     box_id: z.union([
-        z.string().uuid("正しいボックスを選択してください。"),
+        z.string().uuid(t('validation.selectValidBox')),
         z.literal("UNCLASSIFIED")
     ]).nullable().optional(),
-    pattern_id: z.string().uuid("正しいパターンを選択してください。").nullable().optional(),
+    pattern_id: z.string().uuid(t('validation.selectValidPattern')).nullable().optional(),
 });
 
 type CreateItemModalProps = {
@@ -61,6 +62,8 @@ type CreateItemModalProps = {
 };
 
 export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBoxId }: CreateItemModalProps) => {
+    const { t } = useTranslation();
+    const itemSchema = createItemSchema(t);
     const queryClient = useQueryClient();
     const form = useForm<z.infer<typeof itemSchema>>({
         resolver: zodResolver(itemSchema),
@@ -147,7 +150,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
         },
 
         onSuccess: (createdItem, variables) => {
-            toast.success("アイテムを作成しました！");
+            toast.success(t('notification.itemCreated'));
             // --- invalidate & zustand即時反映 ---
             // 通常ボックス
             if (variables.box_id && variables.box_id !== 'UNCLASSIFIED' && variables.box_id !== null) {
@@ -178,7 +181,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
             onClose();
         },
         onError: (err) => {
-            toast.error(`作成に失敗しました: ${err.message}`);
+            toast.error(`${t('notification.creationFailed')}: ${err.message}`);
         },
     });
 
@@ -233,7 +236,14 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     // 復習パターン選択モーダルの開閉状態
     const [isPatternModalOpen, setPatternModalOpen] = React.useState(false);
     // 選択中のパターン名（UI表示用）
-    const [selectedPatternName, setSelectedPatternName] = React.useState('未選択');
+    const [selectedPatternName, setSelectedPatternName] = React.useState('');
+
+    // 初期値設定
+    React.useEffect(() => {
+        if (!selectedPatternName) {
+            setSelectedPatternName(t('common.notSelected'));
+        }
+    }, [t, selectedPatternName]);
 
     // pattern_idのwatch
     const watchedPatternId = form.watch('pattern_id');
@@ -242,11 +252,11 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     React.useEffect(() => {
         if (watchedPatternId && patterns.length > 0) {
             const p = patterns.find(p => p.id === watchedPatternId);
-            setSelectedPatternName(p?.name || '未選択');
+            setSelectedPatternName(p?.name || t('common.notSelected'));
         } else {
-            setSelectedPatternName('未選択');
+            setSelectedPatternName(t('common.notSelected'));
         }
-    }, [watchedPatternId, patterns]);
+    }, [watchedPatternId, patterns, t]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -255,7 +265,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                     <div className="flex-1 flex flex-col overflow-hidden p-0">
                         <DialogHeader>
                             <div className="pb-2">
-                                <DialogTitle>復習物作成モーダル</DialogTitle>
+                                <DialogTitle>{t('item.createItem')}</DialogTitle>
                             </div>
                         </DialogHeader>
                         <Form {...form}>
@@ -264,7 +274,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                     <div className="space-y-4 py-4">
                                         <FormField name="name" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">復習物名</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('item.name')}</FormLabel>
                                                 <div className="w-full">
                                                     <FormControl>
                                                         <Input {...field} />
@@ -275,7 +285,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                         )} />
                                         <FormField name="detail" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">詳細 (任意)</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('item.detailOptional')}</FormLabel>
                                                 <div className="w-full">
                                                     <FormControl>
                                                         <Textarea {...field} />
@@ -286,13 +296,13 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                         )} />
                                         <FormField name="learned_date" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">学習日</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('item.learningDate')}</FormLabel>
                                                 <div>
                                                     <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                                                         <PopoverTrigger asChild>
                                                             <FormControl>
                                                                 <Button variant={"outline"} className={cn("w-[200px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                                    {field.value ? format(field.value, "PPP") : <span>日付を選択</span>}
+                                                                    {field.value ? format(field.value, "PPP") : <span>{t('item.selectDate')}</span>}
                                                                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                                                 </Button>
                                                             </FormControl>
@@ -320,7 +330,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                         )} />
                                         <FormField name="category_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">カテゴリー</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('category.name')}</FormLabel>
                                                 <div className="w-full">
                                                     <Select onValueChange={(value) => {
                                                         field.onChange(value);
@@ -329,12 +339,12 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                     }} value={field.value ?? "UNCLASSIFIED"} disabled={categoriesLoading}>
                                                         <FormControl>
                                                             <SelectTrigger className="w-full min-w-0 max-w-[450px]">
-                                                                <SelectValue placeholder={categoriesLoading ? "読み込み中..." : "カテゴリーを選択 (任意)"} />
+                                                                <SelectValue placeholder={categoriesLoading ? t('loading.loading') : t('category.selectCategoryOptional')} />
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent className="w-full min-w-0 max-w-[450px]">
                                                             <SelectItem value="UNCLASSIFIED">
-                                                                未分類
+                                                                {t('common.unclassified')}
                                                             </SelectItem>
                                                             {categories.map(c => (
                                                                 <SelectItem key={c.id} value={c.id}>
@@ -343,7 +353,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                             ))}
                                                             {categoriesLoading && (
                                                                 <div className="p-2 text-sm text-muted-foreground text-center">
-                                                                    読み込み中...
+                                                                    {t('loading.loading')}
                                                                 </div>
                                                             )}
                                                         </SelectContent>
@@ -354,7 +364,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                         )} />
                                         <FormField name="box_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">ボックス</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('box.name')}</FormLabel>
                                                 <div className="w-full">
                                                     <Select
                                                         onValueChange={(value) => field.onChange(value)}
@@ -363,12 +373,12 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                     >
                                                         <FormControl>
                                                             <SelectTrigger className="w-full min-w-0 max-w-[450px]">
-                                                                <SelectValue placeholder={boxesLoading ? "読み込み中..." : "ボックスを選択 (任意)"} />
+                                                                <SelectValue placeholder={boxesLoading ? t('loading.loading') : t('box.selectBoxOptional')} />
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent className="w-full min-w-0 max-w-[450px]">
                                                             <SelectItem value="UNCLASSIFIED">
-                                                                未分類
+                                                                {t('common.unclassified')}
                                                             </SelectItem>
                                                             {boxes.map(b => (
                                                                 <SelectItem key={b.id} value={b.id}>
@@ -377,7 +387,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                             ))}
                                                             {boxesLoading && (
                                                                 <div className="p-2 text-sm text-muted-foreground text-center">
-                                                                    読み込み中...
+                                                                    {t('loading.loading')}
                                                                 </div>
                                                             )}
                                                         </SelectContent>
@@ -388,7 +398,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                         )} />
                                         <FormField name="pattern_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">復習パターン{isPatternDisabled && " (ボックスの設定を使用)"}</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.reviewPattern')}{isPatternDisabled && ` (${t('pattern.useBoxSetting')})`}</FormLabel>
                                                 <div className="w-full">
                                                     <Button
                                                         type="button"
@@ -399,8 +409,8 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                                     >
                                                         {isPatternDisabled
                                                             ? (selectedBox?.pattern_id
-                                                                ? (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || "設定済み" : "設定済み")
-                                                                : "未設定")
+                                                                ? (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || t('pattern.configured') : t('pattern.configured'))
+                                                                : t('pattern.notConfigured'))
                                                             : selectedPatternName}
                                                     </Button>
                                                 </div>
@@ -422,8 +432,8 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                 <div className=" bottom-0">
                                     <DialogFooter className="justify-end">
                                         <div className="flex gap-3 absolute right-3 bottom-3 ">
-                                            <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
-                                            <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? '作成中...' : '作成'}</Button>
+                                            <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                                            <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? t('loading.creating') : t('common.create')}</Button>
                                         </div>
 
                                     </DialogFooter>

@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 // API & Store
 import { deleteItem, completeReviewDate, incompleteReviewDate } from '@/api/itemApi';
@@ -47,6 +48,7 @@ interface BoxProps {
  * @param props - 親コンポーネント(BoxAndCategoryPage)から渡されるデータと状態
  */
 export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps) => {
+    const { t } = useTranslation();
     // --- Hooks ---
     const { categoryId, boxId } = useParams<{ categoryId: string; boxId: string }>();
     const queryClient = useQueryClient();
@@ -74,50 +76,50 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     // --- State (ソート) ---
     const [itemSortOrder, setItemSortOrder] = React.useState('registered_at_desc');
     const itemSortOptions = [
-        { value: 'name_asc', label: '名前 (昇順)' },
-        { value: 'name_desc', label: '名前 (降順)' },
-        { value: 'learned_date_desc', label: '学習日 (新しい順)' },
-        { value: 'learned_date_asc', label: '学習日 (古い順)' },
-        { value: 'registered_at_desc', label: '作成順 (新しい順)' },
-        { value: 'registered_at_asc', label: '作成順 (古い順)' },
-        { value: 'edited_at_desc', label: '更新順 (新しい順)' },
-        { value: 'edited_at_asc', label: '更新順 (古い順)' },
+        { value: 'name_asc', label: t('sort.nameAsc') },
+        { value: 'name_desc', label: t('sort.nameDesc') },
+        { value: 'learned_date_desc', label: t('sort.createdDesc') },
+        { value: 'learned_date_asc', label: t('sort.createdAsc') },
+        { value: 'registered_at_desc', label: t('sort.createdDesc') },
+        { value: 'registered_at_asc', label: t('sort.createdAsc') },
+        { value: 'edited_at_desc', label: t('sort.updatedDesc') },
+        { value: 'edited_at_asc', label: t('sort.updatedAsc') },
     ];
 
     // --- State (絞り込み) ---
     const [filterType, setFilterType] = React.useState<'all' | 'today'>('all');
-    const filterTypeLabel = filterType === 'all' ? '全て' : '今日の復習';
+    const filterTypeLabel = filterType === 'all' ? t('common.all') : t('home.todaysReview');
 
     // --- Mutations ---
     const deleteMutation = useMutation({
         mutationFn: (itemId: string) => deleteItem(itemId),
         onSuccess: (_, itemId) => {
-            toast.success('アイテムを削除しました。');
+            toast.success(t('notification.itemDeleted'));
             if (boxId) removeItemFromBox(boxId, itemId);
             queryClient.invalidateQueries({ queryKey: ['items', boxId, categoryId] });
         },
-        onError: (err: any) => toast.error(`削除に失敗しました: ${err.message}`),
+        onError: (err: any) => toast.error(t('error.deleteFailed', { message: err.message })),
         onSettled: () => setDeletingItem(null),
     });
 
     const completeReviewMutation = useMutation({
         mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number; }) => completeReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
         onSuccess: (_, variables) => {
-            toast.success('復習を完了しました。');
+            toast.success(t('notification.reviewCompleted'));
             queryClient.invalidateQueries({ queryKey: ['items', boxId, categoryId] });
             // --- zustandストアからも即時削除 ---
             if (storeBoxId) removeItemFromBox(storeBoxId, variables.itemId);
         },
-        onError: (err: any) => toast.error(`完了に失敗しました: ${err.message}`),
+        onError: (err: any) => toast.error(t('error.completeFailed', { message: err.message })),
     });
 
     const incompleteReviewMutation = useMutation({
         mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number; }) => incompleteReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
         onSuccess: () => {
-            toast.success('復習を未完了に戻しました。');
+            toast.success(t('notification.reviewMarkedIncomplete'));
             queryClient.invalidateQueries({ queryKey: ['items', boxId, categoryId] });
         },
-        onError: (err: any) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
+        onError: (err: any) => toast.error(t('error.markIncompleteFailed', { message: err.message })),
     });
 
     // --- リサイズ機能 ---
@@ -216,9 +218,9 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         {
             accessorKey: 'is_finished',
             header: () => (
-                <span className="block w-full text-center">状態</span>
+                <span className="block w-full text-center">{t('item.status')}</span>
             ),
-            size: 60,
+            size: 70,
 
             cell: ({ row }) => {
                 const today = format(new Date(), 'yyyy-MM-dd');
@@ -229,7 +231,6 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 if (!todaysReviewDate) {
                     return <span className="text-muted-foreground flex justify-center">-</span>;
                 }
-
                 if (todaysReviewDate.is_completed) {
                     return (
                         <Button
@@ -238,7 +239,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                             onClick={() => incompleteReviewMutation.mutate({ itemId: row.original.item_id, reviewDateId: todaysReviewDate.review_date_id, stepNumber: todaysReviewDate.step_number })}
                             disabled={incompleteReviewMutation.isPending}
                         >
-                            取消
+                            {t('common.cancel')}
                         </Button>
                     );
                 } else {
@@ -249,7 +250,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                             onClick={() => completeReviewMutation.mutate({ itemId: row.original.item_id, reviewDateId: todaysReviewDate.review_date_id, stepNumber: todaysReviewDate.step_number })}
                             disabled={completeReviewMutation.isPending}
                         >
-                            完了
+                            {t('common.finish')}
                         </Button>
                     );
                 }
@@ -258,7 +259,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         {
             id: 'actions',
             header: () => (
-                <span className="block w-full text-center">操作</span>
+                <span className="block w-full text-center">{t('item.operations')}</span>
             ),
             size: 50,
             cell: ({ row }) => (
@@ -273,13 +274,13 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             accessorKey: 'name',
             header: () => (
                 <div className="flex items-center justify-center relative">
-                    <span className="block w-full text-center">復習物名</span>
+                    <span className="block w-full text-center">{t('item.name')}</span>
                     <Button
                         variant="ghost"
                         size="icon"
                         className="absolute right-1 h-4 w-4 p-0 hover:bg-gray-200"
                         onClick={handleResetWidth}
-                        title="幅を初期化"
+                        title={t('common.resetWidth')}
                     >
                         <ChevronDoubleLeftIcon className="h-3 w-3" />
                     </Button>
@@ -291,7 +292,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         {
             id: 'detail',
             header: () => (
-                <span className="block w-full text-center">詳細</span>
+                <span className="block w-full text-center">{t('item.detail')}</span>
             ),
             size: 50,
             cell: ({ row }) => (
@@ -310,7 +311,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         {
             accessorKey: 'learned_date',
             header: () => (
-                <span className="block w-full text-center">学習日</span>
+                <span className="block w-full text-center">{t('item.learningDate')}</span>
             ),
             size: 100,
             cell: ({ row }) => (
@@ -322,7 +323,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         ...Array.from({ length: maxColumns }).map((_, index) => ({
             id: `review_date_${index + 1}`,
             header: () => (
-                <span className="block w-full text-center">{index + 1}回目</span>
+                <span className="block w-full text-center">{t('item.reviewCount', { count: index + 1, defaultValue: `${index + 1}回目` })}</span>
             ),
             size: 130,
             cell: ({ row }: { row: { original: ItemResponse } }) => {
@@ -354,7 +355,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 );
             },
         })),
-    ], [zustandItems, items, maxColumns, completeReviewMutation, incompleteReviewMutation]);
+    ], [zustandItems, items, maxColumns, completeReviewMutation, incompleteReviewMutation, t]);
 
     // --- フィルタリング処理 ---
     const filteredDisplayItems = React.useMemo(() => {
@@ -402,20 +403,20 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                     <InboxIcon className="inline-block mr-2 h-6 w-6" />
                     <h1
                         className="text-lg font-bold tracking-tight max-w-full truncate flex-1 min-w-0"
-                        title={currentBox?.name || "未分類ボックス"}
+                        title={currentBox?.name || t('box.unclassified')}
                     >
                         {currentBox
-                            ? `ボックス：${currentBox.name}`
-                            : "未分類ボックス"}
+                            ? `${t('box.label')}：${currentBox.name}`
+                            : t('box.unclassified')}
                     </h1>
                     <div className="flex items-center gap-2">
                         {(currentBox || boxId === 'unclassified' || (boxId && boxId.startsWith('unclassified-'))) && (
                             <Button variant="default" onClick={() => setCreateItemModalOpen(true)}>
-                                復習物を作成
+                                {t('item.create')}
                             </Button>
                         )}
                         <Button variant="outline" onClick={() => setFinishedItemsModalOpen(true)}>
-                            完了済みを確認
+                            {t('box.completedItems')}
                         </Button>
                         {/* DropdownMenuで絞り込み */}
                         <DropdownMenu>
@@ -427,10 +428,10 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => setFilterType('all')} className={filterType === 'all' ? 'font-bold text-primary' : ''}>
-                                    全て
+                                    {t('common.all')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setFilterType('today')} className={filterType === 'today' ? 'font-bold text-primary' : ''}>
-                                    今日の復習
+                                    {t('home.todaysReview')}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -494,12 +495,14 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 {deletingItem && (
                     <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
                         <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>本当に「{deletingItem.name}」を削除しますか？</AlertDialogTitle></AlertDialogHeader>
-                            <AlertDialogDescription>この操作は取り消せません。</AlertDialogDescription>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>{t('common.confirmDelete', { name: deletingItem.name, defaultValue: t('box.deleteCompletely', { name: deletingItem.name, defaultValue: `本当に「${deletingItem.name}」を削除しますか？` }) })}</AlertDialogTitle>
+                            </AlertDialogHeader>
+                            <AlertDialogDescription>{t('item.itemDescription')}</AlertDialogDescription>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => deleteMutation.mutate(deletingItem.item_id)} disabled={deleteMutation.isPending}>
-                                    {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                    {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>

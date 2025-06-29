@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { fetchPatterns } from '@/api/patternApi';
 import { usePatternStore } from '@/store';
@@ -19,6 +20,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
  * ホームページやサイドバーから遷移してくる。
  */
 const PatternsPage = () => {
+    const { t } = useTranslation();
     // グローバルなZustandストアからパターンリストとセッター関数を取得
     const { patterns, setPatterns } = usePatternStore();
 
@@ -51,12 +53,12 @@ const PatternsPage = () => {
 
     // 並び順の選択肢を拡張
     const sortOptions = [
-        { value: 'name_asc', label: '名前 (昇順)' },
-        { value: 'name_desc', label: '名前 (降順)' },
-        { value: 'registered_at_desc', label: '作成順 (新しい順)' },
-        { value: 'registered_at_asc', label: '作成順 (古い順)' },
-        { value: 'edited_at_desc', label: '更新順 (新しい順)' },
-        { value: 'edited_at_asc', label: '更新順 (古い順)' },
+        { value: 'name_asc', label: t('sort.nameAsc') },
+        { value: 'name_desc', label: t('sort.nameDesc') },
+        { value: 'registered_at_desc', label: t('sort.createdDesc') },
+        { value: 'registered_at_asc', label: t('sort.createdAsc') },
+        { value: 'edited_at_desc', label: t('sort.updatedDesc') },
+        { value: 'edited_at_asc', label: t('sort.updatedAsc') },
     ];
 
     // 並び順に応じてpatternsをソート
@@ -85,7 +87,7 @@ const PatternsPage = () => {
         <div className="flex flex-col h-full space-y-4">
             {/* ページのヘッダー部分 */}
             <div className="flex items-center justify-between flex-shrink-0">
-                <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: '復習パターン一覧' }]} />
+                <Breadcrumbs items={[{ label: t('sidebar.home'), href: '/' }, { label: t('pattern.list') }]} />
                 <SortDropdown
                     options={sortOptions}
                     value={sortOrder}
@@ -93,7 +95,7 @@ const PatternsPage = () => {
                 />
             </div>
 
-            <h1 className="text-2xl font-bold tracking-tight text-center flex-shrink-0">復習パターン一覧</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-center flex-shrink-0">{t('pattern.list')}</h1>
 
             {/* メインコンテンツ */}
             <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full flex-1 min-h-0">
@@ -107,9 +109,9 @@ const PatternsPage = () => {
                     </div>
                 ) : sortedPatterns.length === 0 ? (
                     <div className="text-center py-8">
-                        <p className="text-muted-foreground">復習パターンがありません。</p>
-                        <p className="text-xs text-gray-400 mt-2">API呼び出しが成功したが、データが空です。</p>
-                        <p className="text-xs text-gray-400 mt-1">サイドバーの「復習パターンを作成」ボタンから新しいパターンを作成できます。</p>
+                        <p className="text-muted-foreground">{t('pattern.noPatterns')}</p>
+                        <p className="text-xs text-gray-400 mt-2">{t('pattern.apiEmpty')}</p>
+                        <p className="text-xs text-gray-400 mt-1">{t('pattern.createPatternHint')}</p>
                     </div>
                 ) : (
                     <div className="flex-1 min-h-0 relative">
@@ -122,18 +124,17 @@ const PatternsPage = () => {
                                     >
                                         <div className="space-y-1">
                                             <div className="flex items-center">
-                                                <span className="w-32 font-semibold">復習パターン名</span>
+                                                <span className="w-32 font-semibold">{t('pattern.name')}</span>
                                                 <span className="mx-2">:</span>
                                                 <span className="font-bold text-lg">{pattern.name}</span>
                                             </div>
-
                                             <div className="flex items-center">
-                                                <span className="w-32 font-semibold">重み</span>
+                                                <span className="w-32 font-semibold">{t('pattern.weight')}</span>
                                                 <span className="mx-2">:</span>
-                                                <span>{pattern.target_weight}</span>
+                                                <span>{t(`pattern.${pattern.target_weight}`)}</span>
                                             </div>
                                             <div className="flex items-center flex-wrap">
-                                                <span className="w-32 font-semibold">復習ステップ</span>
+                                                <span className="w-32 font-semibold">{t('pattern.steps')}</span>
                                                 <span className="mx-2">:</span>
                                                 <span className="break-all">{pattern.steps.map(s => s.interval_days).join(' | ')}</span>
                                             </div>
@@ -143,7 +144,7 @@ const PatternsPage = () => {
                                                 className="rounded-md bg-gray-700 text-white px-4 py-2 text-sm font-semibold hover:bg-primary/80 transition-colors"
                                                 onClick={() => handleEdit(pattern)}
                                             >
-                                                Edit
+                                                {t('common.edit')}
                                             </button>
                                         </div>
                                     </div>

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { InboxIcon } from 'lucide-react';
 import { InboxStackIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 import { fetchCategories } from '@/api/categoryApi';
 import { useCategoryStore } from '@/store';
@@ -32,6 +33,7 @@ type SelectCategoryModalProps = {
  * 復習物作成・編集時や、画面上部のタブ表示が見切れた場合などに使用される。
  */
 export const SelectCategoryModal = ({ isOpen, onClose, onSelect }: SelectCategoryModalProps) => {
+    const { t } = useTranslation();
     // グローバルなZustandストアから、キャッシュされたカテゴリーリストと、それを更新する関数を取得
     const { categories, setCategories } = useCategoryStore();
 
@@ -62,9 +64,9 @@ export const SelectCategoryModal = ({ isOpen, onClose, onSelect }: SelectCategor
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>カテゴリー一覧</DialogTitle>
+                    <DialogTitle>{t('category.selectCategoryModalTitle')}</DialogTitle>
                     <DialogDescription>
-                        操作対象のカテゴリーを選択してください。
+                        {t('category.selectCategoryModalDescription')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -103,7 +105,7 @@ export const SelectCategoryModal = ({ isOpen, onClose, onSelect }: SelectCategor
                 </div>
                 <DialogFooter className="w-full justify-end">
                     <Button type="button" variant="secondary" onClick={onClose}>
-                        閉じる
+                        {t('common.close')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { updateBox, deleteBox } from '@/api/boxApi';
 import { fetchPatterns } from '@/api/patternApi';
@@ -66,9 +67,10 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
     const queryClient = useQueryClient();
     const { updateBox: updateInStore, removeBox: removeFromStore } = useBoxStore();
     const { setPatterns } = usePatternStore();
+    const { t } = useTranslation();
 
     const [isPatternModalOpen, setPatternModalOpen] = React.useState(false);
-    const [selectedPatternName, setSelectedPatternName] = React.useState('未選択');
+    const [selectedPatternName, setSelectedPatternName] = React.useState(t('common.unclassified'));
 
     // フォームの初期化。propsで渡されたboxのデータで初期値を設定する
     const form = useForm<z.infer<typeof boxSchema>>({
@@ -108,13 +110,15 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
         onSuccess: (updatedBox) => {
             queryClient.invalidateQueries({ queryKey: ['boxes', category.id] });
             updateInStore(category.id, updatedBox);
-            toast.success('ボックスを更新しました！');
+            // toast.success('ボックスを更新しました！');
+            toast.success(t('notification.boxUpdated'));
             onClose();
         },
         onError: (error: any) => {
             // 500ステータスコードの場合は、完了済み復習日があるエラーとして扱う
             if (error?.response?.status === 500) {
-                toast.error('ボックス内に復習物が存在するためパターンを変更できません。');
+                // toast.error('ボックス内に復習物が存在するためパターンを変更できません。');
+                toast.error(t('validation.selectValidPattern'));
             } else {
                 toast.error(`Update failed: ${error.message}`);
             }
@@ -126,7 +130,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['boxes', category.id] });
             removeFromStore(category.id, box.id);
-            toast.success('Box deleted successfully!');
+            toast.success(t('notification.boxDeleted'));
             onClose();
         },
         onError: (error: any) => toast.error(`Delete failed: ${error.message}`),
@@ -148,11 +152,10 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                 <DialogContent className="w-[95vw] max-w-lg h-[350px] max-h-[95vh] flex flex-col">
                     <div className="h-full flex flex-col ">
                         <div className="flex-1 flex flex-col ">
-
                             <DialogHeader>
-                                <DialogTitle className="border-b pb-2">復習物ボックス編集モーダル</DialogTitle>
+                                <DialogTitle className="border-b pb-2">{t('box.edit')}</DialogTitle>
                                 <DialogDescription>
-                                    <div className="mb-1 font-semibold text-white">カテゴリー名</div>
+                                    <div className="mb-1 font-semibold text-white">{t('category.name')}</div>
                                     <div className="mb-2 text-lg">
                                         <NameCell name={category.name} maxWidth={500} />
                                     </div>
@@ -160,7 +163,6 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                             </DialogHeader>
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                                    {/* FormFieldを正しく使用してフォームフィールドを実装 */}
                                     <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-200px)]">
                                         <div className="space-y-4 py-4">
                                             <FormField
@@ -168,7 +170,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                                                 name="name"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="inline-block pointer-events-none select-none">ボックス名</FormLabel>
+                                                        <FormLabel className="inline-block pointer-events-none select-none">{t('box.name')}</FormLabel>
                                                         <div className="w-full">
                                                             <FormControl><Input {...field} /></FormControl>
                                                         </div>
@@ -177,7 +179,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                                                 )}
                                             />
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">復習パターン</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.name')}</FormLabel>
                                                 <Button type="button" variant="outline" className="w-full mb-3 max-w-full  justify-start font-normal truncate" onClick={() => setPatternModalOpen(true)}>
                                                     {selectedPatternName}
                                                 </Button>
@@ -189,23 +191,23 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                                         <div className="flex items-center gap-2 w-full justify-between">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
-                                                    <Button variant="destructive" className="absolute left-3 bottom-3">削除</Button>
+                                                    <Button variant="destructive" className="absolute left-3 bottom-3">{t('common.delete')}</Button>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>本当に削除しますか？</AlertDialogTitle></AlertDialogHeader>
-                                                    <AlertDialogDescription>この操作は取り消せません。ボックスに属する全ての復習物は、このカテゴリーの未分類ボックスに移動されます。</AlertDialogDescription>
+                                                    <AlertDialogHeader><AlertDialogTitle>{t('box.delete')}</AlertDialogTitle></AlertDialogHeader>
+                                                    <AlertDialogDescription>{t('box.deleteDescription')}</AlertDialogDescription>
                                                     <AlertDialogFooter>
-                                                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
-                                                            {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                                            {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
                                             <div className="flex gap-3 absolute right-3 bottom-3">
-                                                <Button type="button" variant="outline" onClick={onClose}>キャンセル</Button>
+                                                <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
                                                 <Button type="submit" disabled={updateMutation.isPending}>
-                                                    {updateMutation.isPending ? '保存中...' : '保存'}
+                                                    {updateMutation.isPending ? t('loading.saving') : t('common.save')}
                                                 </Button>
                                             </div>
                                         </div>
@@ -216,7 +218,6 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                     </div>
                 </DialogContent>
             </Dialog>
-
             <SelectPatternModal
                 isOpen={isPatternModalOpen}
                 onClose={() => setPatternModalOpen(false)}

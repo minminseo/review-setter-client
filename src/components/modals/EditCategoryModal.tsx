@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { updateCategory, deleteCategory } from '@/api/categoryApi';
 import { useCategoryStore } from '@/store';
@@ -16,7 +17,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-    DialogDescription,
 } from '@/components/ui/dialog';
 import {
     AlertDialog,
@@ -59,6 +59,7 @@ type EditCategoryModalProps = {
 export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryModalProps) => {
     const queryClient = useQueryClient();
     const { updateCategory: updateInStore, removeCategory: removeFromStore } = useCategoryStore();
+    const { t } = useTranslation();
 
     // フォームの初期化。編集対象のカテゴリー名をデフォルト値として設定する
     const form = useForm<z.infer<typeof categorySchema>>({
@@ -73,7 +74,8 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
             // 成功した場合、キャッシュを無効化し、Zustandストアを更新する
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             updateInStore(updatedCategory);
-            toast.success('カテゴリーを更新しました！');
+            // toast.success('カテゴリーを更新しました！');
+            toast.success(t('notification.categoryUpdated'));
             onClose();
         },
         onError: (error) => toast.error(`Update failed: ${error.message}`),
@@ -85,7 +87,7 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             removeFromStore(category.id);
-            toast.success('Category deleted successfully!');
+            toast.success(t('notification.categoryDeleted'));
             onClose();
         },
         onError: (error) => toast.error(`Delete failed: ${error.message}`),
@@ -102,7 +104,7 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
                 <div className="h-full flex flex-col ">
                     <div className="flex-1 flex flex-col ">
                         <DialogHeader className=" text-ellipsis  whitespace-nowrap">
-                            <DialogTitle className=" border-b pb-2">カテゴリー編集</DialogTitle>
+                            <DialogTitle className=" border-b pb-2">{t('category.edit')}</DialogTitle>
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)}
@@ -115,7 +117,7 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
                                             name="name"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="inline-block pointer-events-none select-none">カテゴリー名</FormLabel>
+                                                    <FormLabel className="inline-block pointer-events-none select-none">{t('category.name')}</FormLabel>
                                                     <div className="w-full pb-10">
                                                         <FormControl>
                                                             <Input {...field} className=" text-ellipsis overflow-hidden whitespace-nowrap" />
@@ -138,20 +140,18 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
                                                     type="button"
                                                     variant="destructive"
                                                     className="absolute left-3 bottom-3"
-                                                >削除</Button>
+                                                >{t('common.delete')}</Button>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        この操作は取り消せません。カテゴリーに属する全てのボックスが削除され、復習物は未分類復習物ボックスへ移動されます。
-                                                    </AlertDialogDescription>
+                                                    <AlertDialogTitle>{t('category.delete')}</AlertDialogTitle>
+                                                    <AlertDialogDescription>{t('category.deleteDescription')}</AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
-                                                    <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                                     {/* 削除実行ボタン */}
                                                     <AlertDialogAction onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
-                                                        {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                                        {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
@@ -159,10 +159,10 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
 
                                         <div className="flex gap-3 absolute right-3 bottom-3">
                                             <Button type="button" variant="outline" onClick={onClose}>
-                                                キャンセル
+                                                {t('common.cancel')}
                                             </Button>
                                             <Button type="submit" disabled={updateMutation.isPending}>
-                                                {updateMutation.isPending ? '保存中...' : '保存'}
+                                                {updateMutation.isPending ? t('loading.saving') : t('common.save')}
                                             </Button>
                                         </div>
                                     </div>

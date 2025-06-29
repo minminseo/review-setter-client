@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 // API関数
 import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate, fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory, fetchItemsByBox, deleteItem } from '@/api/itemApi';
@@ -42,6 +43,7 @@ const getStoreBoxId = (boxId: string | undefined, categoryId: string | undefined
 };
 
 export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: FinishedItemsModalProps) => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const setItemsForBox = useItemStore(state => state.setItemsForBox);
     // 詳細表示モーダルで表示するアイテムを管理するstate
@@ -92,7 +94,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             return markItemAsUnfinished(unfinishData);
         },
         onSuccess: async () => {
-            toast.success(`復習を再開しました。`);
+            toast.success(t('notification.reviewMarkedIncomplete'));
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
                 queryClient.invalidateQueries({ queryKey: ['items', boxId], exact: true }),
@@ -121,14 +123,14 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 setItemsForBox(storeBoxId, items.filter((item: ItemResponse) => !item.is_finished));
             }
         },
-        onError: (err: any) => toast.error(`処理に失敗しました: ${err.message}`),
+        onError: (err: any) => toast.error(t('error.unfinishFailed', { message: err.message })),
     });
 
     const incompleteReviewMutation = useMutation({
         mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number }) =>
             incompleteReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
         onSuccess: async () => {
-            toast.success("復習を未完了に戻しました。");
+            toast.success(t('notification.reviewMarkedIncomplete'));
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
                 queryClient.invalidateQueries({ queryKey: ['items', boxId], exact: true }),
@@ -156,13 +158,13 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 setItemsForBox(storeBoxId, items.filter((item: ItemResponse) => !item.is_finished));
             }
         },
-        onError: (err) => toast.error(`未完了に戻すのに失敗しました: ${err.message}`),
+        onError: (err) => toast.error(t('error.markIncompleteFailed', { message: err.message })),
     });
 
     const deleteMutation = useMutation({
         mutationFn: (itemId: string) => deleteItem(itemId),
         onSuccess: async () => {
-            toast.success("復習物を削除しました。");
+            toast.success(t('notification.itemDeleted'));
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
                 queryClient.invalidateQueries({ queryKey: ['items', boxId], exact: true }),
@@ -171,7 +173,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             ]);
             await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
         },
-        onError: (err: any) => toast.error(`削除に失敗しました: ${err.message}`),
+        onError: (err: any) => toast.error(t('error.deleteFailed', { message: err.message })),
     });
 
     // --- リサイズ機能 ---
@@ -236,9 +238,9 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         {
             id: 'actions',
             header: () => (
-                <span className="block w-full text-center">状態</span>
+                <span className="block w-full text-center">{t('item.status')}</span>
             ),
-            size: 60,
+            size: 70,
             cell: ({ row }) => {
                 const today = format(new Date(), 'yyyy-MM-dd');
                 const item = row.original;
@@ -265,8 +267,6 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 }
                 if (showCancelButton) {
                     return (
-                        // 取消ボタン：すべて完了済み かつ 最後の復習日が今日の場合のみ表示
-
                         <Button
                             size="sm"
                             variant="ghost"
@@ -278,14 +278,12 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                             })}
                             disabled={incompleteReviewMutation.isPending}
                         >
-                            取消
+                            {t('common.reviewCansel')}
                         </Button>
                     );
                 }
                 if (showRestartButton) {
                     return (
-                        // 再開ボタン：一つでも未完了の復習日がある場合のみ表示
-
                         <Button
                             size="sm"
                             variant="ghost"
@@ -293,7 +291,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                             onClick={() => unfinishMutation.mutate(item)}
                             disabled={unfinishMutation.isPending}
                         >
-                            再開
+                            {t('common.restart')}
                         </Button>
                     );
                 }
@@ -302,42 +300,40 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         {
             id: 'operations',
             header: () => (
-                <span className="block w-full text-center">操作</span>
+                <span className="block w-full text-center">{t('item.operations')}</span>
             ),
-            size: 60,
+            size: 70,
             cell: ({ row }) => {
                 const item = row.original;
                 // AlertDialogのopen状態をローカルで管理
-                const [open, setOpen] = React.useState(false);
                 return (
                     <div className="flex items-center justify-center">
-                        <AlertDialog open={open} onOpenChange={setOpen}>
+                        <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button
                                     size="sm"
                                     variant="destructive"
-                                    className="h-8 w-10 p-0 bg-red-600 hover:bg-red-800 text-white hover:text-gray-400 transition-all duration-200"
+                                    className="w-full bg-red-600 hover:bg-red-800 text-white hover:text-gray-400 transition-all duration-200"
                                     disabled={deleteMutation.isPending}
-                                    title="削除"
-                                    onClick={() => setOpen(true)}
+                                    title={t('common.delete')}
                                 >
-                                    削除
+                                    {t('common.delete')}
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
+                                    <AlertDialogTitle>{t('common.confirmDelete', { name: item.name })}</AlertDialogTitle>
                                 </AlertDialogHeader>
                                 <AlertDialogDescription>
-                                    この操作は取り消せません。復習物「{item.name}」を完全に削除します。
+                                    {t('common.confirmDeleteDescription')}
                                 </AlertDialogDescription>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                     <AlertDialogAction
                                         onClick={() => deleteMutation.mutate(item.item_id)}
                                         disabled={deleteMutation.isPending}
                                     >
-                                        {deleteMutation.isPending ? '削除中...' : '削除する'}
+                                        {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
@@ -350,13 +346,13 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             accessorKey: 'name',
             header: () => (
                 <div className="flex items-center justify-center relative">
-                    <span className="block w-full text-center">復習物名</span>
+                    <span className="block w-full text-center">{t('item.name')}</span>
                     <Button
                         variant="ghost"
                         size="icon"
                         className="absolute right-1 h-4 w-4 p-0 hover:bg-gray-200"
                         onClick={handleResetWidth}
-                        title="幅を初期化"
+                        title={t('common.resetWidth', '幅を初期化')}
                     >
                         <ChevronDoubleLeftIcon className="h-3 w-3" />
                     </Button>
@@ -368,7 +364,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         {
             id: 'detail',
             header: () => (
-                <span className="block w-full text-center">詳細</span>
+                <span className="block w-full text-center">{t('item.detail')}</span>
             ),
             size: 50,
             cell: ({ row }) => (
@@ -387,7 +383,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         {
             accessorKey: 'learned_date',
             header: () => (
-                <span className="block w-full text-center">学習日</span>
+                <span className="block w-full text-center">{t('item.learningDate')}</span>
             ),
             size: 100,
             cell: ({ row }) => (
@@ -399,7 +395,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         ...Array.from({ length: maxColumns }).map((_, index) => ({
             id: `review_date_${index + 1}`,
             header: () => (
-                <span className="block w-full text-center">{index + 1}回目</span>
+                <span className="block w-full text-center">{t('item.reviewCount', { count: index + 1, defaultValue: `${index + 1}回目` })}</span>
             ),
             size: 130,
             cell: ({ row }: { row: { original: ItemResponse } }) => {
@@ -425,7 +421,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 );
             },
         })),
-    ], [finishedItems, maxColumns, unfinishMutation, incompleteReviewMutation, nameColumnWidth, handleResetWidth]);
+    ], [finishedItems, maxColumns, unfinishMutation, incompleteReviewMutation, nameColumnWidth, handleResetWidth, t]);
 
 
     return (
@@ -433,8 +429,8 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="w-screen !max-w-none h-[90vh] max-h-[75vh]">
                     <DialogHeader>
-                        <DialogTitle>完了済み復習物一覧</DialogTitle>
-                        <DialogDescription>完了済みのアイテムを確認し、必要に応じて復習を取消、もしくは再開できます。</DialogDescription>
+                        <DialogTitle>{t('item.finishedListTitle')}</DialogTitle>
+                        <DialogDescription>{t('item.finishedListDescription')}</DialogDescription>
                     </DialogHeader>
                     <div className="flex-1 flex flex-col overflow-hidden py-4 mb-2">
                         {/* --- スクロール可能なテーブル領域 --- */}
@@ -468,7 +464,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                     </div>
                     <DialogFooter >
                         <Button variant="outline" className="fixed bottom-0 right-0 mb-5 mr-5"
-                            onClick={onClose}>閉じる</Button>
+                            onClick={onClose}>{t('common.close')}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

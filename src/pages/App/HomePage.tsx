@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCategoryStore } from '@/store';
 import {
     fetchCategories
@@ -36,6 +37,7 @@ import { SortDropdown } from '@/components/shared/SortDropdown';
  * 今日の復習数、カテゴリー一覧、各種サマリーを表示する。
  */
 const HomePage = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { setCategories } = useCategoryStore();
 
@@ -147,16 +149,16 @@ const HomePage = () => {
                 {/* 左ペイン */}
                 <div className="grid auto-rows-max items-start gap-4 md:gap-8 xl:col-span-1">
                     <Card>
-                        <CardHeader><CardTitle>今日の復習</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>{t('home.todaysReview')}</CardTitle></CardHeader>
                         <CardContent>
                             {isLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold"><ClockIcon className="inline-block mr-2 h-6 w-6" />
                                 {totalDailyReviewCountQuery.data?.count ?? 0}</div>}
-                            <Button className="mt-4 w-full" onClick={() => navigate('/today')}>今日の復習を開始</Button>
+                            <Button className="mt-4 w-full" onClick={() => navigate('/today')}>{t('home.startTodaysReview')}</Button>
                         </CardContent>
                     </Card>
                     <Card>
-                        <CardHeader><CardTitle>復習暦</CardTitle></CardHeader>
-                        <CardContent><p className="text-xs text-muted-foreground">今後実装予定</p></CardContent>
+                        <CardHeader><CardTitle>{t('home.dashboard')}</CardTitle></CardHeader>
+                        <CardContent><p className="text-xs text-muted-foreground">{t('home.comingSoon')}</p></CardContent>
                     </Card>
                 </div>
 
@@ -165,14 +167,14 @@ const HomePage = () => {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate(`/categories/${UNCLASSIFIED_ID}/boxes/${UNCLASSIFIED_ID}`)}>
-                            <CardHeader><CardTitle><InboxIcon className="inline-block mr-2 h-6 w-6" />未分類復習物ボックス</CardTitle></CardHeader>
+                            <CardHeader><CardTitle><InboxIcon className="inline-block mr-2 h-6 w-6" />{t('home.unclassifiedBox')}</CardTitle></CardHeader>
                             <CardContent>
                                 {isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold"><DocumentIcon className="inline-block mr-2 h-6 w-6" />
                                     {unclassifiedItemCountQuery.data?.count ?? 0}</p>}
                             </CardContent>
                         </Card>
                         <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate('/patterns')}>
-                            <CardHeader><CardTitle>復習パターン一覧</CardTitle></CardHeader>
+                            <CardHeader><CardTitle>{t('home.reviewPatterns')}</CardTitle></CardHeader>
                             <CardContent>
                                 {(isLoading || isPatternLoading) ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold"><Squares2X2Icon className="inline-block mr-2 h-6 w-6" />
                                     {patterns ? patterns.length : 0}</p>}
@@ -185,7 +187,7 @@ const HomePage = () => {
                                 <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>
                                         <InboxStackIcon className="inline-block mr-2 h-6 w-6" />
-                                        カテゴリー
+                                        {t('home.categories')}
                                         {!isLoading && (
                                             <span className="ml-2 text-base text-muted-foreground font-normal">
                                                 ({sortedCategoriesWithStats.length})
@@ -195,16 +197,16 @@ const HomePage = () => {
                                     <div className="flex items-center gap-2">
                                         <Button size="sm" variant="outline" onClick={() => setCreateCategoryModalOpen(true)}>
                                             <PlusIcon className="h-4 w-4 mr-2" />
-                                            カテゴリー作成
+                                            {t('home.createCategory')}
                                         </Button>
                                         <SortDropdown
                                             options={[
-                                                { value: 'name_asc', label: '名前 (昇順)' },
-                                                { value: 'name_desc', label: '名前 (降順)' },
-                                                { value: 'registered_at_desc', label: '作成順 (新しい順)' },
-                                                { value: 'registered_at_asc', label: '作成順 (古い順)' },
-                                                { value: 'edited_at_desc', label: '更新順 (新しい順)' },
-                                                { value: 'edited_at_asc', label: '更新順 (古い順)' },
+                                                { value: 'name_asc', label: t('sort.nameAsc') },
+                                                { value: 'name_desc', label: t('sort.nameDesc') },
+                                                { value: 'registered_at_desc', label: t('sort.createdDesc') },
+                                                { value: 'registered_at_asc', label: t('sort.createdAsc') },
+                                                { value: 'edited_at_desc', label: t('sort.updatedDesc') },
+                                                { value: 'edited_at_asc', label: t('sort.updatedAsc') },
                                             ]}
                                             value={categorySortOrder}
                                             onValueChange={setCategorySortOrder}

@@ -1,9 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // アプリケーションの初期化に必要な関数とフック
 import { setupCsrfToken } from './api';
 import { useAuth } from './hooks/useAuth';
+import { useUserStore } from './store/userStore';
+import { setLanguage } from './i18n';
 
 // レイアウトコンポーネント
 import AppLayout from './components/layout/AppLayout';
@@ -74,6 +77,8 @@ const AuthGuard = () => {
 const App = () => {
   // CSRFトークンの準備が完了したかどうかを管理するstate
   const [isCsrfReady, setIsCsrfReady] = useState(false);
+  const language = useUserStore((state) => state.language);
+  const { t } = useTranslation();
 
   // アプリケーション起動時に一度だけ実行される副作用フック
   useEffect(() => {
@@ -86,10 +91,15 @@ const App = () => {
     initializeApp();
   }, []); // 空の依存配列で、初回レンダリング時にのみ実行されることを保証
 
+  // Zustandから読み込んだ言語設定をi18nextに適用
+  useEffect(() => {
+    setLanguage(language);
+  }, [language]);
+
   // CSRFトークンの準備ができるまでは、画面に何も表示しない（またはローディング画面を表示）
   // これにより、トークンが未設定の状態でAPIリクエストが送られることを防ぐ
   if (!isCsrfReady) {
-    return <div>Initializing Application...</div>;
+    return <div>{t('loading.initializing')}</div>;
   }
 
   return (

@@ -5,12 +5,11 @@ import { useModal } from '@/contexts/ModalContext';
 import { useQueries } from '@tanstack/react-query';
 import { fetchPatterns } from '@/api/patternApi';
 import { fetchItemCountByBox, fetchDailyReviewCountByBox } from '@/api/itemApi';
+import { useTranslation } from 'react-i18next';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal } from 'lucide-react';
 import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
 import { SortDropdown } from '@/components/shared/SortDropdown';
 
@@ -36,6 +35,7 @@ interface CategoryProps {
  * @param props - 親コンポーネント(BoxAndCategoryPage)から渡されるデータと状態
  */
 export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassifiedPage }: CategoryProps) => {
+    const { t } = useTranslation();
 
     const { openCreateItemModal } = useModal();
 
@@ -53,9 +53,9 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
 
     // 復習パターン名を取得するヘルパー関数
     const getPatternName = (patternId: string | null): string => {
-        if (!patternId || !patterns) return '未設定';
+        if (!patternId || !patterns) return t('pattern.unset');
         const pattern = patterns.find(p => p.id === patternId);
-        return pattern?.name || '未設定';
+        return pattern?.name || t('pattern.unset');
     };
 
     // ボックスのアイテム数を取得するヘルパー関数
@@ -82,12 +82,11 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
     // --- State (ソート) ---
     const [boxSortOrder, setBoxSortOrder] = React.useState('name_asc');
     const boxSortOptions = [
-        { value: 'name_asc', label: 'ボックス名 (昇順)' },
-        { value: 'name_desc', label: 'ボックス名 (降順)' },
-        { value: 'registered_at_desc', label: '作成順 (新しい順)' },
-        { value: 'registered_at_asc', label: '作成順 (古い順)' },
-        { value: 'edited_at_desc', label: '更新順 (新しい順)' },
-        { value: 'edited_at_asc', label: '更新順 (古い順)' },
+        { value: 'name_asc', label: t('box.nameAsc') },
+        { value: 'name_desc', label: t('box.nameDesc') },
+        { value: 'registered_at_desc', label: t('sort.createdDesc') },
+        { value: 'edited_at_desc', label: t('sort.updatedDesc') },
+        { value: 'edited_at_asc', label: t('sort.updatedAsc') },
     ];
     // --- ソート済みボックスリスト ---
     const sortedBoxes = React.useMemo(() => {
@@ -127,7 +126,7 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                 {!isUnclassifiedPage && currentCategory && (
                     <div className="flex items-center gap-2 w-full">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <span className="text-lg font-bold tracking-tight whitespace-nowrap"><InboxStackIcon className="inline-block mr-2 h-6 w-6" />カテゴリー：</span>
+                            <span className="text-lg font-bold tracking-tight whitespace-nowrap"><InboxStackIcon className="inline-block mr-2 h-6 w-6" />{t('category.label')}：</span>
                             <span
                                 className="text-xl font-semibold truncate min-w-0 flex-1"
                                 title={currentCategory.name}
@@ -138,7 +137,7 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <Button onClick={() => setCreateBoxModalOpen(true)}>
                                 <PlusIcon className="mr-2 h-4 w-4" />
-                                ボックス作成
+                                {t('box.create')}
                             </Button>
                             <SortDropdown
                                 options={boxSortOptions}
@@ -160,12 +159,12 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                         <CardListSkeleton count={4} />
                     ) : error ? (
                         <div className="col-span-full text-center py-8">
-                            <p className="text-red-500">データの読み込みに失敗しました。</p>
-                            <p className="text-sm text-muted-foreground mt-2">ページを再読み込みしてください。</p>
+                            <p className="text-red-500">{t('error.loadData')}</p>
+                            <p className="text-sm text-muted-foreground mt-2">{t('error.reloadPage')}</p>
                         </div>
                     ) : sortedBoxes.length === 0 && !isUnclassifiedPage ? (
                         <div className="col-span-full text-center py-8">
-                            <p className="text-muted-foreground">ボックスがありません。「ボックス作成」ボタンから新しいボックスを作成してください。</p>
+                            <p className="text-muted-foreground">{t('box.noBoxes')}</p>
                         </div>
                     ) : (
                         sortedBoxes.map((box) => (
@@ -194,24 +193,24 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
                                 <CardContent className="flex-grow px-4">
                                     <div className="flex items-start gap-4 flex-wrap">
                                         <Button asChild className="flex-shrink-0">
-                                            <Link to={`/categories/${box.category_id}/boxes/${box.id}`}>開く</Link>
+                                            <Link to={`/categories/${box.category_id}/boxes/${box.id}`}>{t('box.open')}</Link>
                                         </Button>
                                         <div className="flex flex-col items-start min-w-0 flex-shrink-0">
-                                            <span className="text-xs text-muted-foreground mb-1">復習物</span>
+                                            <span className="text-xs text-muted-foreground mb-1">{t('review.itemLabel')}</span>
                                             <div className="flex items-center gap-2">
                                                 <DocumentIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                                 <span className="text-base font-medium">{getItemCount(box.id)}</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-start min-w-0 flex-shrink-0">
-                                            <span className="text-xs text-muted-foreground mb-1 whitespace-nowrap">今日の復習</span>
+                                            <span className="text-xs text-muted-foreground mb-1 whitespace-nowrap">{t('review.todayLabel')}</span>
                                             <div className="flex items-center gap-2">
                                                 <ClockIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                                 <span className="text-base font-medium">{getDailyReviewCount(box.id)}</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-start min-w-0 flex-1 max-w-[200px]">
-                                            <span className="text-xs text-muted-foreground mb-1 whitespace-nowrap">復習パターン</span>
+                                            <span className="text-xs text-muted-foreground mb-1 whitespace-nowrap">{t('review.patternLabel')}</span>
                                             <div className="flex items-center gap-2 min-w-0 w-full">
                                                 <Squares2X2Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                                 <span

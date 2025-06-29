@@ -10,6 +10,7 @@ import { fetchItemsByBox, fetchUnclassifiedItems, fetchUnclassifiedItemsByCatego
 import { fetchPatterns } from '@/api/patternApi';
 // 未使用の警告を解決するため、型インポートを一度削除（子コンポーネント側で必要）
 import { UNCLASSIFIED_ID } from '@/constants';
+import { useTranslation } from 'react-i18next';
 
 // Shared & UI Components
 import Breadcrumbs from '@/components/shared/Breadcrumbs';
@@ -32,6 +33,7 @@ import { InboxIcon, InboxStackIcon } from '@heroicons/react/24/outline';
  * URLの `:boxId` の有無によって、表示する内容（カテゴリー詳細 or ボックス詳細）を動的に切り替える。
  */
 const BoxAndCategoryPage = () => {
+    const { t } = useTranslation();
     // --- Hooks ---
     const { categoryId, boxId } = useParams<{ categoryId: string; boxId?: string }>();
     const navigate = useNavigate();
@@ -200,7 +202,7 @@ const BoxAndCategoryPage = () => {
             items.push({ label: currentCategory.name, href: `/categories/${categoryId}` });
         } else if (isUnclassifiedCategoryPage) {
             items.push({
-                label: '未分類',
+                label: t('category.unclassified'),
                 href: ''
             });
         } else {
@@ -217,7 +219,7 @@ const BoxAndCategoryPage = () => {
             });
         } else if (isBoxView && boxId === UNCLASSIFIED_ID) {
             items.push({
-                label: '未分類ボックス',
+                label: t('box.unclassified'),
                 href: ''
             });
         }
@@ -270,10 +272,6 @@ const BoxAndCategoryPage = () => {
     const displayedBoxes = boxesForCurrentCategory.slice(0, maxBoxTabs);
     const hasMoreBoxes = boxesForCurrentCategory.length > maxBoxTabs;
 
-    if (!categoryId) {
-        return <div>カテゴリーIDが見つかりません</div>;
-    }
-
     // --- メインコンテンツ ---
     const storeBoxId = getStoreBoxId(boxId, categoryId);
     const { getItemsForBox } = useItemStore();
@@ -297,7 +295,7 @@ const BoxAndCategoryPage = () => {
                 >
                     {/* カテゴリーラベル */}
                     <div className="flex items-center">
-                        <span className="text-sm font-semibold shrink-0"><InboxStackIcon className="inline-block mr-2 h-6 w-6" />カテゴリー</span>
+                        <span className="text-sm font-semibold shrink-0"><InboxStackIcon className="inline-block mr-2 h-6 w-6" />{t('category.label')}</span>
                     </div>
                     {/* カテゴリータブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
@@ -311,7 +309,9 @@ const BoxAndCategoryPage = () => {
                                             maxWidth: '100%',
                                         }}
                                     >
-                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                        <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
+                                            {t('category.unclassified')}
+                                        </TabsTrigger>
                                         {displayedCategories.map((cat) => (
                                             <TabsTrigger key={cat.id} value={cat.id} className="w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                 {cat.name}
@@ -334,7 +334,7 @@ const BoxAndCategoryPage = () => {
                     </div>
                     {/* ボックスラベル */}
                     <div className="flex items-center">
-                        <span className="text-sm font-semibold shrink-0"><InboxIcon className="inline-block mr-2 h-6 w-6" />ボックス</span>
+                        <span className="text-sm font-semibold shrink-0"><InboxIcon className="inline-block mr-2 h-6 w-6" />{t('box.label')}</span>
                     </div>
                     {/* ボックスタブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
@@ -354,11 +354,17 @@ const BoxAndCategoryPage = () => {
                                         }}
                                     >
                                         {selectedCategoryId === UNCLASSIFIED_ID ? (
-                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                            <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
+                                                {t('box.unclassified')}
+                                            </TabsTrigger>
                                         ) : (
                                             <>
-                                                <TabsTrigger value="" className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">全て</TabsTrigger>
-                                                <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">未分類</TabsTrigger>
+                                                <TabsTrigger value="" className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
+                                                    {t('box.all')}
+                                                </TabsTrigger>
+                                                <TabsTrigger value={UNCLASSIFIED_ID} className="justify-start text-left w-[7rem] shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
+                                                    {t('box.unclassified')}
+                                                </TabsTrigger>
                                                 {displayedBoxes.map((box) => (
                                                     <TabsTrigger key={box.id} value={box.id} className="w-[7rem] justify-start text-left shrink-0 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors data-[state=active]:bg-neutral-400 dark:data-[state=active]:bg-neutral-600">
                                                         {box.name}

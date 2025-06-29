@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import { login, logout, signup, fetchUser, verifyEmail } from '@/api/authApi';
 import { useUserStore } from '@/store';
@@ -12,6 +13,8 @@ import { useUserStore } from '@/store';
  * APIコール、状態管理、画面遷移をこのフックで一元管理する
  */
 export const useAuth = (options: { enabled?: boolean } = {}) => {
+    const { t } = useTranslation();
+
     const { enabled = true } = options;
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -44,14 +47,13 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
     const loginMutation = useMutation({
         mutationFn: login,
         onSuccess: () => {
-            // ログイン成功後、['user']クエリを無効化し、useQueryを再実行させる
             queryClient.invalidateQueries({ queryKey: ['user'] });
             navigate('/');
-            toast.success("ログインしました。");
+            toast.success(t('notification.loginSuccess'));
         },
         onError: (error: any) => {
-            const message = error.response?.data?.error || "ログインに失敗しました。";
-            toast.error(message, { description: "メールアドレスまたはパスワードを確認してください。" });
+            const message = error.response?.data?.error || t('notification.loginFailed');
+            toast.error(message, { description: t('notification.checkCredentials') });
         }
     });
 
@@ -59,29 +61,29 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
         mutationFn: signup,
         onSuccess: (_, variables) => {
             navigate('/verify', { state: { email: variables.email } });
-            toast.success("確認コードを送信しました。", { description: "メールを確認してください。" });
+            toast.success(t('notification.verificationCodeSent'), { description: t('notification.checkEmail') });
         },
         onError: (error: any) => {
-            const message = error.response?.data?.error || "サインアップに失敗しました。";
-            toast.error(message, { description: "入力内容を確認してください。" });
+            const message = error.response?.data?.error || t('notification.loginFailed');
+            toast.error(message, { description: t('validation.passwordRequirements') });
         }
     });
 
     const verifyEmailMutation = useMutation({
         mutationFn: verifyEmail,
         onSuccess: () => {
-            // メール認証成功後も同様に、['user']クエリを無効化して認証状態を確定させる
             queryClient.invalidateQueries({ queryKey: ['user'] });
             navigate('/');
-            toast.success("メール認証が完了しました。");
+            toast.success(t('notification.emailVerified'));
         },
         onError: (error: any) => {
-            const message = error.response?.data?.error || "認証に失敗しました。";
-            toast.error(message, { description: "コードが間違っているか、有効期限が切れています。" });
+            const message = error.response?.data?.error || t('notification.loginFailed');
+            toast.error(message, { description: t('validation.invalidEmail') });
         }
     });
 
     const logoutMutation = useMutation({
+
         mutationFn: logout,
         onSuccess: () => {
             clearUser();
@@ -91,10 +93,10 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
             queryClient.setQueryData(['user'], undefined);
             // ログインページにリダイレクト
             navigate('/login', { replace: true });
-            toast.info("ログアウトしました。");
+            toast.info(t('notification.loggedOut'));
         },
         onError: (error: any) => {
-            const message = error.response?.data?.error || "ログアウトに失敗しました。";
+            const message = error.response?.data?.error || t('notification.loginFailed');
             toast.error(message);
         }
     });
