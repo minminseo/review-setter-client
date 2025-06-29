@@ -17,9 +17,24 @@ export const AuthThemeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // 新しいテーマクラスを追加
     root.classList.add(theme);
     
-    // クリーンアップ：コンポーネントがアンマウントされた時に元に戻す
+    // クリーンアップ：コンポーネントがアンマウントされた時、ユーザーの実際のテーマを適用
     return () => {
       root.classList.remove('light', 'dark');
+      
+      // ユーザーのテーマ設定をlocalStorageから読み取り
+      try {
+        const zustandStorage = localStorage.getItem('review-setter-user-storage');
+        if (zustandStorage) {
+          const parsed = JSON.parse(zustandStorage);
+          const userTheme = parsed.state?.theme;
+          if (userTheme) {
+            root.classList.add(userTheme);
+          }
+        }
+      } catch (error) {
+        // フォールバック：パースエラーの場合はdarkテーマを適用
+        root.classList.add('dark');
+      }
     };
   }, [theme]);
 

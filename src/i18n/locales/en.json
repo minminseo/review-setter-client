@@ -135,7 +135,7 @@
         "passwordRequirements": "Please meet the password requirements."
     },
     "notification": {
-        "userUpdated": "ユーザー情報を更新しました！",
+        "userUpdated": "User information updated!",
         "passwordUpdated": "Password updated!",
         "itemCreated": "Item created successfully!",
         "categoryCreated": "Category created successfully!",
