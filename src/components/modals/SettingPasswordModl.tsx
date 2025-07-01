@@ -38,7 +38,7 @@ export const SettingPasswordModl = ({ isOpen, onClose }: SettingPasswordModlProp
 
     const [showPassword, setShowPassword] = React.useState(false);
     const [showConfirm, setShowConfirm] = React.useState(false);
-    const [submitError, setSubmitError] = React.useState<string | null>(null);
+    const [, setSubmitError] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         if (!isOpen) {
@@ -145,13 +145,14 @@ export const SettingPasswordModl = ({ isOpen, onClose }: SettingPasswordModlProp
                                             </FormItem>
                                         )} />
                                     </div>
+                                    <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
 
                                 </ScrollArea>
                                 <DialogFooter className="justify-end">
                                     <div className="flex gap-3 absolute right-3 bottom-3">
                                         <Button type="button" variant="outline" onClick={onClose}>{t('common.close')}</Button>
                                         <Button type="submit" disabled={isDisabled}>
-                                            {mutation.isPending ? t('loading.updating') : t('common.edit')}
+                                            {mutation.isPending ? t('loading.updating') : t('common.save')}
                                         </Button>
                                     </div>
                                 </DialogFooter>
