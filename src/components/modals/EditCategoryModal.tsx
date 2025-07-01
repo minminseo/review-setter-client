@@ -17,6 +17,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription,
 } from '@/components/ui/dialog';
 import {
     AlertDialog,
@@ -105,6 +106,9 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
                     <div className="flex-1 flex flex-col ">
                         <DialogHeader className=" text-ellipsis  whitespace-nowrap">
                             <DialogTitle className=" border-b pb-2">{t('category.edit')}</DialogTitle>
+                            <DialogDescription>
+                                {t('category.editDescription')}
+                            </DialogDescription>
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)}
@@ -163,7 +167,7 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
 
                                         <div className="flex gap-3 absolute right-3 bottom-3">
                                             <Button type="button" variant="outline" onClick={onClose}>
-                                                {t('common.cancel')}
+                                                {t('common.close')}
                                             </Button>
                                             <Button type="submit" disabled={updateMutation.isPending}>
                                                 {updateMutation.isPending ? t('loading.saving') : t('common.save')}

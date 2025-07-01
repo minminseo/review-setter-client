@@ -125,10 +125,10 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                             <DialogHeader>
                                 <DialogTitle className="border-b pb-2">{t('box.create')}</DialogTitle>
                                 <DialogDescription>
-                                    <div className="mb-1 font-semibold text-white">{t('category.name')}（{t('common.unclassified')}）</div>
-                                    <div className="mb-2 text-lg">
+                                    <span className="block mb-1 font-semibold text-white">{t('category.name')}（{t('common.unclassified')}）</span>
+                                    <span className="block mb-2 text-lg">
                                         <NameCell name={categoryName} maxWidth={500} />
-                                    </div>
+                                    </span>
                                 </DialogDescription>
                             </DialogHeader>
                             <Form {...form}>
@@ -175,7 +175,7 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                                         <div className="flex gap-2 w-full justify-end">
                                             <div className="flex gap-2 absolute right-3 bottom-3">
                                                 <Button type="button" variant="outline" onClick={onClose}>
-                                                    {t('common.cancel')}
+                                                    {t('common.close')}
                                                 </Button>
                                                 <Button type="submit" disabled={mutation.isPending}>
                                                     {mutation.isPending ? t('loading.creating') : t('common.create')}

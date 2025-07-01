@@ -27,6 +27,7 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
         retry: false, // 初回読み込みで失敗（401など）した場合、リトライしない
         refetchOnWindowFocus: false, // ウィンドウフォーカス時の自動再取得を無効化
         refetchOnMount: enabled, // enabled=falseの場合はマウント時実行を無効化
+        refetchOnReconnect: false, // ネットワーク再接続時の自動再取得を無効化
         enabled: enabled, // 条件付きでクエリを有効にする
     });
 
@@ -88,12 +89,20 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
         mutationFn: logout,
         onSuccess: () => {
             clearUser();
-            // On logout, clear all query cache
-            queryClient.clear();
-            // Explicitly set user query to undefined (error state)
-            queryClient.setQueryData(['user'], undefined);
-            // Redirect to login page
+            // Completely disable and remove the user query to prevent any API calls
+            queryClient.cancelQueries({ queryKey: ['user'] });
+            queryClient.removeQueries({ queryKey: ['user'] });
+            queryClient.setQueryData(['user'], null);
+            // Disable the user query globally to prevent future executions
+            queryClient.setQueryDefaults(['user'], { enabled: false });
+            // Redirect to login page first to unmount authenticated pages
             navigate('/login', { replace: true });
+            // Then clear all query cache after navigation
+            setTimeout(() => {
+                queryClient.clear();
+                // Re-enable user query after clearing for future logins
+                queryClient.setQueryDefaults(['user'], { enabled: true });
+            }, 100);
             toast.info(texts.logoutInfo);
         },
         onError: (error: any) => {

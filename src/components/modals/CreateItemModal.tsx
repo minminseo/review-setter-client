@@ -432,7 +432,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                 <div className=" bottom-0">
                                     <DialogFooter className="justify-end">
                                         <div className="flex gap-3 absolute right-3 bottom-3 ">
-                                            <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                                            <Button type="button" variant="outline" onClick={onClose}>{t('common.close')}</Button>
                                             <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? t('loading.creating') : t('common.create')}</Button>
                                         </div>
 
