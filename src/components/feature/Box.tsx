@@ -314,11 +314,25 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                 <span className="block w-full text-center">{t('item.learningDate')}</span>
             ),
             size: 100,
-            cell: ({ row }) => (
-                <div className="flex justify-center">
-                    {format(new Date(row.original.learned_date), 'yyyy-MM-dd')}
-                </div>
-            ),
+            cell: ({ row }) => {
+                const learnedDate = row.original.learned_date;
+                if (!learnedDate || learnedDate === 'null' || learnedDate === 'undefined') {
+                    return <div className="flex justify-center text-muted-foreground">-</div>;
+                }
+                try {
+                    const date = new Date(learnedDate);
+                    if (isNaN(date.getTime())) {
+                        return <div className="flex justify-center text-muted-foreground">-</div>;
+                    }
+                    return (
+                        <div className="flex justify-center">
+                            {format(date, 'yyyy-MM-dd')}
+                        </div>
+                    );
+                } catch (error) {
+                    return <div className="flex justify-center text-muted-foreground">-</div>;
+                }
+            },
         },
         ...Array.from({ length: maxColumns }).map((_, index) => ({
             id: `review_date_${index + 1}`,
@@ -333,7 +347,11 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                     return <span className="text-muted-foreground flex justify-center">-</span>;
                 }
 
-                const isToday = format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                let isToday = false;
+                const scheduledDate = new Date(reviewDate.scheduled_date);
+                if (!isNaN(scheduledDate.getTime())) {
+                    isToday = format(scheduledDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                }
                 const isClickable = isToday && !reviewDate.is_completed;
                 return (
                     <div className="flex items-center justify-center">
@@ -349,7 +367,17 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                             onClick={isClickable ? () => setEditingDate({ item: row.original, reviewDate }) : undefined}
                             disabled={!isClickable}
                         >
-                            {format(new Date(reviewDate.scheduled_date), 'yyyy-MM-dd')}
+                            {(() => {
+                                try {
+                                    const scheduledDate = new Date(reviewDate.scheduled_date);
+                                    if (isNaN(scheduledDate.getTime())) {
+                                        return '-';
+                                    }
+                                    return format(scheduledDate, 'yyyy-MM-dd');
+                                } catch (error) {
+                                    return '-';
+                                }
+                            })()}
                         </Button>
                     </div>
                 );
