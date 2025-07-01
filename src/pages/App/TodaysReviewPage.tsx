@@ -266,7 +266,7 @@ const TodaysReviewPage = () => {
                             disabled={incompleteMutation.isPending}
                         >
 
-                            {t('common.reviewCalsel')}
+                            {t('common.reviewCansel')}
                         </Button>
                     </div>
                 ) : (
@@ -357,7 +357,7 @@ const TodaysReviewPage = () => {
         {
             accessorKey: 'step_number',
             header: () => (
-                <span className="block w-full text-center">{t('pattern.step', 'ステップ')}</span>
+                <span className="block w-full text-center">{t('pattern.step')}</span>
             ),
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
