@@ -3,14 +3,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { updateReviewDate } from '@/api/itemApi';
-import { fetchPatterns } from '@/api/patternApi';
-import { useItemStore, usePatternStore } from '@/store';
+import { useItemStore } from '@/store';
 import { ItemResponse, ReviewDateResponse, UpdateReviewDatesRequest } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -29,11 +28,20 @@ import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 const createFormSchema = (initialScheduledDate: string) => z.object({
     request_scheduled_date: z.date({ required_error: "新しい復習日の選択は必須です。" })
         .refine((date) => {
-            const today = new Date(new Date().setHours(0, 0, 0, 0));
-            const initialDate = new Date(initialScheduledDate);
-            return date < today && date >= initialDate;
+            try {
+                const today = new Date();
+                const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+                yesterday.setHours(0, 0, 0, 0);
+                const initialDate = new Date(initialScheduledDate);
+                initialDate.setHours(0, 0, 0, 0);
+                const selectedDate = new Date(date);
+                selectedDate.setHours(0, 0, 0, 0);
+                return selectedDate >= initialDate && selectedDate <= yesterday;
+            } catch (error) {
+                return false;
+            }
         }, {
-            message: "復習日は今日より前、かつ最初の復習予定日以降の日付である必要があります。"
+            message: "復習日は最初の復習予定日から昨日までの日付である必要があります。"
         }),
     is_mark_overdue_as_completed: z.boolean(),
 });
@@ -50,7 +58,7 @@ type EditReviewDateModalProps = {
 export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateModalProps) => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
-    const { patterns } = usePatternStore();
+    // patternsはバックエンドで取得するため不要
     // useItemStoreからupdateItemInBoxアクションを取得
     const { updateItemInBox } = useItemStore();
 
@@ -63,11 +71,12 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
     const form = useForm<z.infer<ReturnType<typeof createFormSchema>>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            request_scheduled_date: new Date(), // 一時的なデフォルト値
             is_mark_overdue_as_completed: true,
         },
     });
 
-    useQuery({ queryKey: ['patterns'], queryFn: fetchPatterns, staleTime: Infinity });
+    // patternsの取得は不要（バックエンドで処理）
 
     const mutation = useMutation({
         mutationFn: (reqData: UpdateReviewDatesRequest) =>
@@ -76,19 +85,28 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
             toast.success(t('notification.reviewDateUpdated'));
             queryClient.invalidateQueries({ queryKey: ['items', data?.item.box_id] });
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
-            if (data?.item.box_id) {
-                updateItemInBox(data.item.box_id, updatedItemData);
+            if (data?.item.box_id && updatedItemData) {
+                // APIレスポンスは復習日更新の結果のみを返すため、元のアイテムデータとマージする
+                if (updatedItemData.review_dates) {
+                    const mergedItemData = {
+                        ...data.item, // 元のアイテムデータを保持
+                        review_dates: updatedItemData.review_dates, // 更新された復習日で上書き
+                        edited_at: updatedItemData.edited_at || data.item.edited_at
+                    };
+                    updateItemInBox(data.item.box_id, mergedItemData);
+                } else {
+                    // キャッシュを無効化して再取得
+                    queryClient.invalidateQueries({ queryKey: ['items', data.item.box_id] });
+                }
             }
             onClose();
         },
         onError: (err: any) => toast.error(t('error.updateFailed', { message: err.message })),
     });
 
-    // onSubmitハンドラのロジックは変更なし
     const onSubmit = (values: z.infer<ReturnType<typeof createFormSchema>>) => {
         if (!data) return;
-        const currentPattern = patterns.find(p => p.id === data.item.pattern_id);
-        if (!currentPattern) {
+        if (!data.item.pattern_id) {
             toast.error(t('error.patternNotFound'));
             return;
         }
@@ -97,7 +115,7 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
             ...values,
             request_scheduled_date: format(values.request_scheduled_date, "yyyy-MM-dd"),
             today: format(new Date(), "yyyy-MM-dd"),
-            pattern_steps: currentPattern.steps,
+            pattern_id: data.item.pattern_id,
             learned_date: data.item.learned_date,
             initial_scheduled_date: data.reviewDate.initial_scheduled_date,
             step_number: data.reviewDate.step_number,
@@ -109,8 +127,15 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
 
     React.useEffect(() => {
         if (data) {
+            const today = new Date();
+            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+            const initialDate = new Date(data.reviewDate.initial_scheduled_date);
+
+            // 昨日がinitial_scheduled_dateよりも早い場合は、initial_scheduled_dateを使用
+            const defaultDate = yesterday >= initialDate ? yesterday : initialDate;
+
             form.reset({
-                request_scheduled_date: new Date(data.reviewDate.scheduled_date),
+                request_scheduled_date: defaultDate,
                 is_mark_overdue_as_completed: true,
             });
         }
@@ -129,39 +154,54 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                 </DialogHeader>
                 <Form {...form}>
                     {/* form以下のJSXは変更なし */}
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4 mb-3">
-                        <ScrollArea className="flex-1 border-t min-h-0 max-h-[calc(100vh-200px)]">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                        <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-200px)]">
                             <div className="space-y-4 py-4">
                                 <div className="space-y-1">
                                     <p className="text-sm font-medium text-muted-foreground">{t('review.currentReviewDate')}</p>
                                     <p className="font-semibold">{format(new Date(data.reviewDate.scheduled_date), "yyyy-MM-dd")}</p>
                                     <p className="text-xs text-muted-foreground">
-                                        {t('review.editableRange', { from: format(new Date(data.reviewDate.initial_scheduled_date), "yyyy-MM-dd") })}
+                                        {t('review.editableRange', { from: format(new Date(data.reviewDate.initial_scheduled_date), "yyyy-MM-dd") })}から昨日までの日付を選択できます
                                     </p>
                                 </div>
 
-                                <FormField name="request_scheduled_date" control={form.control} render={({ field }) => (
-                                    <FormItem className="flex flex-col">
-                                        <FormLabel className="inline-block pointer-events-none select-none">{t('review.newReviewDate')}</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                        {field.value ? format(field.value, "PPP") : <span>{t('review.selectDate')}</span>}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={field.value}
-                                                    onSelect={field.onChange}
+                                <FormField name="request_scheduled_date" control={form.control} render={({ field }) => {
+                                    const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+                                    
+                                    return (
+                                        <FormItem className="flex flex-col">
+                                            <FormLabel className="inline-block pointer-events-none select-none">{t('review.newReviewDate')}</FormLabel>
+                                            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                            {field.value ? format(field.value, "PPP") : <span>{t('review.selectDate')}</span>}
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={field.value}
+                                                        onSelect={(date) => {
+                                                            field.onChange(date);
+                                                            setIsCalendarOpen(false); // 日付選択時にカレンダーを閉じる
+                                                        }}
                                                     disabled={(date) => {
-                                                        const today = new Date(new Date().setHours(0, 0, 0, 0));
-                                                        const initialDate = new Date(data.reviewDate.initial_scheduled_date);
-                                                        // 今日以降、またはinitial_scheduled_dateより前の日付は無効
-                                                        return date >= today || date < initialDate;
+                                                        try {
+                                                            const today = new Date();
+                                                            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+                                                            yesterday.setHours(0, 0, 0, 0);
+                                                            const initialDate = new Date(data.reviewDate.initial_scheduled_date);
+                                                            initialDate.setHours(0, 0, 0, 0);
+                                                            const selectedDate = new Date(date);
+                                                            selectedDate.setHours(0, 0, 0, 0);
+                                                            // initial_scheduled_dateより前、または今日以降の日付を無効
+                                                            return selectedDate < initialDate || selectedDate > yesterday;
+                                                        } catch (error) {
+                                                            return true; // エラー時は無効にする
+                                                        }
                                                     }}
                                                     initialFocus
                                                 />
@@ -169,7 +209,8 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                                         </Popover>
                                         <FormMessage />
                                     </FormItem>
-                                )} />
+                                    );
+                                }} />
                                 <FormField name="is_mark_overdue_as_completed" control={form.control} render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="inline-block pointer-events-none select-none">{t('review.overdueHandling')}</FormLabel>
@@ -192,11 +233,13 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                             <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
                         </ScrollArea>
                         <DialogFooter className="justify-end">
-                            <div className="flex gap-3 absolute right-3 bottom-3">
-                                <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
-                                <Button type="submit" disabled={mutation.isPending}>
-                                    {mutation.isPending ? t('loading.saving') : t('common.save')}
-                                </Button>
+                            <div className="flex items-center gap-2 w-full justify-between">
+                                <div className="flex gap-3 absolute right-3 bottom-3">
+                                    <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                                    <Button type="submit" disabled={mutation.isPending}>
+                                        {mutation.isPending ? t('loading.saving') : t('common.save')}
+                                    </Button>
+                                </div>
                             </div>
                         </DialogFooter>
                     </form>

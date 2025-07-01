@@ -195,19 +195,20 @@ export interface UpdateReviewDateAsInCompletedRequest {
     step_number: number;
 }
 
-export interface PatternStepForRequest {
-    pattern_step_id: UUID;
-    user_id: UUID;
-    pattern_id: UUID;
-    step_number: number;
-    interval_days: number;
-}
+// PatternStepForRequestはバックエンドで取得するため削除
+// export interface PatternStepForRequest {
+//     pattern_step_id: UUID;
+//     user_id: UUID;
+//     pattern_id: UUID;
+//     step_number: number;
+//     interval_days: number;
+// }
 
 export interface UpdateReviewDatesRequest {
     request_scheduled_date: string; // YYYY-MM-DD
     is_mark_overdue_as_completed: boolean;
     today: string; // YYYY-MM-DD
-    pattern_steps: PatternStepForRequest[];
+    pattern_id: UUID;
     learned_date: string; // YYYY-MM-DD
     initial_scheduled_date: string; // YYYY-MM-DD
     step_number: number;
