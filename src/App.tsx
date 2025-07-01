@@ -54,7 +54,7 @@ const ProtectedRoute = () => {
  * 未認証ユーザーまたはローディング中の場合は認証レイアウトを表示する。
  */
 const AuthGuard = () => {
-  const { isAuthenticated, isUserLoading } = useAuth();
+  const { isAuthenticated, isUserLoading } = useAuth({ enabled: false });
 
   // ローディング中は認証レイアウトを表示（リダイレクトしない）
   if (isUserLoading) {

@@ -44,7 +44,7 @@ const LoginPage = () => {
     // 未ログイン時専用の言語状態管理を使用
     const texts = useAuthTexts();
     // 認証ロジック（ログインAPIの呼び出しなど）を取得
-    const { login, isLoggingIn } = useAuth();
+    const { login, isLoggingIn } = useAuth({ enabled: false });
     // パスワード表示/非表示を切り替えるためのstate
     const [showPassword, setShowPassword] = React.useState(false);
 
