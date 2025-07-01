@@ -167,7 +167,7 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
 
                                 <FormField name="request_scheduled_date" control={form.control} render={({ field }) => {
                                     const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
-                                    
+
                                     return (
                                         <FormItem className="flex flex-col">
                                             <FormLabel className="inline-block pointer-events-none select-none">{t('review.newReviewDate')}</FormLabel>
@@ -188,27 +188,27 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                                                             field.onChange(date);
                                                             setIsCalendarOpen(false); // 日付選択時にカレンダーを閉じる
                                                         }}
-                                                    disabled={(date) => {
-                                                        try {
-                                                            const today = new Date();
-                                                            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-                                                            yesterday.setHours(0, 0, 0, 0);
-                                                            const initialDate = new Date(data.reviewDate.initial_scheduled_date);
-                                                            initialDate.setHours(0, 0, 0, 0);
-                                                            const selectedDate = new Date(date);
-                                                            selectedDate.setHours(0, 0, 0, 0);
-                                                            // initial_scheduled_dateより前、または今日以降の日付を無効
-                                                            return selectedDate < initialDate || selectedDate > yesterday;
-                                                        } catch (error) {
-                                                            return true; // エラー時は無効にする
-                                                        }
-                                                    }}
-                                                    initialFocus
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
+                                                        disabled={(date) => {
+                                                            try {
+                                                                const today = new Date();
+                                                                const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+                                                                yesterday.setHours(0, 0, 0, 0);
+                                                                const initialDate = new Date(data.reviewDate.initial_scheduled_date);
+                                                                initialDate.setHours(0, 0, 0, 0);
+                                                                const selectedDate = new Date(date);
+                                                                selectedDate.setHours(0, 0, 0, 0);
+                                                                // initial_scheduled_dateより前、または今日以降の日付を無効
+                                                                return selectedDate < initialDate || selectedDate > yesterday;
+                                                            } catch (error) {
+                                                                return true; // エラー時は無効にする
+                                                            }
+                                                        }}
+                                                        initialFocus
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                        </FormItem>
                                     );
                                 }} />
                                 <FormField name="is_mark_overdue_as_completed" control={form.control} render={({ field }) => (
@@ -235,7 +235,7 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                         <DialogFooter className="justify-end">
                             <div className="flex items-center gap-2 w-full justify-between">
                                 <div className="flex gap-3 absolute right-3 bottom-3">
-                                    <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                                    <Button type="button" variant="outline" onClick={onClose}>{t('common.close')}</Button>
                                     <Button type="submit" disabled={mutation.isPending}>
                                         {mutation.isPending ? t('loading.saving') : t('common.save')}
                                     </Button>
