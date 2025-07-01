@@ -199,6 +199,7 @@ export const CreatePatternModal = ({ isOpen, onClose }: CreatePatternModalProps)
                                                                         value={typeof stepField.value === 'number' ? stepField.value : undefined}
                                                                         placeholder="未入力"
                                                                         min={1}
+                                                                        aria-label={`${t('pattern.step')} ${index + 1} ${t('pattern.intervalDays')}`}
                                                                         onChange={val => {
                                                                             if (typeof val === 'number' && val >= 1) stepField.onChange(val);
                                                                             else if (val === undefined) stepField.onChange(undefined);
@@ -230,7 +231,7 @@ export const CreatePatternModal = ({ isOpen, onClose }: CreatePatternModalProps)
                         <div className="bottom-0 right-0">
                             <DialogFooter>
                                 <div className="flex gap-3 absolute right-3 bottom-3">
-                                    <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                                    <Button type="button" variant="outline" onClick={onClose}>{t('common.close')}</Button>
                                     <Button type="submit" disabled={mutation.isPending}>
                                         {mutation.isPending ? t('loading.creating') : t('common.create')}
                                     </Button>
