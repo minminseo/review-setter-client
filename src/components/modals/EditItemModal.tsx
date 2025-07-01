@@ -26,13 +26,14 @@ import { cn } from '@/lib/utils';
 // UIコンポーネント
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 const createItemSchema = (t: TFunction) => z.object({
@@ -48,6 +49,7 @@ const createItemSchema = (t: TFunction) => z.object({
         z.literal("UNCLASSIFIED")
     ]).nullable().optional(),
     pattern_id: z.string().uuid(t('validation.selectValidPattern')).nullable().optional(),
+    is_mark_overdue_as_completed: z.boolean(),
 });
 
 type EditItemModalProps = {
@@ -72,11 +74,20 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
             category_id: item.category_id || 'UNCLASSIFIED',
             box_id: item.box_id || 'UNCLASSIFIED',
             pattern_id: item.pattern_id,
+            is_mark_overdue_as_completed: true,
         },
     });
 
     const watchedCategoryId = form.watch('category_id');
     const watchedBoxId = form.watch('box_id');
+    const watchedLearnedDate = form.watch('learned_date');
+
+    // 学習日の変更を検知
+    const originalLearnedDate = React.useMemo(() => new Date(item.learned_date), [item.learned_date]);
+    const isLearnedDateChanged = React.useMemo(() => {
+        if (!watchedLearnedDate) return false;
+        return watchedLearnedDate.getTime() !== originalLearnedDate.getTime();
+    }, [watchedLearnedDate, originalLearnedDate]);
 
     // データ取得: フォームの選択肢を生成するために必要
     const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories, staleTime: Infinity });
@@ -336,7 +347,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
             box_id: values.box_id === 'UNCLASSIFIED' ? null : values.box_id,
             learned_date: format(values.learned_date, "yyyy-MM-dd"),
             today: format(new Date(), "yyyy-MM-dd"),
-            is_mark_overdue_as_completed: true,
+            is_mark_overdue_as_completed: isLearnedDateChanged ? values.is_mark_overdue_as_completed : false,
         };
         updateMutation.mutate(data);
     };
@@ -345,9 +356,9 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="w-[95vw] max-w-lg h-[700px] max-h-[95vh] flex flex-col">
-                <div className="h-full flex flex-col overflow-hidden">
-                    <div className="flex-1 flex flex-col overflow-hidden">
+            <DialogContent className="w-[95vw] max-w-lg h-[800px] max-h-[95vh] flex flex-col">
+                <div className="h-full flex flex-col">
+                    <div className="flex-1 flex flex-col">
                         <DialogHeader>
                             <div className="pb-2">
                                 <DialogTitle>{t('item.edit')}</DialogTitle>
@@ -502,44 +513,69 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
+                                        <FormField name="is_mark_overdue_as_completed" control={form.control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className={cn("inline-block pointer-events-none select-none", !isLearnedDateChanged && "text-muted-foreground")}>{t('review.overdueHandling')}</FormLabel>
+                                                <Select
+                                                    onValueChange={(value) => field.onChange(value === 'true')}
+                                                    defaultValue={String(field.value)}
+                                                    disabled={!isLearnedDateChanged}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger className={cn(!isLearnedDateChanged && "bg-muted text-muted-foreground")}>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="true">{t('review.overdueComplete')}</SelectItem>
+                                                        <SelectItem value="false">{t('review.overdueToday')}</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormDescription className={cn("text-xs pt-2", !isLearnedDateChanged && "text-muted-foreground")}>
+                                                    <QuestionMarkCircleIcon className="inline h-4 w-4 mr-1" />
+                                                    {t('review.overdueDescription')}
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
 
                                     </div>
                                     <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
                                 </ScrollArea>
-                                <div className=" bottom-0">
-                                    <DialogFooter className="justify-end">
-                                        <div className="flex items-center gap-2 w-full justify-between">
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="destructive" className="absolute left-3 bottom-3">{t('common.delete')}</Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>{t('common.confirmDelete', { name: item.name, defaultValue: t('box.deleteCompletely', { name: item.name, defaultValue: `本当に「${item.name}」を削除しますか？` }) })}</AlertDialogTitle></AlertDialogHeader>
-                                                    <AlertDialogDescription>{t('item.itemDescription')}</AlertDialogDescription>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                                        <AlertDialogAction
-                                                            onClick={() => deleteMutation.mutate()}
-                                                            disabled={deleteMutation.isPending}
-                                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                                        >
-                                                            {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                            <div className="flex gap-3 absolute right-3 bottom-3 ">
-                                                <Button type="button" variant="secondary" onClick={() => finishMutation.mutate()} disabled={finishMutation.isPending}>
-                                                    {finishMutation.isPending ? t('loading.loading') : t('common.finish')}
-                                                </Button>
-                                                <Button type="button" variant="outline" onClick={onClose}>{t('common.close')}</Button>
-                                                <Button type="submit" disabled={updateMutation.isPending}>
-                                                    {updateMutation.isPending ? t('loading.saving') : t('common.save')}
-                                                </Button>
-                                            </div>
+
+                                <DialogFooter className="justify-end">
+                                    <div className="flex items-center gap-2 w-full justify-between">
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="destructive" className="absolute left-3 bottom-3">{t('common.delete')}</Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>{t('common.confirmDelete', { name: item.name, defaultValue: t('box.deleteCompletely', { name: item.name, defaultValue: `本当に「${item.name}」を削除しますか？` }) })}</AlertDialogTitle></AlertDialogHeader>
+                                                <AlertDialogDescription>{t('item.itemDescription')}</AlertDialogDescription>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                        onClick={() => deleteMutation.mutate()}
+                                                        disabled={deleteMutation.isPending}
+                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                    >
+                                                        {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                        <div className="flex gap-3 absolute right-3 bottom-3 ">
+                                            <Button type="button" variant="secondary" onClick={() => finishMutation.mutate()} disabled={finishMutation.isPending}>
+                                                {finishMutation.isPending ? t('loading.loading') : t('common.finish')}
+                                            </Button>
+                                            <Button type="button" variant="outline" onClick={onClose}>{t('common.close')}</Button>
+                                            <Button type="submit" disabled={updateMutation.isPending}>
+                                                {updateMutation.isPending ? t('loading.saving') : t('common.save')}
+                                            </Button>
                                         </div>
-                                    </DialogFooter>
-                                </div>
+                                    </div>
+                                </DialogFooter>
+
                             </form>
                         </Form>
                     </div>
