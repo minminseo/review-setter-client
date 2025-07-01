@@ -33,22 +33,18 @@ export const ThemeProvider = ({
 }) => {
     // Zustandからテーマ状態を取得
     const zustandTheme = useUserStore((state) => state.theme)
-    
+
     const [theme, setTheme] = useState(() => {
         // 初期化時はZustandの値を優先
         if (zustandTheme) return zustandTheme;
-        
+
         // ZustandのlocalStorageからテーマを読み込み
-        try {
-            const zustandStorage = localStorage.getItem('review-setter-user-storage');
-            if (zustandStorage) {
-                const parsed = JSON.parse(zustandStorage);
-                if (parsed.state?.theme) return parsed.state.theme;
-            }
-        } catch (error) {
-            console.warn('Failed to parse Zustand storage:', error);
+        const zustandStorage = localStorage.getItem('review-setter-user-storage');
+        if (zustandStorage) {
+            const parsed = JSON.parse(zustandStorage);
+            if (parsed.state?.theme) return parsed.state.theme;
         }
-        
+
         // フォールバック: ThemeProvider独自のstorageKey、最後にdefaultTheme
         return localStorage.getItem(storageKey) || defaultTheme;
     })

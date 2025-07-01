@@ -21,13 +21,8 @@ const api = axios.create({
  * これにより、以降の全てのPOST, PUT, DELETEリクエストにCSRFトークンが自動で付与され、セキュリティが向上する。
  */
 export const setupCsrfToken = async () => {
-    try {
-        const { data } = await api.get<{ csrf_token: string }>('/csrf');
-        api.defaults.headers.common['X-CSRF-Token'] = data.csrf_token;
-    } catch (error) {
-        // CSRFトークンの取得はアプリの動作に必須なため、失敗した場合はコンソールにエラーを記録する。
-        console.error('CRITICAL: Failed to get CSRF token.', error);
-    }
+    const { data } = await api.get<{ csrf_token: string }>('/csrf');
+    api.defaults.headers.common['X-CSRF-Token'] = data.csrf_token;
 };
 
 export default api;
