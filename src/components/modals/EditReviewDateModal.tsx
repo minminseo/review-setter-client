@@ -165,23 +165,29 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                                     </p>
                                 </div>
 
-                                <FormField name="request_scheduled_date" control={form.control} render={({ field }) => (
-                                    <FormItem className="flex flex-col">
-                                        <FormLabel className="inline-block pointer-events-none select-none">{t('review.newReviewDate')}</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                        {field.value ? format(field.value, "PPP") : <span>{t('review.selectDate')}</span>}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={field.value}
-                                                    onSelect={field.onChange}
+                                <FormField name="request_scheduled_date" control={form.control} render={({ field }) => {
+                                    const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+                                    
+                                    return (
+                                        <FormItem className="flex flex-col">
+                                            <FormLabel className="inline-block pointer-events-none select-none">{t('review.newReviewDate')}</FormLabel>
+                                            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                            {field.value ? format(field.value, "PPP") : <span>{t('review.selectDate')}</span>}
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={field.value}
+                                                        onSelect={(date) => {
+                                                            field.onChange(date);
+                                                            setIsCalendarOpen(false); // 日付選択時にカレンダーを閉じる
+                                                        }}
                                                     disabled={(date) => {
                                                         try {
                                                             const today = new Date();
@@ -203,7 +209,8 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                                         </Popover>
                                         <FormMessage />
                                     </FormItem>
-                                )} />
+                                    );
+                                }} />
                                 <FormField name="is_mark_overdue_as_completed" control={form.control} render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="inline-block pointer-events-none select-none">{t('review.overdueHandling')}</FormLabel>
