@@ -155,10 +155,10 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                             <DialogHeader>
                                 <DialogTitle className="border-b pb-2">{t('box.edit')}</DialogTitle>
                                 <DialogDescription>
-                                    <div className="mb-1 font-semibold text-white">{t('category.name')}</div>
-                                    <div className="mb-2 text-lg">
+                                    <span className="block mb-1 font-semibold text-white">{t('category.name')}</span>
+                                    <span className="block mb-2 text-lg">
                                         <NameCell name={category.name} maxWidth={500} />
-                                    </div>
+                                    </span>
                                 </DialogDescription>
                             </DialogHeader>
                             <Form {...form}>
@@ -209,7 +209,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                                                 </AlertDialogContent>
                                             </AlertDialog>
                                             <div className="flex gap-3 absolute right-3 bottom-3">
-                                                <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                                                <Button type="button" variant="outline" onClick={onClose}>{t('common.close')}</Button>
                                                 <Button type="submit" disabled={updateMutation.isPending}>
                                                     {updateMutation.isPending ? t('loading.saving') : t('common.save')}
                                                 </Button>
