@@ -22,7 +22,7 @@ export type NameCellProps = {
 
 // React.FC は使わずアロー関数で定義
 const NameCell = ({ name, maxWidth }: NameCellProps) => {
-    const containerRef = React.useRef<HTMLDivElement>(null);
+    const containerRef = React.useRef<HTMLSpanElement>(null);
     const textRef = React.useRef<HTMLSpanElement>(null);
     const [isOverflow, setIsOverflow] = React.useState(false);
 
@@ -58,9 +58,9 @@ const NameCell = ({ name, maxWidth }: NameCellProps) => {
     }, [checkOverflow]);
 
     return (
-        <div 
+        <span 
             ref={containerRef}
-            className="flex items-center gap-1 w-full" 
+            className="inline-flex items-center gap-1 w-full" 
             style={maxWidth ? { maxWidth } : undefined}
         >
             {/* 短縮表示 */}
@@ -89,7 +89,7 @@ const NameCell = ({ name, maxWidth }: NameCellProps) => {
                     </Tooltip>
                 </TooltipProvider>
             )}
-        </div>
+        </span>
     );
 };
 
