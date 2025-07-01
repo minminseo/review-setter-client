@@ -122,7 +122,7 @@ export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProp
                                     <div className="flex gap-2 w-full justify-end">
                                         <div className="flex gap-2 absolute right-3 bottom-3">
                                             <Button type="button" variant="outline" onClick={onClose}>
-                                                {t('common.cancel')}
+                                                {t('common.close')}
                                             </Button>
                                             <Button type="submit" disabled={mutation.isPending}>
                                                 {mutation.isPending ? t('loading.creating') : t('common.create')}
