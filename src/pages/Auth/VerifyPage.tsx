@@ -33,7 +33,7 @@ const VerifyPage = () => {
     const location = useLocation();
 
     // 認証ロジック（メール認証APIの呼び出しなど）を取得
-    const { verifyEmail, isVerifying } = useAuth();
+    const { verifyEmail, isVerifying } = useAuth({ enabled: false });
 
     // OTP（ワンタイムパスワード）の入力値を管理するstate
     const [otp, setOtp] = React.useState('');

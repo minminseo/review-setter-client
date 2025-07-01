@@ -47,7 +47,7 @@ const SignupPage = () => {
     // 未ログイン時専用の言語・テーマ状態管理を使用
     const texts = useAuthTexts();
     const { language, theme, setLanguage, setTheme } = useAuthLanguageStore();
-    const { signup, isSigningUp } = useAuth();
+    const { signup, isSigningUp } = useAuth({ enabled: false });
     const [showPassword, setShowPassword] = React.useState(false);
 
     const formSchema = createFormSchema(texts);
