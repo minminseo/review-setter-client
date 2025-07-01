@@ -202,6 +202,7 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
                                                                         value={typeof stepField.value === 'number' ? stepField.value : undefined}
                                                                         placeholder={t('common.unset')}
                                                                         min={1}
+                                                                        aria-label={`${t('pattern.step')} ${index + 1} ${t('pattern.intervalDays')}`}
                                                                         onChange={val => {
                                                                             if (typeof val === 'number' && val >= 1) stepField.onChange(val);
                                                                             else if (val === undefined) stepField.onChange(undefined);
@@ -255,7 +256,7 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
                                 </AlertDialog>
                                 <div className="flex gap-3 absolute right-3 bottom-3">
 
-                                    <Button type="button" variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
+                                    <Button type="button" variant="outline" onClick={onClose}>{t('common.close')}</Button>
                                     <Button type="submit" disabled={updateMutation.isPending}>
                                         {updateMutation.isPending ? t('loading.saving') : t('common.save')}
                                     </Button>
