@@ -60,7 +60,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     const [detailItem, setDetailItem] = React.useState<ItemResponse | null>(null);
     const [editingItem, setEditingItem] = React.useState<ItemResponse | null>(null);
     const [deletingItem, setDeletingItem] = React.useState<ItemResponse | null>(null);
-    const [editingDate, setEditingDate] = React.useState<{ item: ItemResponse; reviewDate: ReviewDateResponse } | null>(null);
+    const [editingReviewDate, seteditingReviewDate] = React.useState<{ item: ItemResponse; reviewDate: ReviewDateResponse } | null>(null);
     const [isSummaryModalOpen, setSummaryModalOpen] = React.useState(false);
     const [isEditBoxModalOpen, setEditBoxModalOpen] = React.useState(false);
     const [isFinishedItemsModalOpen, setFinishedItemsModalOpen] = React.useState(false);
@@ -263,7 +263,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             header: () => (
                 <span className="block w-full text-center">{t('item.operations')}</span>
             ),
-            size: 50,
+            size: 65,
             cell: ({ row }) => (
                 <div className="flex items-center flex justify-center">
                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200 hover:text-gray-400 transition-colors" onClick={() => setEditingItem(row.original)}>
@@ -296,7 +296,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             header: () => (
                 <span className="block w-full text-center">{t('item.detail')}</span>
             ),
-            size: 50,
+            size: 60,
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
                     <Button
@@ -315,7 +315,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
             header: () => (
                 <span className="block w-full text-center">{t('item.learningDate')}</span>
             ),
-            size: 100,
+            size: 110,
             cell: ({ row }) => {
                 const learnedDate = row.original.learned_date;
                 if (!learnedDate || learnedDate === 'null' || learnedDate === 'undefined') {
@@ -366,7 +366,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                                 !isToday && reviewDate.is_completed && 'bg-green-700 text-white',
                                 !isClickable && 'cursor-not-allowed opacity-50',
                             )}
-                            onClick={isClickable ? () => setEditingDate({ item: row.original, reviewDate }) : undefined}
+                            onClick={isClickable ? () => seteditingReviewDate({ item: row.original, reviewDate }) : undefined}
                             disabled={!isClickable}
                         >
                             {(() => {
@@ -538,7 +538,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
                         </AlertDialogContent>
                     </AlertDialog>
                 )}
-                {editingDate && <EditReviewDateModal isOpen={!!editingDate} onClose={() => setEditingDate(null)} data={editingDate} />}
+                {editingReviewDate && <EditReviewDateModal isOpen={!!editingReviewDate} onClose={() => seteditingReviewDate(null)} data={editingReviewDate} />}
                 {currentBox && <BoxSummaryModal isOpen={isSummaryModalOpen} onClose={() => setSummaryModalOpen(false)} box={currentBox} itemCount={items.length} />}
                 {currentCategory && currentBox && <EditBoxModal isOpen={isEditBoxModalOpen} onClose={() => setEditBoxModalOpen(false)} category={currentCategory} box={currentBox} />}
                 <FinishedItemsModal isOpen={isFinishedItemsModalOpen} onClose={() => setFinishedItemsModalOpen(false)} boxId={boxId} categoryId={categoryId} />
