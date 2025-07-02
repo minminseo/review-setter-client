@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { InboxIcon } from 'lucide-react';
 import { InboxStackIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 

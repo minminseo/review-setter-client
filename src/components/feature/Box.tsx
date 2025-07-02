@@ -104,11 +104,11 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
 
     const completeReviewMutation = useMutation({
         mutationFn: ({ itemId, reviewDateId, stepNumber }: { itemId: string; reviewDateId: string; stepNumber: number; }) => completeReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
-        onSuccess: (_, variables) => {
+        onSuccess: (_, _variables) => {
             toast.success(t('notification.reviewCompleted'));
             queryClient.invalidateQueries({ queryKey: ['items', boxId, categoryId] });
-            // --- zustandストアからも即時削除 ---
-            if (storeBoxId) removeItemFromBox(storeBoxId, variables.itemId);
+            // 完了済み復習物一覧のキャッシュも無効化
+            queryClient.invalidateQueries({ queryKey: ['finishedItems', { boxId, categoryId }] });
         },
         onError: (err: any) => toast.error(t('error.completeFailed', { message: err.message })),
     });
@@ -118,6 +118,8 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         onSuccess: () => {
             toast.success(t('notification.reviewMarkedIncomplete'));
             queryClient.invalidateQueries({ queryKey: ['items', boxId, categoryId] });
+            // 完了済み復習物一覧のキャッシュも無効化
+            queryClient.invalidateQueries({ queryKey: ['finishedItems', { boxId, categoryId }] });
         },
         onError: (err: any) => toast.error(t('error.markIncompleteFailed', { message: err.message })),
     });

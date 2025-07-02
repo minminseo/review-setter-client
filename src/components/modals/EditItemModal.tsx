@@ -299,33 +299,8 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         onSuccess: () => {
             toast.success(t('notification.markItemAsFinished'));
 
-            // 完了済みアイテムは通常のアイテムリストから削除する
-            if (item.box_id) {
-                removeItemFromBox(item.box_id, item.item_id);
-            }
-
-            // React Queryのキャッシュから直接削除
-            if (item.box_id && item.box_id !== 'unclassified') {
-                // 通常のボックス
-                queryClient.setQueryData(['items', item.box_id, item.category_id], (oldData: any) => {
-                    if (!oldData) return oldData;
-                    return oldData.filter((i: any) => i.item_id !== item.item_id);
-                });
-            } else if (item.category_id && item.category_id !== 'unclassified') {
-                // カテゴリー内の未分類ボックス
-                queryClient.setQueryData(['items', 'unclassified', item.category_id], (oldData: any) => {
-                    if (!oldData) return oldData;
-                    return oldData.filter((i: any) => i.item_id !== item.item_id);
-                });
-            } else {
-                // 完全未分類
-                queryClient.setQueryData(['items', 'unclassified', 'unclassified'], (oldData: any) => {
-                    if (!oldData) return oldData;
-                    return oldData.filter((i: any) => i.item_id !== item.item_id);
-                });
-            }
-
-            // 関連データの無効化
+            // 関連データの無効化（Zustandストアも自動的にrefetchされる）
+            queryClient.invalidateQueries({ queryKey: ['items', item.box_id, item.category_id] });
             queryClient.invalidateQueries({ queryKey: ['finishedItems'] });
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
