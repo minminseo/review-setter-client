@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
-import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon, PencilIcon, ChevronDoubleLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon, DocumentTextIcon, ChevronDoubleLeftIcon } from '@heroicons/react/24/outline';
 import { MoreHorizontal } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,7 +33,6 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SelectCategoryModal } from '@/components/modals/SelectCategoryModal';
 import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
 import { ItemDetailModal } from '@/components/modals/ItemDetailModal';
-import { EditReviewDateModal } from '@/components/modals/EditReviewDateModal';
 import NameCell from '@/components/shared/NameCell';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
@@ -78,6 +77,7 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
  * 今日の復習項目を一覧表示し、完了操作を行うためのページ
  */
 const TodaysReviewPage = () => {
+
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -108,9 +108,8 @@ const TodaysReviewPage = () => {
     const [maxCategoryTabs, setMaxCategoryTabs] = useState<number>(7);
     const [maxBoxTabs, setMaxBoxTabs] = useState<number>(7);
 
-    // 詳細・編集用の状態
+    // 詳細用の状態
     const [detailItem, setDetailItem] = React.useState<DailyReviewDate | null>(null);
-    const [editingReviewDate, setEditingReviewDate] = React.useState<DailyReviewDate | null>(null);
 
     // --- State (復習物名列の幅調整) ---
     const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
@@ -187,7 +186,7 @@ const TodaysReviewPage = () => {
     // --- データ操作 (Mutation) ---
     const createMutationOptions = (_: boolean) => ({
         onSuccess: (_: any, _vars: any) => {
-            toast.success("状態を更新しました。");
+            toast.success(t('notification.reviewDateStatusUpdated'));
             queryClient.invalidateQueries({ queryKey: ['todaysReviews', selectedCategoryId, selectedBoxId] });
             queryClient.invalidateQueries({ queryKey: ['summary'] });
         },
@@ -289,21 +288,6 @@ const TodaysReviewPage = () => {
             },
             size: 70,
         },
-        // 操作カラム（歯車アイコン）
-        {
-            id: 'actions',
-            header: () => (
-                <span className="block w-full text-center">{t('common.actions')}</span>
-            ),
-            cell: ({ row }) => (
-                <div className="flex items-center justify-center">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingReviewDate(row.original)}>
-                        <PencilIcon className="h-5 w-5" />
-                    </Button>
-                </div>
-            ),
-            size: 50,
-        },
         // item_name（復習物名）
         {
             accessorKey: 'item_name',
@@ -337,7 +321,7 @@ const TodaysReviewPage = () => {
                     </Button>
                 </div>
             ),
-            size: 50,
+            size: 60,
         },
         // 重さカラム（target_weight）
         {
@@ -377,7 +361,7 @@ const TodaysReviewPage = () => {
                     {row.original.learned_date || '-'}
                 </div>
             ),
-            size: 100,
+            size: 110,
         },
         // prevカラム
         {
@@ -425,8 +409,8 @@ const TodaysReviewPage = () => {
 
     // テーブル全体の幅を動的に計算
     const tableWidth = React.useMemo(() => {
-        // 基本カラム（状態 + 操作 + 復習物名 + 詳細 + 重さ + ステップ + 学習日）の幅
-        const baseWidth = 60 + 50 + nameColumnWidth + 50 + 55 + 80 + 100; // 動的に計算
+        // 基本カラム（状態 + 復習物名 + 詳細 + 重さ + ステップ + 学習日）の幅
+        const baseWidth = 60 + nameColumnWidth + 50 + 55 + 80 + 100; // 動的に計算
         // スクロール可能カラム（prev + current + next）の幅（各100px）
         const scrollableColumnWidth = 3 * 100;
         // 最小幅を設定
@@ -673,12 +657,12 @@ const TodaysReviewPage = () => {
                                 <DataTable
                                     columns={columns}
                                     data={flattenedAndFilteredReviews}
-                                    fixedColumns={5}
+                                    fixedColumns={4}
                                     maxHeight="100%"
                                     enablePagination={false}
                                     tableWidth={tableWidth}
                                     resizableColumn={{
-                                        index: 2, // 復習物名列（0: 状態, 1: 操作, 2: 復習物名）
+                                        index: 1, // 復習物名列（0: 状態, 1: 復習物名）
                                         onResizeStart: handleResizeStart,
                                         isResizing: isResizing,
                                         isHovering: isHovering,
@@ -715,93 +699,6 @@ const TodaysReviewPage = () => {
                         }}
                     />
                 )}
-                {editingReviewDate && (() => {
-                    // zustandTodaysReviewsから該当itemを検索
-                    let item: any = null;
-                    let reviewDate: any = null;
-                    if (zustandTodaysReviews) {
-                        // 1. カテゴリー・ボックス内
-                        for (const category of zustandTodaysReviews.categories) {
-                            for (const box of category.boxes) {
-                                for (const rd of box.review_dates) {
-                                    if (rd.review_date_id === editingReviewDate.review_date_id) {
-                                        const safeLearned = '1970-01-01';
-                                        const safeScheduled = rd.scheduled_date || '1970-01-01';
-                                        const safeInitial = rd.scheduled_date || '1970-01-01';
-                                        item = {
-                                            item_id: rd.item_id,
-                                            name: rd.item_name,
-                                            detail: rd.detail,
-                                            user_id: '',
-                                            category_id: rd.category_id,
-                                            box_id: rd.box_id,
-                                            pattern_id: null,
-                                            learned_date: safeLearned,
-                                            is_finished: false,
-                                            registered_at: '',
-                                            edited_at: '',
-                                            review_dates: [{ ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial }],
-                                        };
-                                        reviewDate = { ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial };
-                                    }
-                                }
-                            }
-                            // 2. 未分類ボックス
-                            for (const rd of category.unclassified_daily_review_dates_by_category) {
-                                const safeLearned = '1970-01-01';
-                                const safeScheduled = rd.scheduled_date || '1970-01-01';
-                                const safeInitial = rd.scheduled_date || '1970-01-01';
-                                if (rd.review_date_id === editingReviewDate.review_date_id) {
-                                    item = {
-                                        item_id: rd.item_id,
-                                        name: rd.item_name,
-                                        detail: rd.detail,
-                                        user_id: '',
-                                        category_id: rd.category_id,
-                                        box_id: null,
-                                        pattern_id: null,
-                                        learned_date: safeLearned,
-                                        is_finished: false,
-                                        registered_at: '',
-                                        edited_at: '',
-                                        review_dates: [{ ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial }],
-                                    };
-                                    reviewDate = { ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial };
-                                }
-                            }
-                        }
-                        // 3. ユーザー直下
-                        for (const rd of zustandTodaysReviews.daily_review_dates_grouped_by_user) {
-                            const safeLearned = '1970-01-01';
-                            const safeScheduled = rd.scheduled_date || '1970-01-01';
-                            const safeInitial = rd.scheduled_date || '1970-01-01';
-                            if (rd.review_date_id === editingReviewDate.review_date_id) {
-                                item = {
-                                    item_id: rd.item_id,
-                                    name: rd.item_name,
-                                    detail: rd.detail,
-                                    user_id: '',
-                                    category_id: null,
-                                    box_id: null,
-                                    pattern_id: null,
-                                    learned_date: safeLearned,
-                                    is_finished: false,
-                                    registered_at: '',
-                                    edited_at: '',
-                                    review_dates: [{ ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial }],
-                                };
-                                reviewDate = { ...rd, scheduled_date: safeScheduled, initial_scheduled_date: safeInitial };
-                            }
-                        }
-                    }
-                    return (
-                        <EditReviewDateModal
-                            isOpen={!!editingReviewDate}
-                            onClose={() => setEditingReviewDate(null)}
-                            data={item && reviewDate ? { item, reviewDate } : null}
-                        />
-                    );
-                })()}
 
                 <SelectCategoryModal
                     isOpen={isSelectCategoryModalOpen}
