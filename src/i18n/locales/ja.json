@@ -57,7 +57,8 @@
         "selectCategoryFirst": "先にカテゴリーを選択してください。",
         "Unselected": "未選択",
         "noBoxes": "ボックスがありません。",
-        "createBoxHint": "「ボックスを作成」ボタンから新しいボックスを作成できます。"
+        "createBoxHint": "「ボックスを作成」ボタンから新しいボックスを作成できます。",
+        "itemCount": "復習物数"
     },
     "item": {
         "item": "復習物",
@@ -101,7 +102,8 @@
         "normal": "Normal",
         "light": "Light",
         "deleteDescription": "この操作は取り消せません。このパターンを使用しているボックスのスケジュールに影響が出る可能性があります。",
-        "createPatternHint": "サイドバーの「復習パターンを作成」ボタンから新しいパターンを作成できます。"
+        "createPatternHint": "サイドバーの「復習パターンを作成」ボタンから新しいパターンを作成できます。",
+        "step": "ステップ"
     },
     "settings": {
         "changePassword": "パスワード変更",
@@ -154,7 +156,8 @@
         "reviewMarkedIncomplete": "復習を未完了に戻しました。",
         "itemUpdatedError": "適用されている復習物、もしくはボックスが存在するため変更できません。",
         "markItemAsFinished": "復習物を完了させました。",
-        "reviewDateUpdated": "復習日を更新しました。"
+        "reviewDateUpdated": "復習日を更新しました。",
+        "reviewDateStatusUpdated": "状態を更新しました。"
     },
     "error": {
         "pageNotFound": "お探しのページは見つかりませんでした。",

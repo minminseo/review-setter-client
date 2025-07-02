@@ -57,11 +57,12 @@
         "Unselected": "Unselected",
         "all": "All",
         "noBoxes": "No boxes available.",
-        "createBoxHint": "You can create a new box from the 'Create Box' button."
+        "createBoxHint": "You can create a new box from the 'Create Box' button.",
+        "itemCount": "Review Item Count"
     },
     "item": {
         "item": "Review Item",
-        "name": "Item Name",
+        "name": "Review Item Name",
         "detail": "Detail",
         "detailOptional": "Detail (Optional)",
         "learningDate": "Learning Date",
@@ -101,7 +102,8 @@
         "normal": "Normal",
         "light": "Light",
         "deleteDescription": "This action cannot be undone. It may affect the schedule of boxes using this pattern.",
-        "createPatternHint": "You can create a new pattern from the 'Create Pattern' button in the sidebar."
+        "createPatternHint": "You can create a new pattern from the 'Create Pattern' button in the sidebar.",
+        "step": "Step"
     },
     "settings": {
         "changePassword": "Change Password",
@@ -124,7 +126,7 @@
     },
     "validation": {
         "invalidEmail": "Invalid email address.",
-        "itemNameRequired": "Item name is required.",
+        "itemNameRequired": "Review Item name is required.",
         "learningDateRequired": "Learning date is required.",
         "selectValidCategory": "Please select a valid category.",
         "selectValidBox": "Please select a valid box.",
@@ -154,7 +156,8 @@
         "reviewMarkedIncomplete": "Review marked as incomplete.",
         "itemUpdatedError": "Cannot be changed because applied review items or boxes exist.",
         "markItemAsFinished": "Item has been marked as finished.",
-        "reviewDateUpdated": "Review date updated."
+        "reviewDateUpdated": "Review date updated.",
+        "reviewDateStatusUpdated": "status updated."
     },
     "error": {
         "pageNotFound": "The page you are looking for was not found.",
