@@ -14,7 +14,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-    DialogDescription,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '../ui/skeleton';
@@ -57,9 +56,6 @@ export const BoxSummaryModal = ({ isOpen, onClose, box, itemCount }: BoxSummaryM
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{t('box.overview')}</DialogTitle>
-                    <DialogDescription>
-                        {t('box.overviewDescription')}
-                    </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4 mb-3">
                     <ScrollArea className="flex-1 border-t min-h-0 max-h-[calc(100vh-200px)]">
@@ -77,7 +73,7 @@ export const BoxSummaryModal = ({ isOpen, onClose, box, itemCount }: BoxSummaryM
                                 </div>
                                 {/* アイテム数 */}
                                 <div>
-                                    <h4 className="text-sm font-medium text-muted-foreground">{t('box.completedItems')}</h4>
+                                    <h4 className="text-sm font-medium text-muted-foreground">{t('box.itemCount')}</h4>
                                     <p className="font-semibold">{itemCount}</p>
                                 </div>
                                 <Separator />
