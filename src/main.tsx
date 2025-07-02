@@ -40,8 +40,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <App />
         </React.Suspense>
       </BrowserRouter>
-      {/* 開発時にReact Queryの状態を可視化するためのDevtools */}
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   </React.StrictMode>,
 );
