@@ -20,10 +20,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
-// このモーダルが親コンポーネントから受け取るProps（プロパティ）の型を定義
 type SelectCategoryModalProps = {
-    isOpen: boolean;    // モーダルが開いているかどうかの状態
-    onClose: () => void; // モーダルを閉じるための関数
+    isOpen: boolean;
+    onClose: () => void;
     onSelect: (category: GetCategoryOutput) => void; // カテゴリーが選択されたときに、その情報を親に渡すための関数
 };
 
@@ -33,22 +32,17 @@ type SelectCategoryModalProps = {
  */
 export const SelectCategoryModal = ({ isOpen, onClose, onSelect }: SelectCategoryModalProps) => {
     const { t } = useTranslation();
-    // グローバルなZustandストアから、キャッシュされたカテゴリーリストと、それを更新する関数を取得
     const { categories, setCategories } = useCategoryStore();
 
-    // TanStack Query (React Query) v5 を使用してAPIからカテゴリーリストを取得
     const { data: fetchedCategories, isLoading, isSuccess } = useQuery({
-        queryKey: ['categories'], // このクエリを一意に識別するためのキー
-        queryFn: fetchCategories, // 実際にAPIを叩く関数
-        staleTime: 1000 * 60 * 5, // 5分間はキャッシュされたデータを「新鮮」とみなし、再取得しない
-        enabled: isOpen, // このモーダルが開いている(isOpenがtrue)時にのみ、APIリクエストを実行する
+        queryKey: ['categories'],
+        queryFn: fetchCategories,
+        staleTime: 1000 * 60 * 5,
+        enabled: isOpen,
     });
 
-    // v5の作法: useQueryの副作用（データ取得後の処理）はuseEffect内で行う
     React.useEffect(() => {
-        // データ取得が成功し、かつデータが存在する場合
         if (isSuccess && fetchedCategories) {
-            // 取得したデータでZustandストアを更新する
             setCategories(fetchedCategories);
         }
     }, [isSuccess, fetchedCategories, setCategories]); // これらの値が変化した時のみ副作用が実行される
@@ -56,7 +50,7 @@ export const SelectCategoryModal = ({ isOpen, onClose, onSelect }: SelectCategor
     // ユーザーがリスト内のカテゴリーボタンをクリックしたときの処理
     const handleSelect = (category: GetCategoryOutput) => {
         onSelect(category); // 親コンポーネントに選択されたカテゴリーを渡す
-        onClose(); // モーダルを閉じる
+        onClose();
     };
 
     return (
@@ -74,7 +68,7 @@ export const SelectCategoryModal = ({ isOpen, onClose, onSelect }: SelectCategor
                         {/* カテゴリーリストのコンテナ。ScrollAreaが高さとスクロールを管理する */}
                         <div className="space-y-2 p-1">
                             {isLoading ? (
-                                // データ取得中は、ボタンのスケルトンUIを5つ表示する
+                                // データ取得中は、ボタンのスケルトンを表示する
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <Skeleton key={i} className="h-10 w-full" />
                                 ))

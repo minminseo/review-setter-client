@@ -11,15 +11,13 @@ import {
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-// DataTableコンポーネントが受け取るPropsの型定義
-// TDataはテーブルに表示するデータの型、TValueはセルの値の型（ジェネリクスで柔軟性を持たせる）
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
-    enablePagination?: boolean; // ページングを有効にするかどうか
-    maxHeight?: string; // テーブルの最大高さ（縦スクロール用）
-    fixedColumns?: number; // 左側に固定するカラム数
-    tableWidth?: number; // テーブルの全体幅
+    enablePagination?: boolean;
+    maxHeight?: string;
+    fixedColumns?: number;
+    tableWidth?: number;
     resizableColumn?: {
         index: number;
         onResizeStart: (e: React.MouseEvent) => void;
@@ -32,7 +30,7 @@ interface DataTableProps<TData, TValue> {
 /**
  * アプリケーション全体で使われる汎用的なデータテーブルコンポーネント。
  * ソート、ページネーション機能を内蔵している。
- * @param columns - テーブルの列定義。`useMemo`でメモ化することが推奨される。
+ * @param columns - テーブルの列定義。
  * @param data - テーブルに表示するデータ配列。
  */
 export const DataTable = <TData, TValue>({
@@ -44,10 +42,10 @@ export const DataTable = <TData, TValue>({
     tableWidth,
     resizableColumn,
 }: DataTableProps<TData, TValue>) => {
-    // テーブルのソート状態を管理する
+    // テーブルのソート状態を管理
     const [sorting, setSorting] = React.useState<SortingState>([]);
 
-    // TanStack Tableのフックを使い、テーブルのインスタンスを生成
+    // テーブルのインスタンスを生成
     const table = useReactTable({
         data,
         columns,
@@ -81,7 +79,7 @@ export const DataTable = <TData, TValue>({
                                     <TableRow key={headerGroup.id}>
                                         {headerGroup.headers.map((header, index) => {
                                             const isFixed = index < fixedColumns;
-                                            // カラムのサイズ情報を取得（TanStack Tableのcolumn定義から）
+                                            // カラムのサイズ情報を取得
                                             const columnSize = header.column.columnDef.size;
                                             const width = columnSize ? `${columnSize}px` : '130px';
 
@@ -138,7 +136,7 @@ export const DataTable = <TData, TValue>({
                                         <TableRow key={row.id}>
                                             {row.getVisibleCells().map((cell, index) => {
                                                 const isFixed = index < fixedColumns;
-                                                // カラムのサイズ情報を取得（TanStack Tableのcolumn定義から）
+                                                // カラムのサイズ情報を取得
                                                 const columnSize = cell.column.columnDef.size;
                                                 const width = columnSize ? `${columnSize}px` : '130px';
 
@@ -163,7 +161,6 @@ export const DataTable = <TData, TValue>({
                                                         style={{
                                                             position: isFixed ? 'sticky' : 'static',
                                                             zIndex: isFixed ? 10 : undefined,
-                                                            // borderRight: 'none',
                                                             boxShadow: index === fixedColumns - 1 ? '2px 0 4px rgba(0, 0, 0, 0.54)' : 'none',
                                                             width,
                                                             minWidth: width,
@@ -246,7 +243,6 @@ export const DataTable = <TData, TValue>({
                                         </TableRow>
                                     ))
                                 ) : (
-                                    // データがない場合は「No results」と表示
                                     <TableRow>
                                         <TableCell colSpan={columns.length} className="h-24 text-center border-r-0">
                                             No results.

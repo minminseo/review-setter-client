@@ -6,7 +6,7 @@ import { useCategoryStore, usePatternStore } from '@/store';
 import { fetchPatterns } from '@/api/patternApi';
 import { GetBoxOutput } from '@/types';
 
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -63,21 +63,21 @@ export const BoxSummaryModal = ({ isOpen, onClose, box, itemCount }: BoxSummaryM
                             <div className="space-y-4 py-4">
                                 {/* カテゴリー名 */}
                                 <div>
-                                    <h4 className="text-sm font-medium text-muted-foreground">{t('category.name')}</h4>
+                                    <h4 className="text-sm font-medium text-muted-foreground">{t('category.label')}</h4>
                                     <p className="font-semibold">{categoryName}</p>
                                 </div>
                                 {/* ボックス名 */}
                                 <div>
-                                    <h4 className="text-sm font-medium text-muted-foreground">{t('box.name')}</h4>
+                                    <h4 className="text-sm font-medium text-muted-foreground">{t('box.label')}</h4>
                                     <p className="font-semibold">{box.name}</p>
                                 </div>
-                                {/* アイテム数 */}
+                                {/* 復習物数 */}
                                 <div>
                                     <h4 className="text-sm font-medium text-muted-foreground">{t('box.itemCount')}</h4>
                                     <p className="font-semibold">{itemCount}</p>
                                 </div>
                                 <Separator />
-                                {/* 復習パターン情報 */}
+                                {/* パターン情報 */}
                                 <div>
                                     <h4 className="text-sm font-medium text-muted-foreground">{t('pattern.reviewPattern')}</h4>
                                     <div className="mt-2 rounded-md border bg-muted p-4">

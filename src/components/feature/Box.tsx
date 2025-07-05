@@ -13,7 +13,7 @@ import { ItemResponse, ReviewDateResponse, GetCategoryOutput, GetBoxOutput } fro
 import { cn } from '@/lib/utils';
 import { usePatternStore } from '@/store/patternStore';
 
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -24,7 +24,7 @@ import NameCell from '@/components/shared/NameCell';
 import { SortDropdown } from '@/components/shared/SortDropdown';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-// Modals
+// モーダル
 import { ItemDetailModal } from '@/components/modals/ItemDetailModal';
 import { EditItemModal } from '@/components/modals/EditItemModal';
 import { EditReviewDateModal } from '@/components/modals/EditReviewDateModal';
@@ -34,7 +34,6 @@ import { FinishedItemsModal } from '@/components/modals/FinishedItemsModal';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { CreateItemModal } from '@/components/modals/CreateItemModal';
 
-// Boxコンポーネントが受け取るPropsの型定義
 interface BoxProps {
     items: ItemResponse[];
     isLoading: boolean;
@@ -44,8 +43,7 @@ interface BoxProps {
 
 /**
  * ボックス詳細ページのメインコンテンツ。
- * アイテムの一覧テーブルと、関連する操作を担当する。
- * @param props - 親コンポーネント(BoxAndCategoryPage)から渡されるデータと状態
+ * 復習物の一覧テーブルと、関連する操作を担当する。
  */
 export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps) => {
     const { t } = useTranslation();
@@ -169,7 +167,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
         };
     }, [isResizing, handleResizeMove, handleResizeEnd]);
 
-    // --- アイテムリストの取得ロジック ---
+    // --- 復習物リストの取得 ---
     let storeBoxId = boxId;
     if ((boxId === 'unclassified' || !boxId) && categoryId && categoryId !== 'unclassified') {
         storeBoxId = `unclassified-${categoryId}`;
@@ -187,20 +185,20 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
 
 
     // --- テーブル定義 ---
-    // カラム数を動的に計算（ボックスの復習パターンのステップ数を基準に表示）
+    // カラム数を動的に計算（ボックスのパターンのステップ数を基準に表示）
     const { patterns } = usePatternStore();
     const pattern = React.useMemo(() => {
         if (!currentBox?.pattern_id) return null;
         return patterns.find((p) => p.id === currentBox.pattern_id) || null;
     }, [patterns, currentBox?.pattern_id]);
 
-    // 未分類ボックスの場合、アイテムの最大review_dates数を使用
+    // 未分類ボックスの場合、復習物の最大review_dates数を使用
     const maxColumns = React.useMemo(() => {
         if (pattern) {
             return pattern.steps.length;
         }
 
-        // 未分類ボックスの場合：全アイテムの最大review_dates数を計算
+        // 未分類ボックスの場合：全復習物の最大review_dates数を計算
         if (displayItems && displayItems.length > 0) {
             const maxReviewDates = Math.max(...displayItems.map(item => item.review_dates?.length || 0));
             return maxReviewDates;
@@ -390,7 +388,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     // --- フィルタリング処理 ---
     const filteredDisplayItems = React.useMemo(() => {
         if (filterType === 'all') return displayItems;
-        // 今日の復習: 今日のscheduled_dateを持つreview_dateが1つでもあるアイテムのみ
+        // 今日の復習: 今日のscheduled_dateを持つreview_dateが1つでもある復習物のみ
         const todayStr = format(new Date(), 'yyyy-MM-dd');
         return displayItems.filter(item =>
             item.review_dates.some(rd =>

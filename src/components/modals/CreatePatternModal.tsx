@@ -10,8 +10,7 @@ import { usePatternStore } from '@/store';
 import { CreatePatternRequest, TargetWeight } from '@/types';
 import { useTranslation } from 'react-i18next';
 
-
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -21,7 +20,6 @@ import { FaPlusCircle, FaTrashAlt } from "react-icons/fa";
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import { TFunction } from 'i18next';
 
-// フォームのバリデーションルール
 const patternSchema = (t: TFunction) => z.object({
     name: z.string().min(1, t('validation.patternNameRequired')),
     target_weight: z.enum(['heavy', 'normal', 'light', 'unset']),
@@ -38,7 +36,7 @@ type CreatePatternModalProps = {
 };
 
 /**
- * 新しい復習パターンを作成するためのモーダル。
+ * 新しいパターンを作成するためのモーダル。
  * react-hook-formのuseFieldArrayを使い、動的にステップの数を増減させる機能を持つ。
  */
 export const CreatePatternModal = ({ isOpen, onClose }: CreatePatternModalProps) => {

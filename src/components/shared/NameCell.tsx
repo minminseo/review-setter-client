@@ -7,20 +7,14 @@ import {
 } from "@/components/ui/tooltip";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
-/**
- * 表データの「復習物名」セルに使う共通コンポーネント。
- * - 文字列が列幅を超える場合は `truncate` で省略表示。
- * - 省略された場合のみ ℹ︎ アイコンを表示し、ホバーで全文をツールチップ表示する。
- * - ResizeObserverでカラム幅の変更を動的に監視し、リサイズ時にオーバーフロー状態を更新。
- */
+// 表データの「復習物名」セルに使う共通コンポーネント（テキストオーバーフロー時に表示するiマーク）
 export type NameCellProps = {
-    /** フルテキスト（復習物名） */
+    // フルテキスト（復習物名）
     name: string;
-    /** セルの最大横幅 (px)。未指定の場合は動的にカラム幅に追従 */
+    // セルの最大横幅。未指定の場合は動的にカラム幅に追従
     maxWidth?: number;
 };
 
-// React.FC は使わずアロー関数で定義
 const NameCell = ({ name, maxWidth }: NameCellProps) => {
     const containerRef = React.useRef<HTMLSpanElement>(null);
     const textRef = React.useRef<HTMLSpanElement>(null);
@@ -58,9 +52,9 @@ const NameCell = ({ name, maxWidth }: NameCellProps) => {
     }, [checkOverflow]);
 
     return (
-        <span 
+        <span
             ref={containerRef}
-            className="inline-flex items-center gap-1 w-full" 
+            className="inline-flex items-center gap-1 w-full"
             style={maxWidth ? { maxWidth } : undefined}
         >
             {/* 短縮表示 */}
@@ -71,7 +65,7 @@ const NameCell = ({ name, maxWidth }: NameCellProps) => {
                 {name}
             </span>
 
-            {/* 省略されているときだけ情報アイコン */}
+            {/* 省略されているときだけ「i」アイコン */}
             {isOverflow && (
                 <TooltipProvider delayDuration={200}>
                     <Tooltip>

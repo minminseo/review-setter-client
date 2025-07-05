@@ -10,7 +10,7 @@ import { ChevronDown } from 'lucide-react';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-// 親コンポーネントから受け取るPropsの型を定義
+// AppLayoutから受け取るPropsの型を定義
 type SidebarProps = {
     onOpenCreateItem: (context?: { categoryId?: string; boxId?: string }) => void;
     onOpenCreatePattern: () => void;
@@ -23,11 +23,14 @@ type SidebarProps = {
 }
 
 /**
- * 画面左端に表示されるサイドバーコンポーネント
- *
  * @param onOpenCreateItem - 復習物作成モーダルを開くためのコールバック関数
  * @param onOpenCreatePattern - パターン作成モーダルを開くためのコールバック関数
  * @param onOpenSettings - 設定モーダルを開くためのコールバック関数
+ * @param open - サイドバーの開閉状態
+ * @param setOpen - サイドバーの開閉状態を更新する関数
+ * @param sidebarWidth - サイドバーの幅
+ * @param setSidebarWidth - サイドバーの幅を更新する関数
+ * @param onDragStateChange - ドラッグ状態を更新する関数
  */
 const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, setOpen, sidebarWidth, setSidebarWidth, onDragStateChange }: SidebarProps) => {
     const { t } = useTranslation();
@@ -41,13 +44,13 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
     const [isSidebarPinned, setIsSidebarPinned] = useState(false);
     // Editセクションのトグル状態
     const [editOpen, setEditOpen] = useState(false);
-    // Todayセクションのトグル状態
+    // 今日の復習セクションのトグル状態
     const [todayOpen, setTodayOpen] = useState(false);
-    // Todayセクション用の展開カテゴリー
+    // 今日の復習セクション用の展開カテゴリー
     const [todayExpandedCategoryIds, setTodayExpandedCategoryIds] = useState<string[]>([]);
     // カテゴリーボタンのホバー状態
     const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
-    // Todayセクション用のカテゴリーホバー状態
+    // 今日の復習セクション用のカテゴリーホバー状態
     const [todayHoveredCategoryId, setTodayHoveredCategoryId] = useState<string | null>(null);
     // ドラッグ状態
     const [isDragging, setIsDragging] = useState(false);
@@ -59,7 +62,6 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
     // TooltipProviderのリセット用キー
     const [tooltipKey, setTooltipKey] = useState(0);
 
-    // 画面サイズの監視
     useEffect(() => {
         const checkIsMobile = () => {
             setIsMobile(window.innerWidth < 640);
@@ -82,7 +84,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
         }
     }, [open]);
 
-    // 現在のcategoryId, boxIdをパスから抽出（正規表現を使わず分割で）
+    // 現在のcategoryId, boxIdをパスから抽出
     const pathParts = location.pathname.split('/');
     let currentCategoryId: string | null = null;
     let currentBoxId: string | null = null;
@@ -135,7 +137,6 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
         if (!isDragging) return;
 
         const newWidth = e.clientX;
-        // 最小幅180px、最大幅400pxに制限
         const constrainedWidth = Math.max(180, Math.min(400, newWidth));
         setSidebarWidth(constrainedWidth);
     }, [isDragging]);
@@ -193,7 +194,6 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
             <TooltipProvider key={tooltipKey}>
                 {/* 上部固定エリア */}
                 <div className="flex-shrink-0 ">
-                    {/* 開閉トグルボタン（左側に固定） */}
                     <div className="flex items-center justify-start h-9 mt-2 px-2 ">
                         <Button
                             variant="ghost"
@@ -626,7 +626,6 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                     size="icon"
                                     className={`h-11 w-full flex items-center rounded-lg justify-center `}
                                     onClick={() => {
-                                        // Todayセクションが選択されている場合はそちらを優先
                                         if (location.pathname === '/today') {
                                             // カテゴリー選択中かつボックスが「全て」または未指定なら未分類を初期値に
                                             if (todayCategoryParam && (!todayBoxParam || todayBoxParam === 'all')) {
@@ -728,7 +727,6 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                     </nav>
                 </div>
             </TooltipProvider>
-            {/* リサイザー（デスクトップのみ） */}
             {open && !isMobile && (
                 <div
                     ref={dragRef}

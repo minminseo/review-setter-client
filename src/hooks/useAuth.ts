@@ -7,11 +7,7 @@ import { login, logout, signup, fetchUser, verifyEmail } from '@/api/authApi';
 import { useUserStore } from '@/store';
 import { useAuthTexts } from '@/store/authLanguageStore';
 
-/**
- * Custom hook for authentication logic
- * Centralizes API calls, state management, and navigation
- * Uses localized messages from authLanguageStore
- */
+
 export const useAuth = (options: { enabled?: boolean } = {}) => {
     const { enabled = true } = options;
     const navigate = useNavigate();
@@ -19,26 +15,23 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
     const { setUser, clearUser } = useUserStore();
     const texts = useAuthTexts();
 
-    // 認証状態の「源泉」。このクエリが成功するかどうかで、有効なセッションを持つかを判断する。
+    // 有効なセッションを持つかを判断。
     const { data: user, isLoading: isUserLoading, isSuccess, isError } = useQuery({
         queryKey: ['user'],
         queryFn: fetchUser,
-        staleTime: 1000 * 60 * 30, // 30分間はキャッシュを有効にする
-        retry: false, // 初回読み込みで失敗（401など）した場合、リトライしない
-        refetchOnWindowFocus: false, // ウィンドウフォーカス時の自動再取得を無効化
-        refetchOnMount: enabled, // enabled=falseの場合はマウント時実行を無効化
-        refetchOnReconnect: false, // ネットワーク再接続時の自動再取得を無効化
-        enabled: enabled, // 条件付きでクエリを有効にする
+        staleTime: 1000 * 60 * 30,
+        retry: false,
+        refetchOnWindowFocus: false,
+        refetchOnMount: enabled,
+        refetchOnReconnect: false,
+        enabled: enabled,
     });
 
-    // useQueryのv5の作法。コールバックの代わりにuseEffectで副作用を処理する。
     useEffect(() => {
         if (isSuccess && user) {
-            // APIからユーザー情報が取得できたら、ストアを更新して「認証済み」とする
             setUser(user);
         }
         if (isError) {
-            // エラーが発生した場合（セッション切れなど）、ストアをクリアして「未認証」とする
             clearUser();
         }
     }, [isSuccess, isError, user, setUser, clearUser]);
@@ -47,7 +40,7 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
     const loginMutation = useMutation({
         mutationFn: login,
         onSuccess: () => {
-            // ログイン成功後、['user']クエリを無効化し、useQueryを再実行させる
+            // ログイン成功後、'user'クエリを無効化し、useQueryを再実行させる
             queryClient.invalidateQueries({ queryKey: ['user'] });
             navigate('/');
             toast.success(texts.loginSuccess);
@@ -74,7 +67,6 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
     const verifyEmailMutation = useMutation({
         mutationFn: verifyEmail,
         onSuccess: () => {
-            // On successful email verification, invalidate ['user'] query to confirm auth state
             queryClient.invalidateQueries({ queryKey: ['user'] });
             navigate('/');
             toast.success(texts.verificationSuccess);
@@ -89,18 +81,13 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
         mutationFn: logout,
         onSuccess: () => {
             clearUser();
-            // Completely disable and remove the user query to prevent any API calls
             queryClient.cancelQueries({ queryKey: ['user'] });
             queryClient.removeQueries({ queryKey: ['user'] });
             queryClient.setQueryData(['user'], null);
-            // Disable the user query globally to prevent future executions
             queryClient.setQueryDefaults(['user'], { enabled: false });
-            // Redirect to login page first to unmount authenticated pages
             navigate('/login', { replace: true });
-            // Then clear all query cache after navigation
             setTimeout(() => {
                 queryClient.clear();
-                // Re-enable user query after clearing for future logins
                 queryClient.setQueryDefaults(['user'], { enabled: true });
             }, 100);
             toast.info(texts.logoutInfo);
@@ -111,16 +98,13 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
         }
     });
 
-    // Auth state: Only consider authenticated if API query succeeds and user data exists
-    // If error occurs, clearly mark as unauthenticated
     const actualIsAuthenticated = isSuccess && !!user;
-    // Loading state: Only when initially loading and no error
     const actualIsUserLoading = isUserLoading;
 
     return {
         user,
-        isUserLoading: actualIsUserLoading, // Properly manage loading state
-        isAuthenticated: actualIsAuthenticated, // Auth state based on API query result
+        isUserLoading: actualIsUserLoading,
+        isAuthenticated: actualIsAuthenticated,
         login: loginMutation.mutate,
         isLoggingIn: loginMutation.isPending,
         signup: signupMutation.mutate,

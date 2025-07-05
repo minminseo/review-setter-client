@@ -15,7 +15,6 @@ type BreadcrumbItemType = {
     href?: string; // hrefがなければ、現在のページとして表示（クリック不可）
 };
 
-// Breadcrumbsコンポーネントが受け取るPropsの型定義
 type BreadcrumbsProps = {
     items: BreadcrumbItemType[];
 };
@@ -23,11 +22,9 @@ type BreadcrumbsProps = {
 /**
  * ページの現在位置を示すパンくずリストを表示するコンポーネント。
  * @param items - パンくずリストの各項目（ラベルとリンク先）の配列
- * @returns レスポンシブ対応されたパンくずリストUI
  */
 const Breadcrumbs = ({ items }: BreadcrumbsProps) => {
     return (
-        // md（中画面）以上で表示される
         <Breadcrumb className="hidden md:flex">
             <BreadcrumbList>
                 {items.map((item, index) => {

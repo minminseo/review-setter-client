@@ -10,7 +10,7 @@ import { AuthThemeProvider } from '@/components/AuthThemeProvider';
 // 認証関連のロジックを一元管理するカスタムフック
 import { useAuth } from '@/hooks/useAuth';
 
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -36,10 +36,7 @@ const createLoginSchema = (texts: { invalidEmail: string; passwordRequired: stri
     password: z.string().min(1, texts.passwordRequired),
 });
 
-/**
- * ログインページコンポーネント
- * AuthLayout内で表示される
- */
+// ログインページ
 const LoginPage = () => {
     // 未ログイン時専用の言語状態管理を使用
     const texts = useAuthTexts();

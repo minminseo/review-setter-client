@@ -6,22 +6,16 @@ import { fetchPatterns } from '@/api/patternApi';
 import { usePatternStore } from '@/store';
 import { PatternResponse } from '@/types';
 
-// Shared Components
 import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
 import Breadcrumbs from '@/components/shared/Breadcrumbs';
 import { SortDropdown } from '@/components/shared/SortDropdown';
 
-// Modals
 import { EditPatternModal } from '@/components/modals/EditPatternModal';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
-/**
- * 復習パターンを一覧で表示・管理するためのページ。
- * ホームページやサイドバーから遷移してくる。
- */
+
 const PatternsPage = () => {
     const { t } = useTranslation();
-    // グローバルなZustandストアからパターンリストとセッター関数を取得
     const { patterns, setPatterns } = usePatternStore();
 
     // 編集モーダルを開くために、どのパターンを編集中か管理するstate
@@ -33,13 +27,13 @@ const PatternsPage = () => {
     const { data: fetchedPatterns, isLoading, isSuccess, error } = useQuery({
         queryKey: ['patterns'],
         queryFn: fetchPatterns,
-        staleTime: 1000 * 60 * 5, // 5分間はキャッシュを有効にする
-        retry: 1, // 1回だけリトライする
-        refetchOnMount: true, // マウント時に必ず実行
-        refetchOnWindowFocus: false, // ウィンドウフォーカス時の再取得を無効化
+        staleTime: 1000 * 60 * 5,
+        retry: 1,
+        refetchOnMount: true,
+        refetchOnWindowFocus: false,
     });
 
-    // データ取得成功時に、Zustandストアの状態を更新する
+    // データ取得成功時に、Zustandストアの状態を更新
     React.useEffect(() => {
         if (isSuccess && fetchedPatterns) {
             setPatterns(fetchedPatterns);

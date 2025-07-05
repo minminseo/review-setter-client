@@ -3,7 +3,6 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { GetUserOutput, ThemeColor, Language } from '@/types';
 import { setLanguage } from '@/i18n';
 
-// ユーザーの認証状態やUI設定をグローバルに管理するZustandストア
 interface UserState {
     isAuthenticated: boolean;
     user: GetUserOutput | null;
@@ -18,17 +17,15 @@ interface UserState {
 }
 
 export const useUserStore = create<UserState>()(
-    // `persist`ミドルウェアを使い、一部の状態をlocalStorageに永続化する
     persist(
         (set) => ({
-            // 初期状態では未認証
             isAuthenticated: false,
             user: null,
-            theme: 'dark', // デフォルトテーマ
-            language: 'ja', // デフォルト言語
+            theme: 'dark',
+            language: 'ja',
 
             setUser: (user) => {
-                setLanguage(user.language); // i18nextに言語を設定
+                setLanguage(user.language);
                 set({
                     user,
                     isAuthenticated: true,
@@ -43,12 +40,12 @@ export const useUserStore = create<UserState>()(
             }),
 
             setLanguage: (language) => {
-                setLanguage(language); // i18nextに言語を設定
+                setLanguage(language);
                 set({ language });
             },
         }),
         {
-            name: 'review-setter-user-storage', // localStorageで使われるキー
+            name: 'review-setter-user-storage',
             storage: createJSONStorage(() => localStorage),
             // `user`や`isAuthenticated`はリロード時にAPIで確認するため、永続化しない
             // UI設定（テーマ、言語）のみを永続化する

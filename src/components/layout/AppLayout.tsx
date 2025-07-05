@@ -3,20 +3,14 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 
-// AppLayoutは、サイドバーから開かれるモーダルの状態を一元管理するため、
-// 対応するモーダルコンポーネントを全てインポートする。
+// アプリ全体で使うモーダル
 import { CreateItemModal } from '../modals/CreateItemModal';
 import { CreatePatternModal } from '../modals/CreatePatternModal';
 import { SettingsModal } from '../modals/SettingsModal';
+
 import { ModalProvider } from '@/contexts/ModalContext';
 
-/**
- * メインアプリケーション（ログイン後）の共通レイアウト。
- * サイドバーとメインコンテンツエリアで構成される。
- * サイドバーから開かれるグローバルなモーダルの開閉状態も、このコンポーネントが責務を持つ。
- */
 const AppLayout = () => {
-    // サイドバーから開く各モーダルの開閉状態を管理するstate
     const [isCreateItemModalOpen, setCreateItemModalOpen] = React.useState(false);
     const [modalContext, setModalContext] = React.useState<{ categoryId?: string; boxId?: string }>({});
     const [isCreatePatternModalOpen, setCreatePatternModalOpen] = React.useState(false);
@@ -26,7 +20,6 @@ const AppLayout = () => {
     const [isMobile, setIsMobile] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
-    // 画面サイズの監視
     useEffect(() => {
         const checkIsMobile = () => {
             setIsMobile(window.innerWidth < 640);
@@ -66,10 +59,9 @@ const AppLayout = () => {
                 setSidebarWidth={setSidebarWidth}
                 onDragStateChange={(dragging) => setIsDragging(dragging)}
             />
-            {/* メインコンテンツエリア。サイドバーの幅に応じて左paddingを調整 */}
+
             <div className={`flex flex-col flex-1 sm:gap-4 sm:py-4 ${!isDragging ? 'transition-all duration-200' : ''} overflow-hidden`} style={{ paddingLeft: !isMobile ? (sidebarOpen ? `${sidebarWidth}px` : '56px') : '0' }}>
                 <main className="flex-1 flex flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 overflow-hidden">
-                    {/* ここにHomePageやCategoryPageなどの、各ページコンポーネントが描画される */}
                     <ModalProvider
                         openCreateItemModal={openCreateItemModal}
                         updateCreateItemContext={updateCreateItemContext}
@@ -80,8 +72,6 @@ const AppLayout = () => {
             </div>
 
             {/* --- モーダルコンポーネント群 --- */}
-            {/* is~ModalOpen の状態に応じて、各モーダルの表示・非表示が切り替わる */}
-
             <CreateItemModal
                 isOpen={isCreateItemModalOpen}
                 onClose={() => {

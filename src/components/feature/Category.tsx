@@ -6,20 +6,19 @@ import { fetchPatterns } from '@/api/patternApi';
 import { fetchItemCountByBox, fetchDailyReviewCountByBox } from '@/api/itemApi';
 import { useTranslation } from 'react-i18next';
 
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
 import { SortDropdown } from '@/components/shared/SortDropdown';
 
-// Modals
+// モーダル
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
 import { EditBoxModal } from '@/components/modals/EditBoxModal';
 import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
 import { ClockIcon, Cog6ToothIcon, Cog8ToothIcon, DocumentIcon, InboxStackIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
-// Categoryコンポーネントが受け取るPropsの型定義
 interface CategoryProps {
     boxes: GetBoxOutput[];
     isLoading: boolean;
@@ -31,7 +30,6 @@ interface CategoryProps {
 /**
  * カテゴリー詳細ページのメインコンテンツ。
  * ボックスの一覧表示と、関連する操作（ボックス作成・編集、カテゴリー編集）を担当する。
- * @param props - 親コンポーネント(BoxAndCategoryPage)から渡されるデータと状態
  */
 export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassifiedPage }: CategoryProps) => {
     const { t } = useTranslation();
@@ -48,14 +46,14 @@ export const Category = ({ boxes, isLoading, error, currentCategory, isUnclassif
     const [patternsQuery, itemCountByBoxQuery, dailyReviewCountByBoxQuery] = results;
     const patterns = patternsQuery.data;
 
-    // 復習パターン名を取得するヘルパー関数
+    // パターン名を取得するヘルパー関数
     const getPatternName = (patternId: string | null): string => {
         if (!patternId || !patterns) return t('pattern.unset');
         const pattern = patterns.find(p => p.id === patternId);
         return pattern?.name || t('pattern.unset');
     };
 
-    // ボックスのアイテム数を取得するヘルパー関数
+    // ボックスの復習物数を取得するヘルパー関数
     const getItemCount = (boxId: string): number => {
         if (!itemCountByBoxQuery.data) return 0;
         const itemCount = (itemCountByBoxQuery.data as ItemCountGroupedByBoxResponse[])

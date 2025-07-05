@@ -1,41 +1,34 @@
+// 復習物 = item
+
 import { create } from 'zustand';
 import { ItemResponse, GetDailyReviewDatesResponse } from '@/types';
 
-// データ本体：ボックスIDをキーとして、アイテムの配列を保持する
-type ItemStoreData = Record<string, ItemResponse[]>; // Keyed by boxId or a special key for unclassified
+// box_idをキーとして、復習物の配列を保持する
+type ItemStoreData = Record<string, ItemResponse[]>;
 
 interface ItemState {
     itemsByBoxId: ItemStoreData;
-    // 「今日の復習」ページの専用データ
     todaysReviews: GetDailyReviewDatesResponse | null;
 
-    // --- セレクター関数 ---
     /**
-     * 指定されたボックスIDに対応するアイテムのリストを取得する
-     * @param boxId - 取得したいアイテムリストの親ボックスID
+     * 指定されたbox_idに対応する復習物のリストを取得する
+     * @param boxId - 取得したい復習物リストの親ボックスID
      */
     getItemsForBox: (boxId: string) => ItemResponse[] | undefined;
 
-    // --- アクション関数 ---
-    /**
-     * 特定のボックスのアイテムリストをAPIから取得したデータでセット（または上書き）する
-     */
+    // 特定のボックスの復習物リストをAPIから取得したデータでセット（または上書き）する
     setItemsForBox: (boxId: string, items: ItemResponse[]) => void;
-    /**
-     * 「今日の復習」データをセットする
-     */
+
+    // 「今日の復習」データをセットする
     setTodaysReviews: (data: GetDailyReviewDatesResponse) => void;
-    /**
-     * 特定のボックスに新しいアイテムを追加する
-     */
+
+    // 特定のボックスに新しい復習物を追加する
     addItemToBox: (boxId: string, item: ItemResponse) => void;
-    /**
-     * 特定のボックスのアイテムを更新する
-     */
+
+    // 特定のボックスの復習物を更新する
     updateItemInBox: (boxId: string, updatedItem: ItemResponse) => void;
-    /**
-     * 特定のボックスからアイテムを削除する
-     */
+
+    // 特定のボックスから復習物を削除する
     removeItemFromBox: (boxId: string, itemId: string) => void;
 }
 
@@ -60,10 +53,10 @@ export const useItemStore = create<ItemState>((set, get) => ({
     setTodaysReviews: (data) => set({ todaysReviews: data }),
 
     addItemToBox: (boxId, item) => set((state) => {
-        // 完了済みアイテムは追加しない（ただし、サーバーからの正確なデータは信頼）
+        // 完了済み復習物は追加しない（ただし、サーバーからの正確なデータは信頼）
         if (item.is_finished) return state;
 
-        // 重複チェック：同じアイテムIDが既に存在する場合は追加しない
+        // 重複チェック：同じ復習物IDが既に存在する場合は追加しない
         const existingItems = state.itemsByBoxId[boxId] || [];
         const itemExists = existingItems.some(existingItem => existingItem.item_id === item.item_id);
         if (itemExists) return state;
@@ -78,7 +71,7 @@ export const useItemStore = create<ItemState>((set, get) => ({
 
     updateItemInBox: (boxId, updatedItem) => set((state) => {
 
-        // 完了済みアイテムに更新された場合は削除
+        // 完了済み復習物に更新された場合は削除
         if (updatedItem.is_finished) {
             return {
                 itemsByBoxId: {

@@ -1,10 +1,9 @@
 import { create } from 'zustand';
 import { PatternResponse } from '@/types';
 
-// 復習パターンデータをアプリケーション全体で共有するためのストア
 interface PatternState {
     patterns: PatternResponse[];
-    // APIから取得したパターンリストでストアを初期化/上書きする
+    // APIから取得したパターンリストでストアを初期化、上書きする
     setPatterns: (patterns: PatternResponse[]) => void;
     // 新しいパターンをリストの末尾に追加する（楽観的更新用）
     addPattern: (pattern: PatternResponse) => void;

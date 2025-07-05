@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { GetCategoryOutput } from '@/types';
 
-// カテゴリーデータを管理するストア
 interface CategoryState {
     categories: GetCategoryOutput[];
     setCategories: (categories: GetCategoryOutput[]) => void;

@@ -2,8 +2,8 @@ import api from './index';
 import { PatternResponse, CreatePatternRequest, UpdatePatternRequest } from '@/types';
 
 /**
- * ユーザーが作成した全ての復習パターンを取得する
- * @returns 復習パターンの配列
+ * ユーザーが作成した全てのパターンを取得する
+ * @returns パターンの配列
  */
 export const fetchPatterns = async (): Promise<PatternResponse[]> => {
     const response = await api.get<PatternResponse[]>('/patterns');
@@ -11,9 +11,9 @@ export const fetchPatterns = async (): Promise<PatternResponse[]> => {
 };
 
 /**
- * 新しい復習パターンを作成する
+ * 新しいパターンを作成する
  * @param data - 作成に必要なパターン情報
- * @returns 作成された復習パターンオブジェクト
+ * @returns 作成されたパターンオブジェクト
  */
 export const createPattern = async (data: CreatePatternRequest): Promise<PatternResponse> => {
     const response = await api.post<PatternResponse>('/patterns', data);
@@ -21,10 +21,10 @@ export const createPattern = async (data: CreatePatternRequest): Promise<Pattern
 };
 
 /**
- * 既存の復習パターンを更新する
+ * 既存のパターンを更新する
  * @param id - 更新対象のパターンID
  * @param data - 更新内容
- * @returns 更新後の復習パターンオブジェクト
+ * @returns 更新後のパターンオブジェクト
  */
 export const updatePattern = async ({ id, data }: { id: string, data: UpdatePatternRequest }): Promise<PatternResponse> => {
     const response = await api.put<PatternResponse>(`/patterns/${id}`, data);
@@ -32,7 +32,7 @@ export const updatePattern = async ({ id, data }: { id: string, data: UpdatePatt
 };
 
 /**
- * 指定したIDの復習パターンを削除する
+ * 指定したIDのパターンを削除する
  * @param id - 削除対象のパターンID
  */
 export const deletePattern = async (id: string): Promise<void> => {

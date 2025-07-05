@@ -4,10 +4,9 @@ import { toast } from 'sonner';
 import { useAuthTexts } from '@/store/authLanguageStore';
 import { AuthThemeProvider } from '@/components/AuthThemeProvider';
 
-// 認証関連のロジックを一元管理するカスタムフック
 import { useAuth } from '@/hooks/useAuth';
 
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -23,9 +22,7 @@ import {
     InputOTPSlot,
 } from '@/components/ui/input-otp';
 
-/**
- * サインアップ後に表示される、Eメール認証コードの入力ページ。
- */
+// サインアップ後に表示される、Eメール認証コードの入力ページ。
 const VerifyPage = () => {
     // 未ログイン時専用の言語状態管理を使用
     const texts = useAuthTexts();
@@ -35,7 +32,7 @@ const VerifyPage = () => {
     // 認証ロジック（メール認証APIの呼び出しなど）を取得
     const { verifyEmail, isVerifying } = useAuth({ enabled: false });
 
-    // OTP（ワンタイムパスワード）の入力値を管理するstate
+    // OTPの入力値を管理するstate
     const [otp, setOtp] = React.useState('');
 
     // サインアップページから渡されたメールアドレスを取得
@@ -50,9 +47,8 @@ const VerifyPage = () => {
         }
     }, [email, navigate, texts.invalidAccess]);
 
-    // 「送信」ボタンが押された、または6桁の入力が完了したときの処理
+    // OTP入力完了時の処理
     const handleVerify = () => {
-        // 入力が6桁でない場合は何もしない（ボタンがdisabledなので通常は起こらない）
         if (otp.length !== 6) {
             return;
         }
@@ -60,7 +56,6 @@ const VerifyPage = () => {
         verifyEmail({ email, code: otp });
     };
 
-    // emailがない場合は、リダイレクトが走るまで何も表示しない
     if (!email) {
         return null;
     }

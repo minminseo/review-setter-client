@@ -10,17 +10,17 @@ export const AuthThemeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     const root = window.document.documentElement;
-    
+
     // 既存のテーマクラスを削除
     root.classList.remove('light', 'dark');
-    
+
     // 新しいテーマクラスを追加
     root.classList.add(theme);
-    
-    // クリーンアップ：コンポーネントがアンマウントされた時、ユーザーの実際のテーマを適用
+
+    // コンポーネントがアンマウントされた時、ユーザーの実際のテーマを適用
     return () => {
       root.classList.remove('light', 'dark');
-      
+
       // ユーザーのテーマ設定をlocalStorageから読み取り
       try {
         const zustandStorage = localStorage.getItem('review-setter-user-storage');
@@ -32,7 +32,7 @@ export const AuthThemeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           }
         }
       } catch (error) {
-        // フォールバック：パースエラーの場合はdarkテーマを適用
+        // パースエラーの場合はdarkテーマを適用
         root.classList.add('dark');
       }
     };

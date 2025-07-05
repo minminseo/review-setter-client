@@ -6,7 +6,6 @@ import { fetchPatterns } from '@/api/patternApi';
 import { usePatternStore } from '@/store';
 import { PatternResponse } from '@/types';
 
-// UI Components
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -20,31 +19,24 @@ import { CardListSkeleton } from '@/components/shared/SkeletonLoader';
 import { CreatePatternModal } from './CreatePatternModal'; // 追加
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
-// このモーダルが親コンポーネントから受け取るPropsの型を定義
 type SelectPatternModalProps = {
     isOpen: boolean;
     onClose: () => void;
     onSelect: (pattern: PatternResponse) => void;
 };
 
-/**
- * 復習パターンを一覧表示し、ユーザーに選択させるための汎用モーダル。
- * このモーダル自身も、データ取得のためにuseQueryを利用する。
- */
+// パターンを一覧表示し、ユーザーに選択させるための汎用モーダル
 export const SelectPatternModal = ({ isOpen, onClose, onSelect }: SelectPatternModalProps) => {
     const { t } = useTranslation();
-    // グローバルなZustandストアから、キャッシュされたパターンリストとセッター関数を取得
     const { patterns, setPatterns } = usePatternStore();
 
-    // APIからパターンリストを取得するためのReact Query
     const { data: fetchedPatterns, isLoading, isSuccess } = useQuery({
         queryKey: ['patterns'],
         queryFn: fetchPatterns,
-        staleTime: 1000 * 60 * 5, // 5分間はキャッシュを有効にする
-        enabled: isOpen,         // モーダルが開いている時にのみAPIリクエストを実行
+        staleTime: 1000 * 60 * 5,
+        enabled: isOpen,
     });
 
-    // v5の作法に則り、useEffectでデータ取得後の副作用（ストアの更新）を処理
     React.useEffect(() => {
         if (isSuccess && fetchedPatterns) {
             setPatterns(fetchedPatterns);

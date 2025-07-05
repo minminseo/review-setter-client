@@ -3,8 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
 /**
- * テーブルデータ読み込み中に表示するスケルトンUI。
- * 実際のテーブルと同じような見た目にすることで、ユーザーの体感速度を向上させる。
+ * テーブルデータ読み込み中に表示するスケルトンUI
  * @param columns - 表示する列の数
  * @param rows - 表示する行の数
  */
