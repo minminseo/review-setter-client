@@ -7,6 +7,8 @@ import { ArrowRightEndOnRectangleIcon, CheckCircleIcon, XCircleIcon, DocumentTex
 import { MoreHorizontal } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 // API & Store & Types
 import {
@@ -18,7 +20,7 @@ import { fetchCategories } from '@/api/categoryApi';
 import { fetchBoxes } from '@/api/boxApi'; // ボックス取得APIをインポート
 import { useItemStore, useCategoryStore, useBoxStore, usePatternStore } from '@/store';
 import { useModal } from '@/contexts/ModalContext';
-import { DailyReviewDate, GetDailyReviewDatesResponse } from '@/types';
+import { DailyReviewDate, GetDailyReviewDatesResponse, ItemResponse, ReviewDateResponse } from '@/types';
 import { UNCLASSIFIED_ID } from '@/constants';
 
 // Shared & UI Components
@@ -33,6 +35,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SelectCategoryModal } from '@/components/modals/SelectCategoryModal';
 import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
 import { ItemDetailModal } from '@/components/modals/ItemDetailModal';
+import { EditReviewDateModal } from '@/components/modals/EditReviewDateModal';
 import NameCell from '@/components/shared/NameCell';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
@@ -49,7 +52,7 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
             allReviews.push(
                 ...box.review_dates.map(rd => ({
                     ...rd,
-                    item_id: rd.item_id, // ← review_date_idではなく本来のitem_idをセット
+                    item_id: rd.item_id,
                     target_weight: box.target_weight
                 }))
             );
@@ -57,7 +60,7 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
         allReviews.push(
             ...category.unclassified_daily_review_dates_by_category.map(rd => ({
                 ...rd,
-                item_id: rd.item_id, // ← ここも修正
+                item_id: rd.item_id,
                 box_id: null,
             }))
         );
@@ -65,7 +68,7 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
     allReviews.push(
         ...data.daily_review_dates_grouped_by_user.map(rd => ({
             ...rd,
-            item_id: rd.item_id ?? rd.review_date_id, // item_idがなければreview_date_idを暫定的にセット
+            item_id: rd.item_id ?? rd.review_date_id,
             category_id: null,
             box_id: null,
         }))
@@ -73,9 +76,6 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
     return allReviews;
 };
 
-/**
- * 今日の復習項目を一覧表示し、完了操作を行うためのページ
- */
 const TodaysReviewPage = () => {
 
     const queryClient = useQueryClient();
@@ -84,10 +84,9 @@ const TodaysReviewPage = () => {
     const { t } = useTranslation();
     const { categories, setCategories } = useCategoryStore();
     const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
-    const { todaysReviews: zustandTodaysReviews, setTodaysReviews } = useItemStore();
+    const { setTodaysReviews } = useItemStore();
     const { patterns } = usePatternStore();
 
-    // --- Modal Context ---
     const { updateCreateItemContext } = useModal();
 
     // URLパラメータから初期値を取得
@@ -111,14 +110,17 @@ const TodaysReviewPage = () => {
     // 詳細用の状態
     const [detailItem, setDetailItem] = React.useState<DailyReviewDate | null>(null);
 
-    // --- State (復習物名列の幅調整) ---
+    // EditReviewDateModal用の状態
+    const [editingReviewDate, setEditingReviewDate] = React.useState<{ item: ItemResponse; reviewDate: ReviewDateResponse } | null>(null);
+
+    // (復習物名列の幅調整)
     const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
     const [isResizing, setIsResizing] = React.useState(false);
     const [isHovering, setIsHovering] = React.useState(false);
     const [startX, setStartX] = React.useState(0);
     const [startWidth, setStartWidth] = React.useState(0);
 
-    // --- データ取得 (React Query) ---
+    // データ取得
     // 1. カテゴリー一覧 (フィルタータブ用)
     const { data: fetchedCategories, isSuccess: catSuccess } = useQuery({
         queryKey: ['categories'],
@@ -139,7 +141,7 @@ const TodaysReviewPage = () => {
         placeholderData: (previousData) => previousData, // ローディング中に古いデータを表示
     });
 
-    // --- データ取得後の副作用 (ストアの更新) ---
+    // データ取得後の副作用 (ストアの更新)
     React.useEffect(() => {
         if (catSuccess && fetchedCategories) {
             setCategories(fetchedCategories);
@@ -158,7 +160,7 @@ const TodaysReviewPage = () => {
         }
     }, [reviewItems, setTodaysReviews]);
 
-    // --- データ加工 ---
+    // データ加工
     // APIから取得したデータをフラット化してテーブルに渡す
     const flattenedAndFilteredReviews = React.useMemo(() => {
         if (!reviewItems) return [];
@@ -173,7 +175,7 @@ const TodaysReviewPage = () => {
             const boxMatch = selectedBoxId === 'all' ||
                 (selectedBoxId === UNCLASSIFIED_ID ? item.box_id === null : item.box_id === selectedBoxId);
 
-            // カテゴリーが 'all' でなく、ボックスが 'all' の場合、未分類ボックスも含む
+            // カテゴリーが'all'でなく、ボックスが'all'の場合、未分類ボックスも含む
             if (selectedCategoryId !== 'all' && selectedBoxId === 'all') {
                 return categoryMatch;
             }
@@ -183,7 +185,7 @@ const TodaysReviewPage = () => {
     }, [reviewItems, selectedCategoryId, selectedBoxId]);
 
 
-    // --- データ操作 (Mutation) ---
+    // データ操作 (Mutation)
     const createMutationOptions = (_: boolean) => ({
         onSuccess: (_: any, _vars: any) => {
             toast.success(t('notification.reviewDateStatusUpdated'));
@@ -196,7 +198,7 @@ const TodaysReviewPage = () => {
     const completeMutation = useMutation({ mutationFn: completeReviewDate, ...createMutationOptions(true) });
     const incompleteMutation = useMutation({ mutationFn: incompleteReviewDate, ...createMutationOptions(false) });
 
-    // --- リサイズ機能 ---
+    // リサイズ機能
     const handleResizeStart = (e: React.MouseEvent) => {
         e.preventDefault();
         setIsResizing(true);
@@ -208,7 +210,7 @@ const TodaysReviewPage = () => {
         if (!isResizing) return;
 
         const diff = e.clientX - startX;
-        const newWidth = Math.max(100, startWidth + diff); // 最小100px、最大無制限
+        const newWidth = Math.max(100, startWidth + diff);
         setNameColumnWidth(newWidth);
     }, [isResizing, startX, startWidth]);
 
@@ -217,7 +219,7 @@ const TodaysReviewPage = () => {
     }, []);
 
     const handleResetWidth = () => {
-        setNameColumnWidth(300); // 初期値にリセット
+        setNameColumnWidth(300);
     };
 
     React.useEffect(() => {
@@ -241,9 +243,8 @@ const TodaysReviewPage = () => {
         };
     }, [isResizing, handleResizeMove, handleResizeEnd]);
 
-    // --- テーブルの列定義 ---
+    // テーブルの列定義
     const columns = React.useMemo<ColumnDef<DailyReviewDate>[]>(() => [
-        // 状態カラム（完了/未完了）
         {
             id: 'is_completed',
             header: () => (
@@ -288,7 +289,6 @@ const TodaysReviewPage = () => {
             },
             size: 70,
         },
-        // item_name（復習物名）
         {
             accessorKey: 'item_name',
             header: () => (
@@ -306,9 +306,8 @@ const TodaysReviewPage = () => {
                 </div>
             ),
             size: nameColumnWidth,
-            cell: ({ row }) => <NameCell name={row.original.item_name} />, // 省略表示＋ツールチップ
+            cell: ({ row }) => <NameCell name={row.original.item_name} />,
         },
-        // 詳細カラム（情報アイコン）
         {
             id: 'detail',
             header: () => (
@@ -323,7 +322,6 @@ const TodaysReviewPage = () => {
             ),
             size: 60,
         },
-        // 重さカラム（target_weight）
         {
             id: 'target_weight',
             header: () => (
@@ -331,13 +329,11 @@ const TodaysReviewPage = () => {
             ),
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
-                    {/* box_idがあればboxのpattern_idから、なければcategory_idやitem_idから推測 */}
                     {row.original.target_weight ? row.original.target_weight : '-'}
                 </div>
             ),
             size: 60,
         },
-        // ステップカラム
         {
             accessorKey: 'step_number',
             header: () => (
@@ -350,7 +346,6 @@ const TodaysReviewPage = () => {
             ),
             size: 80,
         },
-        // 学習日カラム
         {
             id: 'learned_date',
             header: () => (
@@ -363,7 +358,6 @@ const TodaysReviewPage = () => {
             ),
             size: 110,
         },
-        // prevカラム
         {
             id: 'prev',
             header: () => (
@@ -377,21 +371,82 @@ const TodaysReviewPage = () => {
             size: 100,
 
         },
-        // currentカラム
         {
             id: 'current',
             header: () => (
                 <span className="block w-full text-center">current</span>
             ),
-            cell: ({ row }) => (
-                <div className="flex items-center justify-center ">
-                    {row.original.scheduled_date || '-'}
-                </div>
-            ),
-            size: 100,
+            cell: ({ row }) => {
+                const scheduledDate = row.original.scheduled_date;
+                if (!scheduledDate) {
+                    return <span className="text-muted-foreground flex justify-center">-</span>;
+                }
+
+                let isToday = false;
+                const scheduledDateObj = new Date(scheduledDate);
+                if (!isNaN(scheduledDateObj.getTime())) {
+                    isToday = format(scheduledDateObj, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                }
+                const isClickable = isToday && !row.original.is_completed;
+
+                return (
+                    <div className="flex items-center justify-center">
+                        <Button
+                            variant={!row.original.is_completed && !isToday ? 'outline' : 'default'}
+                            size="sm"
+                            className={cn(
+                                isToday && !row.original.is_completed && 'bg-blue-800 hover:bg-blue-900 text-gray-200',
+                                isToday && row.original.is_completed && 'bg-blue-900 text-gray-400',
+                                !isToday && row.original.is_completed && 'bg-green-700 text-white',
+                                !isClickable && 'cursor-not-allowed opacity-50',
+                            )}
+                            onClick={isClickable ? () => setEditingReviewDate({
+                                item: {
+                                    item_id: row.original.item_id,
+                                    user_id: '',
+                                    name: row.original.item_name,
+                                    detail: row.original.detail || null,
+                                    category_id: row.original.category_id || null,
+                                    box_id: row.original.box_id || null,
+                                    pattern_id: null,
+                                    learned_date: row.original.learned_date || '',
+                                    is_finished: false,
+                                    registered_at: '',
+                                    edited_at: '',
+                                    review_dates: []
+                                } as ItemResponse,
+                                reviewDate: {
+                                    review_date_id: row.original.review_date_id,
+                                    user_id: '',
+                                    category_id: row.original.category_id || null,
+                                    box_id: row.original.box_id || null,
+                                    item_id: row.original.item_id,
+                                    step_number: row.original.step_number,
+                                    initial_scheduled_date: row.original.initial_scheduled_date,
+                                    scheduled_date: row.original.scheduled_date,
+                                    is_completed: row.original.is_completed
+                                } as ReviewDateResponse
+                            }) : undefined}
+                            disabled={!isClickable}
+                        >
+                            {(() => {
+                                try {
+                                    const scheduledDateObj = new Date(scheduledDate);
+                                    if (isNaN(scheduledDateObj.getTime())) {
+                                        return '-';
+                                    }
+                                    return format(scheduledDateObj, 'yyyy-MM-dd');
+                                } catch (error) {
+                                    return '-';
+                                }
+                            })()}
+                        </Button>
+                    </div>
+                );
+            },
+            size: 130,
 
         },
-        // nextカラム
         {
             id: 'next',
             header: () => (
@@ -411,8 +466,8 @@ const TodaysReviewPage = () => {
     const tableWidth = React.useMemo(() => {
         // 基本カラム（状態 + 復習物名 + 詳細 + 重さ + ステップ + 学習日）の幅
         const baseWidth = 60 + nameColumnWidth + 50 + 55 + 80 + 100; // 動的に計算
-        // スクロール可能カラム（prev + current + next）の幅（各100px）
-        const scrollableColumnWidth = 3 * 100;
+        // スクロール可能カラム（prev + current + next）の幅（prev:100px, current:130px, next:100px）
+        const scrollableColumnWidth = 100 + 130 + 100;
         // 最小幅を設定
         const totalWidth = Math.max(baseWidth + scrollableColumnWidth, 600);
         return totalWidth;
@@ -439,7 +494,7 @@ const TodaysReviewPage = () => {
         });
     }, [selectedCategoryId, selectedBoxId, updateCreateItemContext]);
 
-    // --- イベントハンドラ ---
+    // イベントハンドラ
     const handleCategoryChange = (newCategoryId: string) => {
         setSelectedCategoryId(newCategoryId);
         setSelectedBoxId('all'); // カテゴリー変更時はボックス選択をリセット
@@ -479,17 +534,15 @@ const TodaysReviewPage = () => {
         else navigate(`/categories/${selectedCategoryId}/boxes/${selectedBoxId}`);
     };
 
-    // タブの最大表示数を計算（レスポンシブ）
     useEffect(() => {
         const calcTabs = () => {
-            // タブ1つの最小幅（rem単位→px換算、1rem=16px想定）
-            const tabMinWidth = 112; // 7rem * 16px
-            const moreButtonWidth = 40; // MoreHorizontalボタンの幅
+            const tabMinWidth = 112;
+            const moreButtonWidth = 40;
 
             if (categoryTabsContainerRef.current) {
                 const containerWidth = categoryTabsContainerRef.current.offsetWidth;
-                const availableWidth = containerWidth * 0.95 - moreButtonWidth; // 95%の領域からMoreボタン幅を除く
-                const fixedTabsWidth = 2 * tabMinWidth; // 「全て」「未分類」の固定タブ幅
+                const availableWidth = containerWidth * 0.95 - moreButtonWidth;
+                const fixedTabsWidth = 2 * tabMinWidth;
                 const remainingWidth = availableWidth - fixedTabsWidth;
                 const maxDynamicTabs = Math.max(0, Math.floor(remainingWidth / tabMinWidth));
                 setMaxCategoryTabs(maxDynamicTabs);
@@ -498,7 +551,7 @@ const TodaysReviewPage = () => {
             if (boxTabsContainerRef.current) {
                 const containerWidth = boxTabsContainerRef.current.offsetWidth;
                 const availableWidth = containerWidth * 0.95 - moreButtonWidth;
-                const fixedTabsCount = selectedCategoryId === 'all' ? 1 : 2; // 「全て」のみ or 「全て」「未分類」
+                const fixedTabsCount = selectedCategoryId === 'all' ? 1 : 2;
                 const fixedTabsWidth = fixedTabsCount * tabMinWidth;
                 const remainingWidth = availableWidth - fixedTabsWidth;
                 const maxDynamicTabs = Math.max(0, Math.floor(remainingWidth / tabMinWidth));
@@ -511,7 +564,7 @@ const TodaysReviewPage = () => {
         return () => window.removeEventListener('resize', calcTabs);
     }, [selectedCategoryId]);
 
-    // --- 表示用データ ---
+    // 表示用データ
     const boxesForSelectedCategory = React.useMemo(() => {
         if (!selectedCategoryId || selectedCategoryId === 'all' || selectedCategoryId === UNCLASSIFIED_ID) return [];
         return boxesByCategoryId[selectedCategoryId] || [];
@@ -538,11 +591,11 @@ const TodaysReviewPage = () => {
                     className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-4 gap-y-2 items-stretch w-full max-w-full"
                     style={{ minWidth: 'min-content' }}
                 >
-                    {/* カテゴリーラベル */}
+
+                    {/* カテゴリータブ */}
                     <div className="flex items-center">
                         <span className="text-sm font-semibold shrink-0">{t('category.label')}:</span>
                     </div>
-                    {/* カテゴリータブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
                         <div className="relative flex items-center w-full max-w-full" ref={categoryTabsContainerRef}>
                             <div className="flex overflow-hidden" style={{ width: hasMoreCategories ? 'calc(100% - 48px)' : '100%' }}>
@@ -578,11 +631,11 @@ const TodaysReviewPage = () => {
                             )}
                         </div>
                     </div>
-                    {/* ボックスラベル */}
+
+                    {/* ボックスタブ */}
                     <div className="flex items-center">
                         <span className="text-sm font-semibold shrink-0">{t('box.label')}:</span>
                     </div>
-                    {/* ボックスタブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
                         <div className="relative flex items-center w-full max-w-full" ref={boxTabsContainerRef}>
                             <div className="flex overflow-hidden" style={{ width: hasMoreBoxes ? 'calc(100% - 48px)' : '100%' }}>
@@ -697,6 +750,14 @@ const TodaysReviewPage = () => {
                             edited_at: '',
                             review_dates: [],
                         }}
+                    />
+                )}
+
+                {editingReviewDate && (
+                    <EditReviewDateModal
+                        isOpen={!!editingReviewDate}
+                        onClose={() => setEditingReviewDate(null)}
+                        data={editingReviewDate}
                     />
                 )}
 
