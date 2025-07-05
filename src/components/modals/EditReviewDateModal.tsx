@@ -13,20 +13,20 @@ import { useItemStore } from '@/store';
 import { ItemResponse, ReviewDateResponse, UpdateReviewDatesRequest } from '@/types';
 import { cn } from '@/lib/utils';
 
-// UI Components
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-// FormDescriptionを正しくインポート
+
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { TFunction } from 'i18next';
 
-// フォームのバリデーションルール（動的に生成）
-const createFormSchema = (initialScheduledDate: string) => z.object({
-    request_scheduled_date: z.date({ required_error: "新しい復習日の選択は必須です。" })
+// フォームのバリデーションルール
+const createFormSchema = (initialScheduledDate: string, t: TFunction) => z.object({
+    request_scheduled_date: z.date()
         .refine((date) => {
             try {
                 const today = new Date();
@@ -41,7 +41,7 @@ const createFormSchema = (initialScheduledDate: string) => z.object({
                 return false;
             }
         }, {
-            message: "復習日は最初の復習予定日から昨日までの日付である必要があります。"
+            message: t('validation.editReviewDate')
         }),
     is_mark_overdue_as_completed: z.boolean(),
 });
@@ -52,21 +52,17 @@ type EditReviewDateModalProps = {
     data: { item: ItemResponse; reviewDate: ReviewDateResponse } | null;
 };
 
-/**
- * 特定の復習日のスケジュールを変更するためのモーダル。
- */
+// 特定の復習日のスケジュールを変更するためのモーダル。
 export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateModalProps) => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
-    // patternsはバックエンドで取得するため不要
-    // useItemStoreからupdateItemInBoxアクションを取得
     const { updateItemInBox } = useItemStore();
 
     // 動的にバリデーションスキーマを生成
     const formSchema = React.useMemo(() => {
-        if (!data) return createFormSchema(new Date().toISOString());
-        return createFormSchema(data.reviewDate.initial_scheduled_date);
-    }, [data]);
+        if (!data) return createFormSchema(new Date().toISOString(), t);
+        return createFormSchema(data.reviewDate.initial_scheduled_date, t);
+    }, [data, t]);
 
     const form = useForm<z.infer<ReturnType<typeof createFormSchema>>>({
         resolver: zodResolver(formSchema),
@@ -76,8 +72,6 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
         },
     });
 
-    // patternsの取得は不要（バックエンドで処理）
-
     const mutation = useMutation({
         mutationFn: (reqData: UpdateReviewDatesRequest) =>
             updateReviewDate({ itemId: data!.item.item_id, reviewDateId: data!.reviewDate.review_date_id, data: reqData }),
@@ -86,10 +80,10 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
             queryClient.invalidateQueries({ queryKey: ['items', data?.item.box_id] });
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
             if (data?.item.box_id && updatedItemData) {
-                // APIレスポンスは復習日更新の結果のみを返すため、元のアイテムデータとマージする
+                // APIレスポンスは復習日更新の結果のみを返すため、元の復習物データとマージする
                 if (updatedItemData.review_dates) {
                     const mergedItemData = {
-                        ...data.item, // 元のアイテムデータを保持
+                        ...data.item, // 元の復習物データを保持
                         review_dates: updatedItemData.review_dates, // 更新された復習日で上書き
                         edited_at: updatedItemData.edited_at || data.item.edited_at
                     };
@@ -153,7 +147,6 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    {/* form以下のJSXは変更なし */}
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
                         <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-200px)]">
                             <div className="space-y-4 py-4">
@@ -161,7 +154,7 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                                     <p className="text-sm font-medium text-muted-foreground">{t('review.currentReviewDate')}</p>
                                     <p className="font-semibold">{format(new Date(data.reviewDate.scheduled_date), "yyyy-MM-dd")}</p>
                                     <p className="text-xs text-muted-foreground">
-                                        {t('review.editableRange', { from: format(new Date(data.reviewDate.initial_scheduled_date), "yyyy-MM-dd") })}から昨日までの日付を選択できます
+                                        {t('review.editableRange', { from: format(new Date(data.reviewDate.initial_scheduled_date), "yyyy-MM-dd") })}
                                     </p>
                                 </div>
 
@@ -186,7 +179,7 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                                                         selected={field.value}
                                                         onSelect={(date) => {
                                                             field.onChange(date);
-                                                            setIsCalendarOpen(false); // 日付選択時にカレンダーを閉じる
+                                                            setIsCalendarOpen(false);
                                                         }}
                                                         disabled={(date) => {
                                                             try {
@@ -221,7 +214,6 @@ export const EditReviewDateModal = ({ isOpen, onClose, data }: EditReviewDateMod
                                                 <SelectItem value="false">{t('review.overdueToday')}</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        {/* FormDescriptionを正しく使用 */}
                                         <FormDescription className="text-xs pt-2">
                                             <QuestionMarkCircleIcon className="inline h-4 w-4 mr-1" />
                                             {t('review.overdueDescription')}

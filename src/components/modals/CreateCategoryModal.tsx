@@ -4,12 +4,13 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { createCategory } from '@/api/categoryApi';
 import { useCategoryStore } from '@/store';
 import { CreateCategoryInput } from '@/types';
 
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -30,58 +31,47 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
-// フォームのバリデーションルールをzodで定義
-const categorySchema = z.object({
-    // カテゴリー名は1文字以上必須
-    name: z.string().min(1, 'Category name is required.'),
+const createCategorySchema = (t: TFunction) => z.object({
+    name: z.string().min(1, t('validation.categoryNameRequired')),
 });
 
-// このモーダルが受け取るPropsの型定義
 type CreateCategoryModalProps = {
-    isOpen: boolean;    // モーダルが開いているかどうか
-    onClose: () => void; // モーダルを閉じるための関数
+    isOpen: boolean;
+    onClose: () => void;
 };
 
 /**
  * 新しいカテゴリーを作成するためのモーダルコンポーネント。
- * ホーム画面やカテゴリー内部画面から呼び出されることを想定。
  */
 export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProps) => {
     const { t } = useTranslation();
-    // React Queryのキャッシュを操作するためのクライアント
     const queryClient = useQueryClient();
-    // Zustandストアからカテゴリーを追加するアクションを取得
     const addCategoryToStore = useCategoryStore((state) => state.addCategory);
 
-    // react-hook-formを使ってフォームの状態とバリデーションを管理
-    const form = useForm<z.infer<typeof categorySchema>>({
-        resolver: zodResolver(categorySchema),
+    const form = useForm<z.infer<ReturnType<typeof createCategorySchema>>>({
+        resolver: zodResolver(createCategorySchema(t)),
         defaultValues: { name: '' },
     });
 
     // カテゴリー作成APIを呼び出すためのmutationを定義
     const mutation = useMutation({
         mutationFn: (data: CreateCategoryInput) => createCategory(data),
-        // mutationが成功した後の処理
         onSuccess: (newCategory) => {
-            // 1. サーバーから最新のカテゴリーリストを再取得するよう、キャッシュを無効化
+            // サーバーから最新のカテゴリーリストを再取得するよう、キャッシュを無効化
             queryClient.invalidateQueries({ queryKey: ['categories'] });
-            // 2. Zustandストアにも新しいカテゴリーを追加し、UIに即時反映（楽観的更新）
+            // Zustandストアにも新しいカテゴリーを追加し、UIに即時反映（楽観的更新）
             addCategoryToStore(newCategory);
 
             toast.success(t('notification.categoryCreated'));
-            onClose(); // モーダルを閉じる
+            onClose();
             form.reset(); // 次回開いた時のためにフォームをリセット
         },
-        // mutationが失敗した後の処理
         onError: (error) => {
             toast.error(`Failed to create category: ${error.message}`);
         },
     });
 
-    // フォームが送信されたときの処理
-    const onSubmit = (values: z.infer<typeof categorySchema>) => {
-        // mutationを実行してAPIを呼び出す
+    const onSubmit = (values: z.infer<ReturnType<typeof createCategorySchema>>) => {
         mutation.mutate(values);
     };
 
@@ -106,7 +96,7 @@ export const CreateCategoryModal = ({ isOpen, onClose }: CreateCategoryModalProp
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="inline-block pointer-events-none select-none">{t('category.name')}</FormLabel>
-                                                    <div className="w-full pb-8">
+                                                    <div className="w-full">
                                                         <FormControl>
                                                             <Input {...field} />
                                                         </FormControl>

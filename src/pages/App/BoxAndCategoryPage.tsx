@@ -1,28 +1,23 @@
 import * as React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// useQueryClient をインポートに追加
-import { useQuery, /*useQueryClient*/ } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useBoxStore, useCategoryStore, useItemStore, usePatternStore } from '@/store';
 import { useModal } from '@/contexts/ModalContext';
 import { fetchBoxes } from '@/api/boxApi';
 import { fetchCategories } from '@/api/categoryApi';
 import { fetchItemsByBox, fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory } from '@/api/itemApi';
 import { fetchPatterns } from '@/api/patternApi';
-// 未使用の警告を解決するため、型インポートを一度削除（子コンポーネント側で必要）
 import { UNCLASSIFIED_ID } from '@/constants';
 import { useTranslation } from 'react-i18next';
 
-// Shared & UI Components
 import Breadcrumbs from '@/components/shared/Breadcrumbs';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MoreHorizontal } from 'lucide-react';
 
-// Modals
 import { SelectCategoryModal } from '@/components/modals/SelectCategoryModal';
 import { SelectBoxModal } from '@/components/modals/SelectBoxModal';
 
-// Feature Components
 import { Category } from '@/components/feature/Category';
 import { Box } from '@/components/feature/Box';
 import { useRef, useEffect, useState } from 'react';
@@ -34,23 +29,18 @@ import { InboxIcon, InboxStackIcon } from '@heroicons/react/24/outline';
  */
 const BoxAndCategoryPage = () => {
     const { t } = useTranslation();
-    // --- Hooks ---
     const { categoryId, boxId } = useParams<{ categoryId: string; boxId?: string }>();
     const navigate = useNavigate();
-    // queryClient は invalidate などキャッシュ操作が必要な場合にのみ呼び出す
-    // const queryClient = useQueryClient(); // 今回は不要なためコメントアウト
 
-    // --- Zustandストア ---
+    // Zustandストア
     const { categories, setCategories } = useCategoryStore();
     const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
     const { setItemsForBox } = useItemStore();
     const { setPatterns } = usePatternStore();
 
-    // --- Modal Context ---
+    // Modal Context
     const { updateCreateItemContext } = useModal();
 
-
-    // --- State ---
     const [isSelectCategoryModalOpen, setSelectCategoryModalOpen] = React.useState(false);
     const [isSelectBoxModalOpen, setSelectBoxModalOpen] = React.useState(false);
     // カテゴリー・ボックスの選択状態をuseStateで管理
@@ -70,7 +60,6 @@ const BoxAndCategoryPage = () => {
             boxId: selectedBoxId
         });
     }, [selectedCategoryId, selectedBoxId, updateCreateItemContext]);
-
 
     // カテゴリータブ変更時のハンドラ
     const handleCategoryTabChange = (value: string) => {
@@ -93,8 +82,6 @@ const BoxAndCategoryPage = () => {
         }
     };
 
-
-    // --- Utility Functions ---
     // storeBoxIdの計算ロジックを統一
     const getStoreBoxId = React.useCallback((boxId: string | undefined, categoryId: string | undefined) => {
         if ((boxId === 'unclassified' || boxId === UNCLASSIFIED_ID || !boxId) && categoryId && categoryId !== UNCLASSIFIED_ID && categoryId !== 'unclassified') {
@@ -105,17 +92,15 @@ const BoxAndCategoryPage = () => {
         return boxId;
     }, []);
 
-    // --- Derived State (計算済み変数) ---
+    // 計算済み変数
     const isBoxView = !!boxId;
     const isUnclassifiedCategoryPage = categoryId === UNCLASSIFIED_ID;
 
     const currentCategory = categories.find(c => c.id === categoryId);
     const boxesForCurrentCategory = boxesByCategoryId[categoryId || ''] || [];
     const currentBox = isBoxView ? boxesForCurrentCategory.find(b => b.id === boxId) : null;
-    // items は Box コンポーネントに直接 fetchedItems から渡すため、ここでは不要
 
     // --- データ取得 (React Query) ---
-
     // 1. 全カテゴリーリスト
     const { data: fetchedCategories, isSuccess: categoriesSuccess } = useQuery({
         queryKey: ['categories'],
@@ -130,10 +115,9 @@ const BoxAndCategoryPage = () => {
         retry: false,
     });
 
-    // --- Query enablement ---
     const enabledItemsQuery = isBoxView;
 
-    // 3. (ボックス表示時のみ) 現在のボックスに属するアイテムリスト
+    // 3. (ボックス表示時のみ) 現在のボックスに属する復習物リスト
     const { data: fetchedItems, isLoading: isItemsLoading, isSuccess: itemsSuccess } = useQuery({
         queryKey: ['items', boxId, categoryId],
         queryFn: async () => {
@@ -154,11 +138,10 @@ const BoxAndCategoryPage = () => {
 
             return [];
         },
-        enabled: enabledItemsQuery, // ボックス画面 or 未分類ボックス画面
+        enabled: enabledItemsQuery, // ボックス画面or未分類ボックス画面
     });
 
-    // 4. 全復習パターン
-    // ★修正点: onSuccess を削除し、useEffect で副作用を扱う
+    // 4. 全パターン
     const { data: fetchedPatterns, isSuccess: patternsSuccess } = useQuery({
         queryKey: ['patterns'],
         queryFn: fetchPatterns,
@@ -179,14 +162,13 @@ const BoxAndCategoryPage = () => {
 
     React.useEffect(() => {
         if (itemsSuccess && fetchedItems) {
-            // 完了済みアイテムを除外してストアに保存
+            // 完了済み復習物を除外してストアに保存
             const activeItems = fetchedItems.filter(item => !item.is_finished);
             const storeBoxId = getStoreBoxId(boxId, categoryId);
             setItemsForBox(storeBoxId || '', activeItems);
         }
     }, [itemsSuccess, fetchedItems, boxId, categoryId, setItemsForBox, getStoreBoxId]);
 
-    // ★修正点: パターン取得後の副作用を useEffect に分離
     React.useEffect(() => {
         if (patternsSuccess && fetchedPatterns) {
             setPatterns(fetchedPatterns);
@@ -226,24 +208,21 @@ const BoxAndCategoryPage = () => {
         return items;
     }, [currentCategory, categoryId, isUnclassifiedCategoryPage, isBoxView, currentBox, boxId]);
 
-    // --- タブのレスポンシブ表示制御 ---
     const categoryTabsContainerRef = useRef<HTMLDivElement>(null);
     const boxTabsContainerRef = useRef<HTMLDivElement>(null);
 
     const [maxCategoryTabs, setMaxCategoryTabs] = useState<number>(7);
     const [maxBoxTabs, setMaxBoxTabs] = useState<number>(7);
 
-    // タブの最大表示数を計算（レスポンシブ）
     useEffect(() => {
         const calcTabs = () => {
-            // タブ1つの最小幅（rem単位→px換算、1rem=16px想定）
-            const tabMinWidth = 112; // 7rem * 16px
-            const moreButtonWidth = 40; // MoreHorizontalボタンの幅
+            const tabMinWidth = 112;
+            const moreButtonWidth = 40;
 
             if (categoryTabsContainerRef.current) {
                 const containerWidth = categoryTabsContainerRef.current.offsetWidth;
-                const availableWidth = containerWidth * 0.95 - moreButtonWidth; // 95%の領域からMoreボタン幅を除く
-                const fixedTabsWidth = 1 * tabMinWidth; // 「未分類」の固定タブ幅
+                const availableWidth = containerWidth * 0.95 - moreButtonWidth;
+                const fixedTabsWidth = 1 * tabMinWidth;
                 const remainingWidth = availableWidth - fixedTabsWidth;
                 const maxDynamicTabs = Math.max(0, Math.floor(remainingWidth / tabMinWidth));
                 setMaxCategoryTabs(maxDynamicTabs);
@@ -252,7 +231,7 @@ const BoxAndCategoryPage = () => {
             if (boxTabsContainerRef.current) {
                 const containerWidth = boxTabsContainerRef.current.offsetWidth;
                 const availableWidth = containerWidth * 0.95 - moreButtonWidth;
-                const fixedTabsCount = selectedCategoryId === UNCLASSIFIED_ID ? 1 : 2; // 「未分類」のみ or 「全て」「未分類」
+                const fixedTabsCount = selectedCategoryId === UNCLASSIFIED_ID ? 1 : 2;
                 const fixedTabsWidth = fixedTabsCount * tabMinWidth;
                 const remainingWidth = availableWidth - fixedTabsWidth;
                 const maxDynamicTabs = Math.max(0, Math.floor(remainingWidth / tabMinWidth));
@@ -278,7 +257,6 @@ const BoxAndCategoryPage = () => {
     const zustandItems = getItemsForBox(storeBoxId || '');
 
     return (
-        // <div className="min-h-screen flex flex-col overflow-hidden">
         <>
             {/* 上部固定ヘッダー */}
             <div
@@ -293,11 +271,10 @@ const BoxAndCategoryPage = () => {
                     className="grid grid-cols-[auto_1fr] grid-rows-2 gap-x-4 gap-y-2 items-stretch w-full max-w-full"
                     style={{ minWidth: 'min-content' }}
                 >
-                    {/* カテゴリーラベル */}
+                    {/* カテゴリータブ */}
                     <div className="flex items-center">
                         <span className="text-sm font-semibold shrink-0"><InboxStackIcon className="inline-block mr-2 h-6 w-6" />{t('category.label')}</span>
                     </div>
-                    {/* カテゴリータブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
                         <div className="relative flex items-center w-full max-w-full" ref={categoryTabsContainerRef}>
                             <div className="flex overflow-hidden" style={{ width: hasMoreCategories ? 'calc(100% - 48px)' : '100%' }}>
@@ -332,11 +309,11 @@ const BoxAndCategoryPage = () => {
                             )}
                         </div>
                     </div>
-                    {/* ボックスラベル */}
+
+                    {/* ボックスタブ */}
                     <div className="flex items-center">
                         <span className="text-sm font-semibold shrink-0"><InboxIcon className="inline-block mr-2 h-6 w-6" />{t('box.label')}</span>
                     </div>
-                    {/* ボックスタブ */}
                     <div className="flex items-center min-h-[2.5rem] w-full max-w-full overflow-hidden">
                         <div className="relative flex items-center w-full max-w-full" ref={boxTabsContainerRef}>
                             <div className="flex overflow-hidden" style={{ width: (hasMoreBoxes && selectedCategoryId !== UNCLASSIFIED_ID) ? 'calc(100% - 48px)' : '100%' }}>
@@ -391,8 +368,6 @@ const BoxAndCategoryPage = () => {
             </div>
 
             {/* メインコンテンツ */}
-            {/* <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex-1 flex flex-col overflow-hidden"> */}
             {isBoxView ? (
                 <Box
                     key={boxId}
@@ -413,8 +388,6 @@ const BoxAndCategoryPage = () => {
                     isUnclassifiedPage={isUnclassifiedCategoryPage}
                 />
             )}
-            {/* </div>
-            </div> */}
 
             <SelectCategoryModal
                 isOpen={isSelectCategoryModalOpen}
@@ -427,7 +400,6 @@ const BoxAndCategoryPage = () => {
                 onSelect={(box) => navigate(`/categories/${categoryId}/boxes/${box.id}`)}
                 categoryId={categoryId}
             />
-            {/* </div> */}
         </>
     );
 };

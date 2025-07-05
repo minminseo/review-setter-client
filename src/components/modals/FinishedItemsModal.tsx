@@ -5,14 +5,14 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
-// API関数
+
 import { fetchFinishedItemsByBox, fetchFinishedUnclassifiedItems, fetchFinishedUnclassifiedItemsByCategory, markItemAsUnfinished, incompleteReviewDate, fetchUnclassifiedItems, fetchUnclassifiedItemsByCategory, fetchItemsByBox, deleteItem } from '@/api/itemApi';
 import { UNCLASSIFIED_ID } from '@/constants';
 import { useItemStore } from '@/store';
 import { cn } from '@/lib/utils';
-// 型定義
+
 import { ItemResponse } from '@/types';
-// UIコンポーネント
+
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -22,7 +22,7 @@ import { DataTable } from '@/components/shared/DataTable/DataTable';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import NameCell from '@/components/shared/NameCell';
-// 詳細表示用にItemDetailModalをインポート
+
 import { ItemDetailModal } from './ItemDetailModal';
 
 type FinishedItemsModalProps = {
@@ -32,7 +32,6 @@ type FinishedItemsModalProps = {
     categoryId?: string;
 };
 
-// storeBoxId生成ロジックをBoxAndCategoryPageと統一
 const getStoreBoxId = (boxId: string | undefined, categoryId: string | undefined) => {
     if ((boxId === UNCLASSIFIED_ID || !boxId) && categoryId && categoryId !== UNCLASSIFIED_ID) {
         return `unclassified-${categoryId}`;
@@ -46,10 +45,9 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const setItemsForBox = useItemStore(state => state.setItemsForBox);
-    // 詳細表示モーダルで表示するアイテムを管理するstate
+    // 詳細表示モーダルで表示する復習物を管理するstate
     const [detailItem, setDetailItem] = React.useState<ItemResponse | null>(null);
 
-    // --- State (復習物名列の幅調整) ---
     const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
     const [isResizing, setIsResizing] = React.useState(false);
     const [isHovering, setIsHovering] = React.useState(false);
@@ -59,7 +57,6 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
     const queryKey = ['finishedItems', { boxId, categoryId }];
     const queryFn = () => {
         if (boxId) {
-            // 未分類ボックスの場合は異なるAPIを使用
             if (boxId === UNCLASSIFIED_ID) {
                 if (categoryId === UNCLASSIFIED_ID) {
                     // ホーム画面からの真の未分類（category_id、box_id両方NULL）
@@ -102,7 +99,6 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 queryClient.invalidateQueries({ queryKey: ['summary'], exact: true })
             ]);
             await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
-            // --- zustandストアも即時更新 ---
             const storeBoxId = getStoreBoxId(boxId, categoryId);
             let items: ItemResponse[] = [];
             if (
@@ -137,7 +133,6 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 queryClient.invalidateQueries({ queryKey: ['todaysReviews'], exact: true })
             ]);
             await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
-            // --- zustandストアも即時更新 ---
             const storeBoxId = getStoreBoxId(boxId, categoryId);
             let items: ItemResponse[] = [];
             if (
@@ -176,7 +171,6 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         onError: (err: any) => toast.error(t('error.deleteFailed', { message: err.message })),
     });
 
-    // --- リサイズ機能 ---
     const handleResizeStart = (e: React.MouseEvent) => {
         e.preventDefault();
         setIsResizing(true);
@@ -188,7 +182,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         if (!isResizing) return;
 
         const diff = e.clientX - startX;
-        const newWidth = Math.max(100, startWidth + diff); // 最小100px、最大無制限
+        const newWidth = Math.max(100, startWidth + diff);
         setNameColumnWidth(newWidth);
     }, [isResizing, startX, startWidth]);
 
@@ -197,7 +191,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
     }, []);
 
     const handleResetWidth = () => {
-        setNameColumnWidth(300); // 初期値にリセット
+        setNameColumnWidth(300);
     };
 
     React.useEffect(() => {
@@ -434,7 +428,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                         <DialogDescription>{t('item.finishedListDescription')}</DialogDescription>
                     </DialogHeader>
                     <div className="flex-1 flex flex-col overflow-hidden py-4 mb-2">
-                        {/* --- スクロール可能なテーブル領域 --- */}
+                        {/* スクロール可能なテーブル領域 */}
                         <Card className="flex-1 min-h-0 p-0 py-0">
                             <CardContent className="p-0 h-full">
                                 <ScrollArea className="w-full h-full max-h-[calc(90vh-200px)] rounded-xl pb-6 pr-3">
@@ -469,7 +463,6 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            {/* ItemDetailModalを正しくレンダリングする */}
             <ItemDetailModal isOpen={!!detailItem} onClose={() => setDetailItem(null)} item={detailItem} />
         </>
     );

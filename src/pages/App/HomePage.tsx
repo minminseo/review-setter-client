@@ -17,13 +17,10 @@ import {
 import { fetchPatterns } from '@/api/patternApi';
 import { GetCategoryOutput, ItemCountGroupedByBoxResponse, UnclassifiedItemCountGroupedByCategoryResponse, DailyCountGroupedByBoxResponse, UnclassifiedDailyDatesCountGroupedByCategoryResponse } from '@/types';
 
-// UI Components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
-
-// Modals
 import { CreateCategoryModal } from '@/components/modals/CreateCategoryModal';
 import { EditCategoryModal } from '@/components/modals/EditCategoryModal';
 import { CreateBoxModal } from '@/components/modals/CreateBoxModal';
@@ -32,10 +29,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { ClockIcon, Cog8ToothIcon, DocumentIcon, InboxIcon, InboxStackIcon, PlusIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import { SortDropdown } from '@/components/shared/SortDropdown';
 
-/**
- * ログイン後のホームページ（ダッシュボード）。
- * 今日の復習数、カテゴリー一覧、各種サマリーを表示する。
- */
+
 const HomePage = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -94,7 +88,7 @@ const HomePage = () => {
         const unclassifiedDailyCount = (dailyUnclassifiedReviewCountByCategoryQuery.data || []) as UnclassifiedDailyDatesCountGroupedByCategoryResponse[];
 
         return categoriesQuery.data.map(category => {
-            // カテゴリーに属するボックスの総アイテム数を計算
+            // カテゴリーに属するボックスの総復習物数を計算
             const totalItems = itemCountByBox
                 .filter(c => c.category_id === category.id)
                 .reduce((sum, current) => sum + current.count, 0);
@@ -136,7 +130,7 @@ const HomePage = () => {
         }
     }, [categoriesWithStats, categorySortOrder]);
 
-    // 復習パターン一覧取得
+    // パターン一覧取得
     const { data: patterns, isLoading: isPatternLoading } = useQuery({
         queryKey: ['patterns'],
         queryFn: fetchPatterns,
@@ -146,7 +140,6 @@ const HomePage = () => {
     return (
         <ScrollArea className="w-full h-full">
             <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-                {/* 左ペイン */}
                 <div className="grid auto-rows-max items-start gap-4 md:gap-8 xl:col-span-1">
                     <Card>
                         <CardHeader><CardTitle>{t('home.todaysReview')}</CardTitle></CardHeader>
@@ -162,7 +155,6 @@ const HomePage = () => {
                     </Card>
                 </div>
 
-                {/* 右ペイン */}
                 <div className="grid auto-rows-max items-start gap-4 md:gap-4 xl:col-span-2">
 
                     <div className="grid gap-4 sm:grid-cols-2">

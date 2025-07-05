@@ -58,8 +58,8 @@ const SignupPage = () => {
             email: '',
             password: '',
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            theme_color: theme, // Zustand状態からデフォルト値を取得
-            language: language, // Zustand状態からデフォルト値を取得
+            theme_color: theme,
+            language: language,
         },
     });
 
@@ -80,145 +80,145 @@ const SignupPage = () => {
     return (
         <AuthThemeProvider>
             <Card className="w-full">
-            <CardHeader>
-                <CardTitle className="text-2xl">Review Setter</CardTitle>
-                <CardDescription>{texts.signupDescription}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{texts.email}</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="name@example.com" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="password"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{texts.password}</FormLabel>
-                                    <div className="relative">
+                <CardHeader>
+                    <CardTitle className="text-2xl">Review Setter</CardTitle>
+                    <CardDescription>{texts.signupDescription}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{texts.email}</FormLabel>
                                         <FormControl>
-                                            <Input type={showPassword ? 'text' : 'password'} {...field} />
+                                            <Input placeholder="name@example.com" {...field} />
                                         </FormControl>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute inset-y-0 right-0 h-full px-3"
-                                            onClick={() => setShowPassword(!showPassword)}
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{texts.password}</FormLabel>
+                                        <div className="relative">
+                                            <FormControl>
+                                                <Input type={showPassword ? 'text' : 'password'} {...field} />
+                                            </FormControl>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="absolute inset-y-0 right-0 h-full px-3"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                            >
+                                                {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                                            </Button>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="timezone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{texts.timezone}</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder={texts.selectTimezone} />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {TIMEZONES.map(tz => (
+                                                    <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="theme_color"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{texts.themeColor}</FormLabel>
+                                        <Select
+                                            onValueChange={(value) => {
+                                                field.onChange(value);
+                                                // テーマ選択時に未ログイン時専用の状態を更新
+                                                setTheme(value as 'dark' | 'light');
+                                            }}
+                                            value={field.value}
                                         >
-                                            {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
-                                        </Button>
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="timezone"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{texts.timezone}</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={texts.selectTimezone} />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {TIMEZONES.map(tz => (
-                                                <SelectItem key={tz} value={tz}>{tz}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="theme_color"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{texts.themeColor}</FormLabel>
-                                    <Select 
-                                        onValueChange={(value) => {
-                                            field.onChange(value);
-                                            // テーマ選択時に未ログイン時専用の状態を更新
-                                            setTheme(value as 'dark' | 'light');
-                                        }} 
-                                        value={field.value}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={texts.selectTheme} />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {THEME_COLORS.map(themeOption => (
-                                                <SelectItem key={themeOption.value} value={themeOption.value}>{themeOption.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="language"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{texts.language}</FormLabel>
-                                    <Select 
-                                        onValueChange={(value) => {
-                                            field.onChange(value);
-                                            // 言語選択時に未ログイン時専用の状態を更新
-                                            setLanguage(value as 'ja' | 'en');
-                                        }} 
-                                        value={field.value}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={texts.selectLanguage} />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {LANGUAGES.map(lang => (
-                                                <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit" className="w-full" disabled={isSigningUp}>
-                            {isSigningUp ? texts.loading : texts.signup}
-                        </Button>
-                    </form>
-                </Form>
-            </CardContent>
-            <CardFooter>
-                <div className="text-center text-sm w-full">
-                    {texts.haveAccount}?{' '}
-                    <Link to="/login" className="underline">
-                        {texts.login}
-                    </Link>
-                </div>
-            </CardFooter>
-        </Card>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder={texts.selectTheme} />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {THEME_COLORS.map(themeOption => (
+                                                    <SelectItem key={themeOption.value} value={themeOption.value}>{themeOption.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="language"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{texts.language}</FormLabel>
+                                        <Select
+                                            onValueChange={(value) => {
+                                                field.onChange(value);
+                                                // 言語選択時に未ログイン時専用の状態を更新
+                                                setLanguage(value as 'ja' | 'en');
+                                            }}
+                                            value={field.value}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder={texts.selectLanguage} />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {LANGUAGES.map(lang => (
+                                                    <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" className="w-full" disabled={isSigningUp}>
+                                {isSigningUp ? texts.loading : texts.signup}
+                            </Button>
+                        </form>
+                    </Form>
+                </CardContent>
+                <CardFooter>
+                    <div className="text-center text-sm w-full">
+                        {texts.haveAccount}?{' '}
+                        <Link to="/login" className="underline">
+                            {texts.login}
+                        </Link>
+                    </div>
+                </CardFooter>
+            </Card>
         </AuthThemeProvider>
     );
 };

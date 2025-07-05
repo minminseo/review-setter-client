@@ -5,12 +5,13 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { createBox } from '@/api/boxApi';
 import { useBoxStore } from '@/store';
 import { PatternResponse, CreateBoxInput } from '@/types';
 
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -30,21 +31,16 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
-// このモーダルから呼び出す、別のモーダルをインポート
 import { SelectPatternModal } from './SelectPatternModal';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 import NameCell from '../shared/NameCell';
 
 
-// フォームのバリデーションルールをzodで定義
-const boxSchema = z.object({
-    // ボックス名は1文字以上必須
-    name: z.string().min(1, 'Box name is required.'),
-    // パターンIDはUUID形式の文字列、またはnull。必須ではない。
+const createBoxSchema = (t: TFunction) => z.object({
+    name: z.string().min(1, t('validation.boxNameRequired')),
     pattern_id: z.string().uuid().nullable().optional(),
 });
 
-// このモーダルが親コンポーネントから受け取るPropsの型を定義
 type CreateBoxModalProps = {
     isOpen: boolean;
     onClose: () => void;
@@ -54,12 +50,10 @@ type CreateBoxModalProps = {
 
 /**
  * 新しい復習物ボックスを作成するためのモーダル。
- * このモーダル内から、さらに復習パターン選択モーダルを呼び出す機能を持つ。
+ * このモーダル内から、さらにパターン選択モーダルを呼び出す機能を持つ。
  */
 export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: CreateBoxModalProps) => {
-    // React Queryのキャッシュを操作するためのクライアント
     const queryClient = useQueryClient();
-    // Zustandストアからボックスを追加するアクションを取得
     const addBoxToStore = useBoxStore((state) => state.addBox);
 
     // ネストされた「パターン選択モーダル」の開閉状態を管理
@@ -69,39 +63,33 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
     const [selectedPatternName, setSelectedPatternName] = React.useState(t('common.unclassified'));
 
     // react-hook-formを使ってフォームの状態とバリデーションを管理
-    const form = useForm<z.infer<typeof boxSchema>>({
-        resolver: zodResolver(boxSchema),
+    const form = useForm<z.infer<ReturnType<typeof createBoxSchema>>>({
+        resolver: zodResolver(createBoxSchema(t)),
         defaultValues: { name: '', pattern_id: null },
     });
 
     // ボックス作成APIを呼び出すためのmutationを定義
     const mutation = useMutation({
         mutationFn: (data: CreateBoxInput) => createBox({ categoryId, data }),
-        // useMutationではonSuccessが利用可能。APIコールが成功した直後の処理を記述する。
         onSuccess: (newBox) => {
             // 関連するボックスリストのキャッシュを無効化し、次回表示時に再取得させる
             queryClient.invalidateQueries({ queryKey: ['boxes', categoryId] });
             // Zustandストアにも新しいボックスを追加し、UIに即時反映させる
             addBoxToStore(categoryId, newBox);
-            // toast.success('新しいボックスを作成しました！');
             toast.success(t('notification.boxCreated'));
-            onClose(); // このモーダルを閉じる
+            onClose();
         },
         onError: (error) => toast.error(`Failed to create box: ${error.message}`),
     });
 
     // パターン選択モーダルからパターンが選択されたときに呼ばれるコールバック関数
     const handleSelectPattern = (pattern: PatternResponse) => {
-        form.setValue('pattern_id', pattern.id); // フォームの値を更新
-        setSelectedPatternName(pattern.name);    // 表示用のstateを更新
-        setPatternModalOpen(false);              // パターン選択モーダルを閉じる
+        form.setValue('pattern_id', pattern.id);
+        setSelectedPatternName(pattern.name);
+        setPatternModalOpen(false);
     };
-
-    // フォームの送信処理
-    const onSubmit = (values: z.infer<typeof boxSchema>) => {
-        // パターンが未選択の場合はバリデーションエラーを表示
+    const onSubmit = (values: z.infer<ReturnType<typeof createBoxSchema>>) => {
         if (!values.pattern_id) {
-            // toast.error('パターン選択は必須です。');
             toast.error(t('validation.selectValidPattern'));
             return;
         }
@@ -125,7 +113,7 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                             <DialogHeader>
                                 <DialogTitle className="border-b pb-2">{t('box.create')}</DialogTitle>
                                 <DialogDescription>
-                                    <span className="block mb-1 font-semibold text-white">{t('category.name')}（{t('common.unclassified')}）</span>
+                                    <span className="block mb-1 font-semibold text-white">{t('category.label')}</span>
                                     <span className="block mb-2 text-lg">
                                         <NameCell name={categoryName} maxWidth={500} />
                                     </span>
@@ -155,7 +143,7 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                                             />
 
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.name')}</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.label')}</FormLabel>
                                                 <div className="w-full">
                                                     <Button
                                                         type="button"
@@ -190,8 +178,6 @@ export const CreateBoxModal = ({ isOpen, onClose, categoryId, categoryName }: Cr
                 </DialogContent>
             </Dialog>
 
-            {/* ネストされたパターン選択モーダル */}
-            {/* このモーダルは次のステップで実装します */}
             <SelectPatternModal
                 isOpen={isPatternModalOpen}
                 onClose={() => setPatternModalOpen(false)}

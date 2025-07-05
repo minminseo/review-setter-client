@@ -17,8 +17,8 @@ interface AuthLanguageState {
 }
 
 export const useAuthLanguageStore = create<AuthLanguageState>((set) => ({
-    language: 'ja', // デフォルトは日本語
-    theme: 'dark', // デフォルトはダークテーマ
+    language: 'ja',
+    theme: 'dark',
     setLanguage: (language) => set({ language }),
     setTheme: (theme) => set({ theme }),
 }));
@@ -126,7 +126,7 @@ const japaneseTexts: AuthTexts = {
     verificationFailed: '認証に失敗しました。',
     logoutFailed: 'ログアウトに失敗しました',
     loginErrorDescription: 'メールアドレスとパスワードを確認してください。',
-    signupErrorDescription: '入力内容を確認してください。',
+    signupErrorDescription: 'このメールアドレスはすでに使用されています。',
     verificationErrorDescription: 'コードが正しくないか、期限切れです。',
 };
 
@@ -178,21 +178,17 @@ const englishTexts: AuthTexts = {
     verificationFailed: 'Verification failed.',
     logoutFailed: 'Logout failed',
     loginErrorDescription: 'Please check your email and password.',
-    signupErrorDescription: 'Please check your input.',
+    signupErrorDescription: 'This email address is already in use.',
     verificationErrorDescription: 'The code is incorrect or has expired.',
 };
 
-/**
- * 現在の言語設定に基づいてテキストを取得するフック
- */
+// 現在の言語設定に基づいてテキストを取得するフック
 export const useAuthTexts = (): AuthTexts => {
     const language = useAuthLanguageStore((state) => state.language);
     return language === 'ja' ? japaneseTexts : englishTexts;
 };
 
-/**
- * 未ログイン時のテーマ状態を取得するフック
- */
+// 未ログイン時のテーマ状態を取得するフック
 export const useAuthTheme = (): AuthTheme => {
     return useAuthLanguageStore((state) => state.theme);
 };

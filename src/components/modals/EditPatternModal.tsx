@@ -6,12 +6,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { NumberInput } from "@heroui/number-input";
 import { FaPlusCircle, FaTrashAlt } from "react-icons/fa";
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { updatePattern, deletePattern } from '@/api/patternApi';
 import { usePatternStore } from '@/store';
 import { PatternResponse, UpdatePatternRequest, TargetWeight, UpdatePatternStepField } from '@/types';
 
-// UI Components
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -20,15 +20,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
-// フォームのバリデーションルール
-const patternSchema = z.object({
-    name: z.string().min(1, 'Name is required.'),
+const createPatternSchema = (t: TFunction) => z.object({
+    name: z.string().min(1, t('validation.patternNameRequired')),
     target_weight: z.enum(['heavy', 'normal', 'light', 'unset']),
-    // ステップは配列で、各要素は1以上の数字である必要がある
     steps: z.array(z.object({
-        step_id: z.string().uuid().optional(), // 既存ステップのID
-        interval_days: z.coerce.number().min(1, 'Interval must be at least 1 day.'),
-    })).min(1, 'At least one step is required.'),
+        step_id: z.string().uuid().optional(),
+        interval_days: z.coerce.number(),
+    })),
 });
 
 type EditPatternModalProps = {
@@ -38,7 +36,7 @@ type EditPatternModalProps = {
 };
 
 /**
- * 既存の復習パターンを編集・削除するためのモーダル。
+ * 既存のパターンを編集・削除するためのモーダル。
  * react-hook-formのuseFieldArrayを使い、動的にステップの数を増減させる機能を持つ。
  */
 export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalProps) => {
@@ -47,8 +45,8 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
     const { t } = useTranslation();
 
     // フォームの初期化。propsで渡されたpatternデータで初期値を設定する
-    const form = useForm<z.infer<typeof patternSchema>>({
-        resolver: zodResolver(patternSchema),
+    const form = useForm<z.infer<ReturnType<typeof createPatternSchema>>>({
+        resolver: zodResolver(createPatternSchema(t)),
         values: {
             name: pattern.name,
             target_weight: pattern.target_weight,
@@ -76,7 +74,7 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
         },
         onError: (error: any) => {
             if (error?.response?.status === 500) {
-                toast.error(t('notification.itemUpdatedError'));
+                toast.error(t('notification.patternUpdatedError'));
             } else {
                 toast.error(t('error.updateFailed', { message: error.message }));
             }
@@ -94,7 +92,7 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
         },
         onError: (error: any) => {
             if (error?.response?.status === 500) {
-                toast.error(t('notification.itemUpdatedError'));
+                toast.error(t('notification.patternUpdatedError'));
             } else {
                 toast.error(t('error.deleteFailed', { message: error.message }));
             }
@@ -102,7 +100,23 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
     });
 
     // 保存ボタンが押されたときの処理
-    const onSubmit = (values: z.infer<typeof patternSchema>) => {
+    const onSubmit = (values: z.infer<ReturnType<typeof createPatternSchema>>) => {
+        // まず重複チェック
+        const stepValues = values.steps.map((step) => step.interval_days);
+        const hasDuplicates = stepValues.some((value, index) => stepValues.indexOf(value) !== index);
+        if (hasDuplicates) {
+            toast.error(t('pattern.duplicateStepError'));
+            return;
+        }
+        // 昇順チェック
+        const isAscending = stepValues.every((value, index) => {
+            if (index === 0) return true;
+            return value > stepValues[index - 1];
+        });
+        if (!isAscending) {
+            toast.error(t('pattern.stepOrderError'));
+            return;
+        }
         // 変更有無判定
         const isNameChanged = values.name !== pattern.name;
         const isWeightChanged = values.target_weight !== pattern.target_weight;
@@ -116,7 +130,6 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
             return;
         }
 
-        // APIが要求する形式にデータを整形
         const data: UpdatePatternRequest = {
             name: values.name,
             target_weight: values.target_weight as TargetWeight,

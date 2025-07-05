@@ -1,9 +1,9 @@
-// 復習物アイテムに関する、最も多機能なAPI関数をまとめたファイル
+// 復習物に関する、最も多機能なAPI関数をまとめたファイル
 import api from './index';
 import { ItemResponse, CreateItemRequest, UpdateItemRequest, UpdateReviewDatesRequest, UpdateItemAsUnFinishedForceRequest, GetDailyReviewDatesResponse, UpdateReviewDateAsCompletedRequest, UpdateReviewDateAsInCompletedRequest } from '@/types';
 import { format } from 'date-fns';
 
-// --- アイテムのCRUD ---
+// --- 復習物のCRUD ---
 export const createItem = async (data: CreateItemRequest) => {
 
     const response = await api.post<ItemResponse>('/items', data);
@@ -24,7 +24,7 @@ export const deleteItem = async (itemId: string): Promise<void> => {
     await api.delete(`/items/${itemId}`);
 }
 
-// --- アイテムのリスト取得 ---
+// --- 復習物のリスト取得 ---
 export const fetchUnclassifiedItems = async (): Promise<ItemResponse[]> => {
     const response = await api.get<ItemResponse[]>('/items/unclassified');
     return response.data;
@@ -41,7 +41,7 @@ export const fetchUnclassifiedItemsByCategory = async (categoryId: string): Prom
 }
 
 /**
- * 今日の日付でスケジュールされている全ての復習アイテムを取得する
+ * 今日の日付でスケジュールされている全ての復習物を取得する
  */
 export const fetchTodaysReviews = async (): Promise<GetDailyReviewDatesResponse> => {
     const today = format(new Date(), 'yyyy-MM-dd');

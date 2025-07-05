@@ -27,7 +27,7 @@ import { CreateItemRequest } from '@/types';
 // 定数
 import { UNCLASSIFIED_ID } from '@/constants';
 
-// UIコンポーネント
+// UI
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -80,8 +80,6 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     const watchedCategoryId = form.watch('category_id');
     const watchedBoxId = form.watch('box_id');
 
-    // --- Zustandストアとの連携 ---
-    // データを表示するために、各ストアから状態を読み取る
     const { categories, setCategories } = useCategoryStore();
     const { boxesByCategoryId, setBoxesForCategory } = useBoxStore();
     const { patterns, setPatterns } = usePatternStore();
@@ -93,7 +91,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     // 選択されたボックスの情報を取得
     const selectedBox = watchedBoxId ? boxes.find(box => box.id === watchedBoxId) : null;
 
-    // ボックスが選択されている場合は復習パターン選択を無効化
+    // ボックスが選択されている場合はパターン選択を無効化
     const isPatternDisabled = !!selectedBox;
 
     // --- データ取得とストアへの同期 ---
@@ -133,17 +131,17 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
         }
     }, [patternsSuccess, fetchedPatterns, setPatterns]);
 
-    // ボックス選択時に自動で復習パターンを設定する
+    // ボックス選択時に自動でパターンを設定する
     React.useEffect(() => {
         if (selectedBox && selectedBox.pattern_id) {
             form.setValue('pattern_id', selectedBox.pattern_id);
         } else if (!selectedBox) {
-            // ボックスが選択解除された場合は復習パターンをクリア
+            // ボックスが選択解除された場合はパターンをクリア
             form.setValue('pattern_id', null);
         }
     }, [selectedBox, form]);
 
-    // アイテム作成APIを呼び出すためのmutation
+    // 復習物作成APIを呼び出すためのmutation
     const mutation = useMutation({
         mutationFn: (data: CreateItemRequest) => {
             return createItem(data);
@@ -196,7 +194,6 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
             box_id: values.box_id === 'UNCLASSIFIED' ? null : values.box_id,
             name: values.name,
             detail: values.detail,
-            // Dateオブジェクトを "YYYY-MM-DD" 形式の文字列に変換
             learned_date: format(values.learned_date, "yyyy-MM-dd"),
             today: format(new Date(), "yyyy-MM-dd"),
             // 過去の復習日を完了扱いにするかどうかのフラグ
@@ -233,7 +230,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
     }, [isOpen, form, defaultCategoryId, defaultBoxId]);
 
     const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
-    // 復習パターン選択モーダルの開閉状態
+    // パターン選択モーダルの開閉状態
     const [isPatternModalOpen, setPatternModalOpen] = React.useState(false);
     // 選択中のパターン名（UI表示用）
     const [selectedPatternName, setSelectedPatternName] = React.useState('');
@@ -330,7 +327,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                         )} />
                                         <FormField name="category_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">{t('category.name')}</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('category.label')}</FormLabel>
                                                 <div className="w-full">
                                                     <Select onValueChange={(value) => {
                                                         field.onChange(value);
@@ -364,7 +361,7 @@ export const CreateItemModal = ({ isOpen, onClose, defaultCategoryId, defaultBox
                                         )} />
                                         <FormField name="box_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">{t('box.name')}</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('box.label')}</FormLabel>
                                                 <div className="w-full">
                                                     <Select
                                                         onValueChange={(value) => field.onChange(value)}

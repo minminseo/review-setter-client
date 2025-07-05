@@ -20,7 +20,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
-// このモーダルが親コンポーネントから受け取るPropsの型を定義
 type SelectBoxModalProps = {
     isOpen: boolean;
     onClose: () => void;
@@ -30,23 +29,21 @@ type SelectBoxModalProps = {
 
 /**
  * 特定のカテゴリーに属するボックスを一覧表示し、ユーザーに選択させるための汎用モーダル。
+ * 復習物作成・編集時や、画面上部のタブ表示が見切れた場合などに使用される。
  * このモーダルの表示内容は、propsで渡される`categoryId`に依存して動的に変わる。
  */
 export const SelectBoxModal = ({ isOpen, onClose, onSelect, categoryId }: SelectBoxModalProps) => {
     const { t } = useTranslation();
-    // グローバルなZustandストアから、特定のカテゴリーに属するボックスリストを取得するセレクター関数と、
-    // ボックスリストを更新するためのセッター関数を取得する
     const { getBoxesForCategory, setBoxesForCategory } = useBoxStore();
     const boxes = getBoxesForCategory(categoryId || '');
 
-    // 特定カテゴリーのボックスリストを取得するためのReact Query
     const { data: fetchedBoxes, isLoading, isSuccess } = useQuery({
         // クエリキーに`categoryId`を含めることで、カテゴリーごとにキャッシュを管理する
         queryKey: ['boxes', categoryId],
         queryFn: () => fetchBoxes(categoryId!), // categoryIdがnullでないことを!でTypeScriptに伝える
         // モーダルが開いていて、かつcategoryIdが指定されている場合にのみAPIリクエストを実行
         enabled: isOpen && !!categoryId,
-        staleTime: 1000 * 60 * 5, // 5分間はキャッシュを有効にする
+        staleTime: 1000 * 60 * 5,
     });
 
     // データ取得成功時に、その結果をZustandストアに同期させる副作用
@@ -59,7 +56,7 @@ export const SelectBoxModal = ({ isOpen, onClose, onSelect, categoryId }: Select
     // ユーザーがリスト内のボックスボタンをクリックしたときの処理
     const handleSelect = (box: GetBoxOutput) => {
         onSelect(box); // 親コンポーネントに選択されたボックス情報を渡す
-        onClose();      // モーダルを閉じる
+        onClose();
     };
 
     return (

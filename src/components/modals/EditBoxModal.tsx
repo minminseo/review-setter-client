@@ -11,7 +11,7 @@ import { fetchPatterns } from '@/api/patternApi';
 import { useBoxStore, usePatternStore } from '@/store';
 import { GetBoxOutput, GetCategoryOutput, PatternResponse, UpdateBoxInput } from '@/types';
 
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -42,14 +42,14 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
-// Nested Modal
 import { SelectPatternModal } from './SelectPatternModal';
 import NameCell from '@/components/shared/NameCell';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
+import { TFunction } from 'i18next';
 
 // フォームのバリデーションルール
-const boxSchema = z.object({
-    name: z.string().min(1, 'Box name is required.'),
+const createBoxSchema = (t: TFunction) => z.object({
+    name: z.string().min(1, t('validation.boxNameRequired')),
     pattern_id: z.string().uuid().nullable().optional(),
 });
 
@@ -60,9 +60,7 @@ type EditBoxModalProps = {
     category: GetCategoryOutput;
 };
 
-/**
- * 既存の復習物ボックスを編集・削除するためのモーダル。
- */
+// 既存の復習物ボックスを編集・削除するためのモーダル。
 export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalProps) => {
     const queryClient = useQueryClient();
     const { updateBox: updateInStore, removeBox: removeFromStore } = useBoxStore();
@@ -73,8 +71,8 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
     const [selectedPatternName, setSelectedPatternName] = React.useState(t('common.unclassified'));
 
     // フォームの初期化。propsで渡されたboxのデータで初期値を設定する
-    const form = useForm<z.infer<typeof boxSchema>>({
-        resolver: zodResolver(boxSchema),
+    const form = useForm<z.infer<ReturnType<typeof createBoxSchema>>>({
+        resolver: zodResolver(createBoxSchema(t)),
         values: {
             name: box.name,
             pattern_id: box.pattern_id,
@@ -96,7 +94,6 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                 const initialPattern = fetchedPatterns.find(p => p.id === box.pattern_id);
                 setSelectedPatternName(initialPattern?.name || '未選択');
             } else if (box.pattern_id) {
-                // patterns is empty but box has pattern_id - pattern was deleted
                 setSelectedPatternName('未選択');
             } else {
                 setSelectedPatternName('未選択');
@@ -104,20 +101,16 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
         }
     }, [isSuccess, fetchedPatterns, setPatterns, box.pattern_id]);
 
-    // --- Mutations ---
     const updateMutation = useMutation({
         mutationFn: (data: UpdateBoxInput) => updateBox({ categoryId: category.id, boxId: box.id, data }),
         onSuccess: (updatedBox) => {
             queryClient.invalidateQueries({ queryKey: ['boxes', category.id] });
             updateInStore(category.id, updatedBox);
-            // toast.success('ボックスを更新しました！');
             toast.success(t('notification.boxUpdated'));
             onClose();
         },
         onError: (error: any) => {
-            // 500ステータスコードの場合は、完了済み復習日があるエラーとして扱う
             if (error?.response?.status === 500) {
-                // toast.error('ボックス内に復習物が存在するためパターンを変更できません。');
                 toast.error(t('validation.selectValidPattern'));
             } else {
                 toast.error(`Update failed: ${error.message}`);
@@ -142,7 +135,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
         setPatternModalOpen(false);
     };
 
-    const onSubmit = (values: z.infer<typeof boxSchema>) => {
+    const onSubmit = (values: z.infer<ReturnType<typeof createBoxSchema>>) => {
         updateMutation.mutate(values);
     };
 
@@ -155,7 +148,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                             <DialogHeader>
                                 <DialogTitle className="border-b pb-2">{t('box.edit')}</DialogTitle>
                                 <DialogDescription>
-                                    <span className="block mb-1 font-semibold text-white">{t('category.name')}</span>
+                                    <span className="block mb-1 font-semibold text-white">{t('category.label')}</span>
                                     <span className="block mb-2 text-lg">
                                         <NameCell name={category.name} maxWidth={500} />
                                     </span>
@@ -179,7 +172,7 @@ export const EditBoxModal = ({ isOpen, onClose, box, category }: EditBoxModalPro
                                                 )}
                                             />
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.name')}</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.label')}</FormLabel>
                                                 <Button type="button" variant="outline" className="w-full mb-3 max-w-full  justify-start font-normal truncate" onClick={() => setPatternModalOpen(true)}>
                                                     {selectedPatternName}
                                                 </Button>

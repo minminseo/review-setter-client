@@ -202,7 +202,7 @@
   background: hsl(var(--muted-foreground) / 0.8) !important;
 }
 
-/* サイドバーコンテンツの動的幅制御 */
+/* サイドバーの動的幅制御 */
 .sidebar-content {
   width: 100%;
   transition: max-width 0.2s ease-out;
@@ -211,10 +211,8 @@
 
 .sidebar-content.sidebar-closed {
   max-width: 44px;
-  /* w-14 (56px) - scrollbar area (12px) */
 }
 
 .sidebar-content.sidebar-open {
   max-width: 180px;
-  /* w-48 (192px) - scrollbar area (12px) */
 }

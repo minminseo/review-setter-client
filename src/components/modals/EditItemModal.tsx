@@ -98,7 +98,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     });
     const { data: patterns = [] } = useQuery({ queryKey: ['patterns'], queryFn: fetchPatterns, staleTime: Infinity });
 
-    // 復習パターンの間隔配列が完全に一致するかを判定する関数
+    // パターンの間隔配列が完全に一致するかを判定する関数
     const arePatternIntervalsEqual = (pattern1: any, pattern2: any): boolean => {
         if (!pattern1 || !pattern2) return false;
         if (!pattern1.steps || !pattern2.steps) return false;
@@ -119,9 +119,9 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         return item.review_dates?.some(reviewDate => reviewDate.is_completed) ?? false;
     };
 
-    // 現在のアイテムの復習パターンと一致するボックスのみをフィルタリング
+    // 現在の復習物のパターンと一致するボックスのみをフィルタリング
     const filteredBoxes = React.useMemo(() => {
-        // 完了済みの復習日がない場合は、復習パターンに関係なく全てのボックスを表示
+        // 完了済みの復習日がない場合は、パターンに関係なく全てのボックスを表示
         if (!hasCompletedReviews()) {
             return boxes;
         }
@@ -141,11 +141,11 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     // 選択されたボックスの情報を取得（フィルタリング後のリストから）
     const selectedBox = watchedBoxId ? filteredBoxes.find(box => box.id === watchedBoxId) : null;
 
-    // ボックスが選択されている場合は復習パターン選択を無効化（未分類は除く）
+    // ボックスが選択されている場合はパターン選択を無効化（未分類は除く）
     const watchedBoxIdValue = form.watch('box_id');
     const isPatternDisabled = !!selectedBox && watchedBoxIdValue !== 'UNCLASSIFIED';
 
-    // ボックス選択時に自動で復習パターンを設定する
+    // ボックス選択時に自動でパターンを設定する
     React.useEffect(() => {
         const watchedBoxIdValue = form.watch('box_id');
 
@@ -153,8 +153,8 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         if (selectedBox && selectedBox.pattern_id && watchedBoxIdValue !== 'UNCLASSIFIED') {
             form.setValue('pattern_id', selectedBox.pattern_id);
         }
-        // 未分類ボックス選択時や、ボックス選択解除時は復習パターンを変更しない
-        // （元の復習パターンを維持）
+        // 未分類ボックス選択時や、ボックス選択解除時はパターンを変更しない
+        // （元のパターンを維持）
     }, [selectedBox, form]);
 
     const updateMutation = useMutation({
@@ -217,7 +217,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
             const oldQueryKey = getQueryKey(oldBoxId, oldCategoryId);
             const newQueryKey = getQueryKey(newBoxId, newCategoryId);
 
-            // 元のクエリキーからアイテムを削除（移動またはカテゴリ変更の場合）
+            // 元のクエリキーから復習物を削除（移動またはカテゴリ変更の場合）
             if (oldBoxId !== newBoxId || oldCategoryId !== newCategoryId) {
                 queryClient.setQueryData(oldQueryKey, (oldData: any) => {
                     if (!oldData) return oldData;
@@ -235,12 +235,12 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
                         const existingIndex = oldData.findIndex((i: any) => i.item_id === enrichedUpdatedItem.item_id);
                         if (existingIndex >= 0) {
-                            // 既存アイテムを更新
+                            // 既存復習物を更新
                             const newData = [...oldData];
                             newData[existingIndex] = enrichedUpdatedItem;
                             return newData;
                         }
-                        // 新しいアイテムを追加
+                        // 新しい復習物を追加
                         return [...oldData, enrichedUpdatedItem];
                     });
                 }
@@ -317,7 +317,6 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     const onSubmit = (values: z.infer<typeof itemSchema>) => {
         const data: UpdateItemRequest = {
             ...values,
-            // UNCLASSIFIEDをnullに変換（未分類として正しく送信）
             category_id: values.category_id === 'UNCLASSIFIED' ? null : values.category_id,
             box_id: values.box_id === 'UNCLASSIFIED' ? null : values.box_id,
             learned_date: format(values.learned_date, "yyyy-MM-dd"),
@@ -331,7 +330,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="w-[95vw] max-w-lg h-[800px] max-h-[95vh] flex flex-col">
+            <DialogContent className="w-[95vw] max-w-lg h-[850px] max-h-[95vh] flex flex-col">
                 <div className="h-full flex flex-col">
                     <div className="flex-1 flex flex-col">
                         <DialogHeader>
@@ -401,7 +400,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         )} />
                                         <FormField name="category_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">{t('category.caategory')}</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('category.label')}</FormLabel>
                                                 <div className="w-full">
                                                     <Select onValueChange={(value) => {
                                                         field.onChange(value);
@@ -425,7 +424,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         <FormField name="box_id" control={form.control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel className="inline-block pointer-events-none select-none">
-                                                    {t('box.box')}
+                                                    {t('box.label')}
                                                     {item.pattern_id && filteredBoxes.length < boxes.length && hasCompletedReviews() && (
                                                         <span className="text-xs text-muted-foreground ml-1">
                                                             {t('pattern.useBoxSetting')}
@@ -455,7 +454,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                         )} />
                                         <FormField name="pattern_id" control={form.control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.selectPattern')}{isPatternDisabled && ` (${t('pattern.useBoxSetting')})`}</FormLabel>
+                                                <FormLabel className="inline-block pointer-events-none select-none">{t('pattern.reviewPattern')}{isPatternDisabled && ` (${t('pattern.useBoxSetting')})`}</FormLabel>
                                                 <div className="w-full w-full">
                                                     <Select
                                                         onValueChange={field.onChange}
@@ -469,7 +468,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                                         (selectedBox?.pattern_id ?
                                                                             (patterns.length > 0 ? patterns.find(p => p.id === selectedBox.pattern_id)?.name || t('pattern.useBoxSetting') : t('pattern.useBoxSetting'))
                                                                             : t('pattern.unset'))
-                                                                        : t('pattern.selectPattern')
+                                                                        : t('pattern.reviewPattern')
                                                                     }
                                                                 />
                                                             </SelectTrigger>

@@ -11,8 +11,8 @@ type PatternDetailProps = {
 };
 
 /**
- * 復習パターンの詳細をカード形式で表示する再利用可能なコンポーネント。
- * @param pattern - 表示する復習パターンのデータ
+ * パターンの詳細をカード形式で表示する再利用可能なコンポーネント。
+ * @param pattern - 表示するパターンのデータ
  * @param onEdit - (オプション) 編集ボタンを押した際の処理
  */
 export const PatternDetail = ({ pattern, onEdit, className }: PatternDetailProps) => {

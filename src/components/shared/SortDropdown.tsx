@@ -2,7 +2,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
-// ソートオプションの型定義
 type SortOption = {
     value: string; // "name_asc" のような内部的な値
     label: string; // "名前（昇順）" のようなUI表示用のラベル
@@ -16,7 +15,6 @@ type SortDropdownProps = {
 };
 
 /**
- * 「並び替え」機能を提供する再利用可能なドロップダウンコンポーネント。
  * @param options - ドロップダウンに表示する選択肢の配列
  */
 export const SortDropdown = ({ options, value, onValueChange, className }: SortDropdownProps) => {

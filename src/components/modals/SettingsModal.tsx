@@ -12,7 +12,6 @@ import { UpdateUserInput } from '@/types';
 import { THEME_COLORS, LANGUAGES, TIMEZONES } from '@/constants';
 import { useTheme } from '@/components/theme-provider';
 
-// UI Components
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -36,14 +35,12 @@ type SettingsModalProps = {
     onClose: () => void;
 };
 
-/**
- * ユーザー設定（メール、テーマ、言語、タイムゾーン）を変更するためのモーダル。
- */
+// ユーザー設モーダル
 export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     const queryClient = useQueryClient();
-    const { user } = useAuth(); // 現在のユーザー情報をuseAuthフックから取得
+    const { user } = useAuth();
     const { t } = useTranslation();
-    const { setTheme } = useTheme(); // テーマ即座変更用
+    const { setTheme } = useTheme();
 
     const schema = settingsSchema(t);
 
@@ -69,7 +66,6 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     const updateMutation = useMutation({
         mutationFn: (data: UpdateUserInput) => updateUser(data),
         onSuccess: () => {
-            // toast.success('設定を更新しました。');
             toast.success(t('notification.userUpdated'));
             // ['user']クエリを無効化し、useAuthフックに最新のユーザー情報を再取得させる
             queryClient.invalidateQueries({ queryKey: ['user'] });

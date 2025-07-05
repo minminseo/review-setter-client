@@ -1,6 +1,5 @@
 import { ThemeColor, Language } from "@/types";
 
-// Goのドメイン層で定義されている選択肢と一致させる
 export const THEME_COLORS: { value: ThemeColor; label: string }[] = [
     { value: 'dark', label: 'Dark' },
     { value: 'light', label: 'Light' },
@@ -11,8 +10,6 @@ export const LANGUAGES: { value: Language; label: string }[] = [
     { value: 'en', label: 'English' },
 ];
 
-// サインアップ画面で選択可能なタイムゾーンのリスト
-// 将来的にユーザーが選択肢を増やせるように、ここで一元管理する
 export const TIMEZONES = [
     "Asia/Tokyo",
     "Europe/London",
@@ -32,7 +29,6 @@ export const TIMEZONES = [
     "America/Sao_Paulo",
     "America/Santiago",
 ];
-
 
 // 未分類カテゴリーやボックスを識別するための一意なID
 export const UNCLASSIFIED_ID = 'unclassified';

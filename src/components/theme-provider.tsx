@@ -45,7 +45,7 @@ export const ThemeProvider = ({
             if (parsed.state?.theme) return parsed.state.theme;
         }
 
-        // フォールバック: ThemeProvider独自のstorageKey、最後にdefaultTheme
+        // ThemeProvider独自のstorageKey、最後にdefaultTheme
         return localStorage.getItem(storageKey) || defaultTheme;
     })
 
@@ -79,9 +79,8 @@ export const ThemeProvider = ({
     )
 }
 
-/**
- * 現在のテーマを取得し、テーマを変更するためのカスタムフック
- */
+// 現在のテーマを取得し、テーマを変更するためのカスタムフック
+
 export const useTheme = () => {
     const context = useContext(ThemeProviderContext)
 

@@ -1,7 +1,6 @@
 import { ItemResponse } from '@/types';
 import { useTranslation } from 'react-i18next';
 
-// UI Components
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -13,21 +12,19 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
-// このモーダルが親コンポーネントから受け取るPropsの型を定義
 type ItemDetailModalProps = {
-    isOpen: boolean;    // モーダルが開いているかどうかの状態
-    onClose: () => void; // モーダルを閉じるための関数
-    item: ItemResponse | null; // 表示対象のアイテムデータ。nullの場合は何も表示しない。
+    isOpen: boolean;
+    onClose: () => void;
+    item: ItemResponse | null; // 表示対象の復習物データ。nullの場合は何も表示しない。
 };
 
 /**
- * 復習物アイテムの詳細情報（`detail`フィールド）を表示するための読み取り専用モーダル。
+ * 復習物の詳細表示モーダル。
  * このモーダル自身はAPIを叩かず、親コンポーネントから表示するデータをpropsとして受け取る。
  */
 export const ItemDetailModal = ({ isOpen, onClose, item }: ItemDetailModalProps) => {
     const { t } = useTranslation();
 
-    // 表示対象のアイテムが存在しない場合は、何もレンダリングしない
     if (!item) {
         return null;
     }
