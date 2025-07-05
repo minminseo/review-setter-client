@@ -4,12 +4,13 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { updateCategory, deleteCategory } from '@/api/categoryApi';
 import { useCategoryStore } from '@/store';
 import { GetCategoryOutput, UpdateCategoryInput } from '@/types';
 
-// UI Components
+// UI
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -17,7 +18,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-    DialogDescription,
 } from '@/components/ui/dialog';
 import {
     AlertDialog,
@@ -43,14 +43,14 @@ import { ScrollArea, ScrollBar } from '../ui/scroll-area';
 
 
 // フォームのバリデーションルール
-const categorySchema = z.object({
-    name: z.string().min(1, 'Category name is required.'),
+const createCategorySchema = (t: TFunction) => z.object({
+    name: z.string().min(1, t('validation.categoryNameRequired')),
 });
 
 // このモーダルが受け取るPropsの型定義
 type EditCategoryModalProps = {
-    isOpen: boolean;    // モーダルが開いているか
-    onClose: () => void; // モーダルを閉じるための関数
+    isOpen: boolean;
+    onClose: () => void;
     category: GetCategoryOutput; // 編集対象のカテゴリー情報
 };
 
@@ -63,8 +63,8 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
     const { t } = useTranslation();
 
     // フォームの初期化。編集対象のカテゴリー名をデフォルト値として設定する
-    const form = useForm<z.infer<typeof categorySchema>>({
-        resolver: zodResolver(categorySchema),
+    const form = useForm<z.infer<ReturnType<typeof createCategorySchema>>>({
+        resolver: zodResolver(createCategorySchema(t)),
         values: { name: category.name },
     });
 
@@ -75,7 +75,6 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
             // 成功した場合、キャッシュを無効化し、Zustandストアを更新する
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             updateInStore(updatedCategory);
-            // toast.success('カテゴリーを更新しました！');
             toast.success(t('notification.categoryUpdated'));
             onClose();
         },
@@ -95,20 +94,17 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
     });
 
     // 保存ボタンが押されたときの処理
-    const onSubmit = (values: z.infer<typeof categorySchema>) => {
+    const onSubmit = (values: z.infer<ReturnType<typeof createCategorySchema>>) => {
         updateMutation.mutate(values);
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="w-[95vw] max-w-lg h-[350px] max-h-[95vh] flex flex-col">
+            <DialogContent className="w-[95vw] max-w-lg h-[250px] max-h-[95vh] flex flex-col">
                 <div className="h-full flex flex-col ">
                     <div className="flex-1 flex flex-col ">
                         <DialogHeader className=" text-ellipsis  whitespace-nowrap">
                             <DialogTitle className=" border-b pb-2">{t('category.edit')}</DialogTitle>
-                            <DialogDescription>
-                                {t('category.editDescription')}
-                            </DialogDescription>
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)}
@@ -122,7 +118,7 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="inline-block pointer-events-none select-none">{t('category.name')}</FormLabel>
-                                                    <div className="w-full pb-10">
+                                                    <div className="w-full">
                                                         <FormControl>
                                                             <Input {...field} className=" text-ellipsis overflow-hidden whitespace-nowrap" />
                                                         </FormControl>
@@ -134,10 +130,8 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
                                     </div>
                                     <ScrollBar orientation="vertical" className="!bg-transparent [&>div]:!bg-gray-600" />
                                 </ScrollArea>
-                                {/* フッターエリア：削除ボタンと保存・キャンセルボタンを左右に配置 */}
                                 <DialogFooter className="justify-end">
                                     <div className="flex items-center gap-2 w-full justify-between">
-                                        {/* 削除ボタン：誤操作を防ぐため、AlertDialogで確認を挟む */}
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                                 <Button
@@ -153,7 +147,6 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                                    {/* 削除実行ボタン */}
                                                     <AlertDialogAction
                                                         onClick={() => deleteMutation.mutate()}
                                                         disabled={deleteMutation.isPending}
