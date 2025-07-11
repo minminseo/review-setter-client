@@ -92,13 +92,22 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         },
         onSuccess: async () => {
             toast.success(t('notification.reviewMarkedIncomplete'));
+            
+            // キャッシュを無効化・再取得
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
                 queryClient.invalidateQueries({ queryKey: ['items', boxId], exact: true }),
                 queryClient.invalidateQueries({ queryKey: ['todaysReviews'], exact: true }),
                 queryClient.invalidateQueries({ queryKey: ['summary'], exact: true })
             ]);
+            
+            // 完了済み復習物リストを更新
             await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
+            
+            // 通常の復習物リストも更新
+            await queryClient.refetchQueries({ queryKey: ['items', boxId], exact: true });
+            
+            // ストアを最新のサーバーデータで更新
             const storeBoxId = getStoreBoxId(boxId, categoryId);
             let items: ItemResponse[] = [];
             if (
@@ -115,7 +124,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 // 通常のボックスの場合
                 items = await fetchItemsByBox(boxId);
             }
-            if (storeBoxId) {
+            if (storeBoxId && items.length > 0) {
                 setItemsForBox(storeBoxId, items.filter((item: ItemResponse) => !item.is_finished));
             }
         },
@@ -127,12 +136,22 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             incompleteReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
         onSuccess: async () => {
             toast.success(t('notification.reviewMarkedIncomplete'));
+            
+            // キャッシュを無効化・再取得
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
                 queryClient.invalidateQueries({ queryKey: ['items', boxId], exact: true }),
-                queryClient.invalidateQueries({ queryKey: ['todaysReviews'], exact: true })
+                queryClient.invalidateQueries({ queryKey: ['todaysReviews'], exact: true }),
+                queryClient.invalidateQueries({ queryKey: ['summary'], exact: true })
             ]);
+            
+            // 完了済み復習物リストを更新
             await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
+            
+            // 通常の復習物リストも更新
+            await queryClient.refetchQueries({ queryKey: ['items', boxId], exact: true });
+            
+            // ストアを最新のサーバーデータで更新
             const storeBoxId = getStoreBoxId(boxId, categoryId);
             let items: ItemResponse[] = [];
             if (
