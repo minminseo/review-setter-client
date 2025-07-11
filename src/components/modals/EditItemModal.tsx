@@ -97,7 +97,10 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
     const originalLearnedDate = React.useMemo(() => new Date(item.learned_date), [item.learned_date]);
     const isLearnedDateChanged = React.useMemo(() => {
         if (!watchedLearnedDate) return false;
-        return watchedLearnedDate.getTime() !== originalLearnedDate.getTime();
+        // 時刻部分を無視して日付のみで比較（時刻による誤差を防ぐため）
+        const originalDateOnly = new Date(originalLearnedDate.getFullYear(), originalLearnedDate.getMonth(), originalLearnedDate.getDate());
+        const currentDateOnly = new Date(watchedLearnedDate.getFullYear(), watchedLearnedDate.getMonth(), watchedLearnedDate.getDate());
+        return originalDateOnly.getTime() !== currentDateOnly.getTime();
     }, [watchedLearnedDate, originalLearnedDate]);
 
     // データ取得: フォームの選択肢を生成するために必要
