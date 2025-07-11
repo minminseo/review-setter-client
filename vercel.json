@@ -1,0 +1,14 @@
+{
+    "builds": [
+        {
+            "src": "cmd/api/main.go",
+            "use": "@vercel/go"
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/cmd/api/main.go"
+        }
+    ]
+}
