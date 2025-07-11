@@ -64,7 +64,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
     const queryClient = useQueryClient();
     const { updateItemInBox, removeItemFromBox, addItemToBox } = useItemStore();
-    
+
     // Zustandストアのキー計算関数
     const getStoreBoxId = (boxId: string | null | undefined, categoryId: string | null | undefined) => {
         if (!boxId || boxId === 'unclassified') {
@@ -302,13 +302,13 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         mutationFn: () => markItemAsFinished(item.item_id),
         onSuccess: () => {
             toast.success(t('notification.markItemAsFinished'));
-            
+
             // 1. ストアから復習物を削除（完了済み復習物は通常リストに表示しない）
             const storeBoxId = getStoreBoxId(item.box_id, item.category_id);
             if (storeBoxId) {
                 removeItemFromBox(storeBoxId, item.item_id);
             }
-            
+
             // 2. 関連データの無効化
             queryClient.invalidateQueries({ queryKey: ['items', item.box_id, item.category_id] });
             queryClient.invalidateQueries({ queryKey: ['finishedItems'] });
@@ -541,7 +541,7 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                                                     <AlertDialogAction
                                                         onClick={() => deleteMutation.mutate()}
                                                         disabled={deleteMutation.isPending}
-                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                        className="bg-destructive text-white hover:bg-destructive/90"
                                                     >
                                                         {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                                     </AlertDialogAction>

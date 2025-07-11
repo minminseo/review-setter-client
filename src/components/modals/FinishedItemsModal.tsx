@@ -92,7 +92,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
         },
         onSuccess: async () => {
             toast.success(t('notification.reviewMarkedIncomplete'));
-            
+
             // キャッシュを無効化・再取得
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
@@ -100,13 +100,13 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 queryClient.invalidateQueries({ queryKey: ['todaysReviews'], exact: true }),
                 queryClient.invalidateQueries({ queryKey: ['summary'], exact: true })
             ]);
-            
+
             // 完了済み復習物リストを更新
             await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
-            
+
             // 通常の復習物リストも更新
             await queryClient.refetchQueries({ queryKey: ['items', boxId], exact: true });
-            
+
             // ストアを最新のサーバーデータで更新
             const storeBoxId = getStoreBoxId(boxId, categoryId);
             let items: ItemResponse[] = [];
@@ -136,7 +136,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
             incompleteReviewDate({ itemId, reviewDateId, data: { step_number: stepNumber } }),
         onSuccess: async () => {
             toast.success(t('notification.reviewMarkedIncomplete'));
-            
+
             // キャッシュを無効化・再取得
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: queryKey, exact: true }),
@@ -144,13 +144,13 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                 queryClient.invalidateQueries({ queryKey: ['todaysReviews'], exact: true }),
                 queryClient.invalidateQueries({ queryKey: ['summary'], exact: true })
             ]);
-            
+
             // 完了済み復習物リストを更新
             await queryClient.refetchQueries({ queryKey: queryKey, exact: true });
-            
+
             // 通常の復習物リストも更新
             await queryClient.refetchQueries({ queryKey: ['items', boxId], exact: true });
-            
+
             // ストアを最新のサーバーデータで更新
             const storeBoxId = getStoreBoxId(boxId, categoryId);
             let items: ItemResponse[] = [];
@@ -345,7 +345,7 @@ export const FinishedItemsModal = ({ isOpen, onClose, boxId, categoryId }: Finis
                                     <AlertDialogAction
                                         onClick={() => deleteMutation.mutate(item.item_id)}
                                         disabled={deleteMutation.isPending}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        className="bg-destructive text-white hover:bg-destructive/90"
                                     >
                                         {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                     </AlertDialogAction>

@@ -150,7 +150,7 @@ export const EditCategoryModal = ({ isOpen, onClose, category }: EditCategoryMod
                                                     <AlertDialogAction
                                                         onClick={() => deleteMutation.mutate()}
                                                         disabled={deleteMutation.isPending}
-                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                        className="bg-destructive text-white hover:bg-destructive/90"
                                                     >
                                                         {deleteMutation.isPending ? t('loading.deleting') : t('common.delete')}
                                                     </AlertDialogAction>
