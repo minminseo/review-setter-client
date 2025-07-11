@@ -64,6 +64,17 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
 
     const queryClient = useQueryClient();
     const { updateItemInBox, removeItemFromBox, addItemToBox } = useItemStore();
+    
+    // Zustandストアのキー計算関数
+    const getStoreBoxId = (boxId: string | null | undefined, categoryId: string | null | undefined) => {
+        if (!boxId || boxId === 'unclassified') {
+            if (!categoryId || categoryId === 'unclassified') {
+                return 'unclassified';
+            }
+            return `unclassified-${categoryId}`;
+        }
+        return boxId;
+    };
 
     const form = useForm<z.infer<typeof itemSchema>>({
         resolver: zodResolver(itemSchema),
@@ -183,16 +194,6 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
                 return ['items', boxId, categoryId];
             };
 
-            // Zustandストアのキー計算関数
-            const getStoreBoxId = (boxId: string | null | undefined, categoryId: string | null | undefined) => {
-                if (!boxId || boxId === 'unclassified') {
-                    if (!categoryId || categoryId === 'unclassified') {
-                        return 'unclassified';
-                    }
-                    return `unclassified-${categoryId}`;
-                }
-                return boxId;
-            };
 
             // 1. Zustandストアを即座にサーバーレスポンスで更新
             const oldStoreBoxId = getStoreBoxId(oldBoxId, oldCategoryId);
@@ -298,8 +299,14 @@ export const EditItemModal = ({ isOpen, onClose, item }: EditItemModalProps) => 
         mutationFn: () => markItemAsFinished(item.item_id),
         onSuccess: () => {
             toast.success(t('notification.markItemAsFinished'));
-
-            // 関連データの無効化（Zustandストアも自動的にrefetchされる）
+            
+            // 1. ストアから復習物を削除（完了済み復習物は通常リストに表示しない）
+            const storeBoxId = getStoreBoxId(item.box_id, item.category_id);
+            if (storeBoxId) {
+                removeItemFromBox(storeBoxId, item.item_id);
+            }
+            
+            // 2. 関連データの無効化
             queryClient.invalidateQueries({ queryKey: ['items', item.box_id, item.category_id] });
             queryClient.invalidateQueries({ queryKey: ['finishedItems'] });
             queryClient.invalidateQueries({ queryKey: ['todaysReviews'] });
