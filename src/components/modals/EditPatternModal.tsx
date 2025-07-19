@@ -117,6 +117,12 @@ export const EditPatternModal = ({ isOpen, onClose, pattern }: EditPatternModalP
             toast.error(t('pattern.stepOrderError'));
             return;
         }
+        // ステップサイズチェック（32768以上）
+        const hasLargeStep = stepValues.some((value) => value >= 32768);
+        if (hasLargeStep) {
+            toast.error(t('pattern.steoSizeError'));
+            return;
+        }
         // 変更有無判定
         const isNameChanged = values.name !== pattern.name;
         const isWeightChanged = values.target_weight !== pattern.target_weight;

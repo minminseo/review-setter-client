@@ -102,6 +102,13 @@ export const CreatePatternModal = ({ isOpen, onClose }: CreatePatternModalProps)
             return;
         }
 
+        // ステップサイズチェック（32768以上）
+        const hasLargeStep = stepValues.some((value) => value >= 32768);
+        if (hasLargeStep) {
+            toast.error(t('pattern.steoSizeError'));
+            return;
+        }
+
         // APIが要求する形式にデータを整形する
         const data: CreatePatternRequest = {
             ...values,

@@ -97,6 +97,7 @@
         "steps": "Steps",
         "duplicateStepError": "Steps are duplicated.",
         "stepOrderError": "Step order is incorrect.",
+        "steoSizeError": "Value is too large.",
         "heavy": "Heavy",
         "normal": "Normal",
         "light": "Light",
