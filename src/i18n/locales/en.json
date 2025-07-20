@@ -178,7 +178,7 @@
         "patternNotFound": "Pattern for this Review Item was not found."
     },
     "loading": {
-        "initializing": "Initializing Application...",
+        "initializing": "Now loading...",
         "loading": "Loading...",
         "creating": "Creating...",
         "updating": "Updating...",
