@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 // アプリケーション初期化用の関数とフック
 import { setupCsrfToken } from './api';
@@ -22,6 +21,7 @@ import BoxAndCategoryPage from './pages/App/BoxAndCategoryPage';
 import TodaysReviewPage from './pages/App/TodaysReviewPage';
 import PatternsPage from './pages/App/PatternsPage';
 import NotFoundPage from './pages/NotFoundPage';
+import LoadingPage from './pages/LoadingPage';
 
 // UI
 import { Toaster } from "@/components/ui/sonner";
@@ -61,7 +61,6 @@ const AuthGuard = () => {
 const App = () => {
   const [isCsrfReady, setIsCsrfReady] = useState(false);
   const language = useUserStore((state) => state.language);
-  const { t } = useTranslation();
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -76,7 +75,7 @@ const App = () => {
   }, [language]);
 
   if (!isCsrfReady) {
-    return <div>{t('loading.initializing')}</div>;
+    return <LoadingPage />;
   }
 
   return (
