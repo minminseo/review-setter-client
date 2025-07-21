@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 // UI
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -134,9 +134,6 @@ export const CreatePatternModal = ({ isOpen, onClose }: CreatePatternModalProps)
             <DialogContent className="w-screen max-w-none sm:max-w-none min-w-0 h-[700px] max-h-full flex flex-col">
                 <DialogHeader>
                     <DialogTitle className=" border-b pb-2">{t('pattern.create')}</DialogTitle>
-                    <DialogDescription>
-                        {t('pattern.createPatternFirst')}
-                    </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 space-y-2 min-h-0">
