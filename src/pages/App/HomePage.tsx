@@ -141,12 +141,11 @@ const HomePage = () => {
         <ScrollArea className="w-full h-full">
             <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
                 <div className="grid auto-rows-max items-start gap-4 md:gap-8 xl:col-span-1">
-                    <Card>
+                    <Card className="cursor-pointer hover:bg-muted" onClick={() => navigate('/today')}>
                         <CardHeader><CardTitle>{t('home.todaysReview')}</CardTitle></CardHeader>
                         <CardContent>
                             {isLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold"><ClockIcon className="inline-block mr-2 h-6 w-6" />
                                 {totalDailyReviewCountQuery.data?.count ?? 0}</div>}
-                            <Button className="mt-4 w-full" onClick={() => navigate('/today')}>{t('home.startTodaysReview')}</Button>
                         </CardContent>
                     </Card>
                     <Card>
