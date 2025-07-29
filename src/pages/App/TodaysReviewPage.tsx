@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 import {
     fetchTodaysReviews, // フィルター機能を持つように変更したと仮定
     completeReviewDate,
-    incompleteReviewDate
+    incompleteReviewDate,
+    fetchUnclassifiedItems
 } from '@/api/itemApi';
 import { fetchCategories } from '@/api/categoryApi';
 import { fetchBoxes } from '@/api/boxApi'; // ボックス取得APIをインポート
@@ -44,16 +45,24 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
  * @param data - APIからのレスポンスデータ
  * @returns フラット化された復習日オブジェクトの配列
  */
-const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): DailyReviewDate[] => {
+const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined, boxesByCategoryId: Record<string, any[]>): (DailyReviewDate & { pattern_id?: string | null })[] => {
+
     if (!data) return [];
-    const allReviews: DailyReviewDate[] = [];
+    const allReviews: (DailyReviewDate & { pattern_id?: string | null })[] = [];
     data.categories.forEach(category => {
         category.boxes.forEach(box => {
+            // ボックス情報からpattern_idを取得
+            const categoryBoxes = boxesByCategoryId[category.category_id];
+            const boxInfo = categoryBoxes?.find(b => b.id === box.box_id);
+            const patternId = boxInfo?.pattern_id || null;
+
+
             allReviews.push(
                 ...box.review_dates.map(rd => ({
                     ...rd,
                     item_id: rd.item_id,
-                    target_weight: box.target_weight
+                    target_weight: box.target_weight,
+                    pattern_id: patternId
                 }))
             );
         });
@@ -62,6 +71,7 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
                 ...rd,
                 item_id: rd.item_id,
                 box_id: null,
+                pattern_id: null, // 未分類はpattern_idなし
             }))
         );
     });
@@ -71,8 +81,10 @@ const flattenTodaysReviews = (data: GetDailyReviewDatesResponse | undefined): Da
             item_id: rd.item_id ?? rd.review_date_id,
             category_id: null,
             box_id: null,
+            pattern_id: null, // ユーザー未分類はpattern_idなし
         }))
     );
+
     return allReviews;
 };
 
@@ -111,7 +123,7 @@ const TodaysReviewPage = () => {
     const [detailItem, setDetailItem] = React.useState<DailyReviewDate | null>(null);
 
     // EditReviewDateModal用の状態
-    const [editingReviewDate, setEditingReviewDate] = React.useState<{ item: ItemResponse; reviewDate: ReviewDateResponse } | null>(null);
+    const [editingReviewDate, seteditingReviewDate] = React.useState<{ item: ItemResponse; reviewDate: ReviewDateResponse } | null>(null);
 
     // (復習物名列の幅調整)
     const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
@@ -134,6 +146,34 @@ const TodaysReviewPage = () => {
         enabled: selectedCategoryId !== 'all' && selectedCategoryId !== UNCLASSIFIED_ID,
     });
 
+    // 2.1. すべてのカテゴリーのボックス情報を順次取得する
+    React.useEffect(() => {
+        if (categories.length > 0) {
+            categories.forEach(async (category) => {
+                const boxes = await fetchBoxes(category.id);
+                setBoxesForCategory(category.id, boxes);
+            });
+        }
+    }, [categories, setBoxesForCategory]);
+
+    // 2.2. 未分類アイテムの情報を取得してpattern_idマッピングを作成
+    const [unclassifiedItemsMap, setUnclassifiedItemsMap] = React.useState<Record<string, string>>({});
+
+    React.useEffect(() => {
+        const fetchUnclassifiedData = async () => {
+            const unclassifiedItems = await fetchUnclassifiedItems();
+            const itemPatternMap: Record<string, string> = {};
+            unclassifiedItems.forEach(item => {
+                if (item.pattern_id) {
+                    itemPatternMap[item.item_id] = item.pattern_id;
+                }
+            });
+            setUnclassifiedItemsMap(itemPatternMap);
+        };
+
+        fetchUnclassifiedData();
+    }, []);
+
     // 3. 今日の復習リスト（フィルター適用）
     const { data: reviewItems, isLoading } = useQuery({
         queryKey: ['todaysReviews', selectedCategoryId, selectedBoxId],
@@ -154,6 +194,7 @@ const TodaysReviewPage = () => {
         }
     }, [fetchedBoxesForCategory, selectedCategoryId, setBoxesForCategory]);
 
+
     React.useEffect(() => {
         if (reviewItems) {
             setTodaysReviews(reviewItems);
@@ -165,7 +206,7 @@ const TodaysReviewPage = () => {
     const flattenedAndFilteredReviews = React.useMemo(() => {
         if (!reviewItems) return [];
 
-        const flattened = flattenTodaysReviews(reviewItems);
+        const flattened = flattenTodaysReviews(reviewItems, boxesByCategoryId);
 
         // クライアントサイドでの最終フィルタリング
         return flattened.filter(item => {
@@ -400,33 +441,45 @@ const TodaysReviewPage = () => {
                                 !isToday && row.original.is_completed && 'bg-green-700 text-white',
                                 !isClickable && 'cursor-not-allowed opacity-50',
                             )}
-                            onClick={isClickable ? () => setEditingReviewDate({
-                                item: {
-                                    item_id: row.original.item_id,
-                                    user_id: '',
-                                    name: row.original.item_name,
-                                    detail: row.original.detail || null,
-                                    category_id: row.original.category_id || null,
-                                    box_id: row.original.box_id || null,
-                                    pattern_id: null,
-                                    learned_date: row.original.learned_date || '',
-                                    is_finished: false,
-                                    registered_at: '',
-                                    edited_at: '',
-                                    review_dates: []
-                                } as ItemResponse,
-                                reviewDate: {
-                                    review_date_id: row.original.review_date_id,
-                                    user_id: '',
-                                    category_id: row.original.category_id || null,
-                                    box_id: row.original.box_id || null,
-                                    item_id: row.original.item_id,
-                                    step_number: row.original.step_number,
-                                    initial_scheduled_date: row.original.initial_scheduled_date,
-                                    scheduled_date: row.original.scheduled_date,
-                                    is_completed: row.original.is_completed
-                                } as ReviewDateResponse
-                            }) : undefined}
+                            onClick={isClickable ? () => {
+
+                                let patternId = (row.original as any).pattern_id || null;
+
+                                // 未分類アイテムの場合、事前に取得したマッピングからpattern_idを取得
+                                if (!patternId && (!row.original.category_id || !row.original.box_id)) {
+                                    patternId = unclassifiedItemsMap[row.original.item_id] || null;
+                                }
+
+                                const editData = {
+                                    item: {
+                                        item_id: row.original.item_id,
+                                        user_id: '',
+                                        name: row.original.item_name,
+                                        detail: row.original.detail || null,
+                                        category_id: row.original.category_id || null,
+                                        box_id: row.original.box_id || null,
+                                        pattern_id: patternId,
+                                        learned_date: row.original.learned_date || '',
+                                        is_finished: false,
+                                        registered_at: '',
+                                        edited_at: '',
+                                        review_dates: []
+                                    } as ItemResponse,
+                                    reviewDate: {
+                                        review_date_id: row.original.review_date_id,
+                                        user_id: '',
+                                        category_id: row.original.category_id || null,
+                                        box_id: row.original.box_id || null,
+                                        item_id: row.original.item_id,
+                                        step_number: row.original.step_number,
+                                        initial_scheduled_date: row.original.initial_scheduled_date,
+                                        scheduled_date: row.original.scheduled_date,
+                                        is_completed: row.original.is_completed
+                                    } as ReviewDateResponse
+                                };
+
+                                seteditingReviewDate(editData);
+                            } : undefined}
                             disabled={!isClickable}
                         >
                             {(() => {
@@ -753,13 +806,7 @@ const TodaysReviewPage = () => {
                     />
                 )}
 
-                {editingReviewDate && (
-                    <EditReviewDateModal
-                        isOpen={!!editingReviewDate}
-                        onClose={() => setEditingReviewDate(null)}
-                        data={editingReviewDate}
-                    />
-                )}
+                {editingReviewDate && <EditReviewDateModal isOpen={!!editingReviewDate} onClose={() => seteditingReviewDate(null)} data={editingReviewDate} />}
 
                 <SelectCategoryModal
                     isOpen={isSelectCategoryModalOpen}
