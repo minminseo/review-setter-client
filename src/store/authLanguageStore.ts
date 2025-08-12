@@ -80,7 +80,7 @@ export interface AuthTexts {
 
 const japaneseTexts: AuthTexts = {
     // 共通
-    serviceTitle: '復習効率を最適化するWebサービス',
+    serviceTitle: '楽に復習スケジュールを管理できるWebサービス',
 
     // ログイン画面
     login: 'ログイン',
@@ -132,7 +132,7 @@ const japaneseTexts: AuthTexts = {
 
 const englishTexts: AuthTexts = {
     // 共通
-    serviceTitle: 'Web Service to Optimize Review Efficiency',
+    serviceTitle: 'Web service for easily managing your review schedule',
 
     // ログイン画面
     login: 'Login',
