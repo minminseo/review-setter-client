@@ -139,7 +139,7 @@ const englishTexts: AuthTexts = {
     loginDescription: 'Login',
     email: 'Email',
     password: 'Password',
-    noAccount: "Don't have an account",
+    noAccount: "New users",
     signup: 'Sign Up',
     loading: 'Loading...',
 
@@ -148,7 +148,7 @@ const englishTexts: AuthTexts = {
     timezone: 'Timezone',
     themeColor: 'Theme',
     language: 'Language',
-    haveAccount: 'Already have an account',
+    haveAccount: 'Existing users',
     selectTimezone: 'Please select a timezone',
     selectTheme: 'Please select a theme',
     selectLanguage: 'Please select a language',

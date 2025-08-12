@@ -212,7 +212,7 @@ const SignupPage = () => {
                 </CardContent>
                 <CardFooter>
                     <div className="text-center text-sm w-full">
-                        {texts.haveAccount}?{' '}
+                        {texts.haveAccount}{' '}
                         <Link to="/login" className="underline">
                             {texts.login}
                         </Link>

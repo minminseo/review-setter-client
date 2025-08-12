@@ -119,7 +119,7 @@ const LoginPage = () => {
                 </CardContent>
                 <CardFooter>
                     <div className="text-center text-sm w-full">
-                        {texts.noAccount}?{' '}
+                        {texts.noAccount}{' '}
                         <Link to="/signup" className="underline">
                             {texts.signup}
                         </Link>
