@@ -9,7 +9,8 @@
         "createPattern": "Add Pattern",
         "settings": "Settings",
         "edit": "Edit",
-        "today": "Today's Review"
+        "today": "Today's Review",
+        "contact": "Contact"
     },
     "home": {
         "todaysReview": "Today's Review",
