@@ -9,7 +9,8 @@
         "createPattern": "パターンを追加",
         "settings": "設定",
         "edit": "Edit",
-        "today": "今日の復習"
+        "today": "今日の復習",
+        "contact": "お問い合わせ"
     },
     "home": {
         "todaysReview": "今日の復習",

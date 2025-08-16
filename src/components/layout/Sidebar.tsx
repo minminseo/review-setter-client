@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { HomeIcon, DocumentPlusIcon, UserCircleIcon, ArrowRightOnRectangleIcon, InboxStackIcon, InboxIcon, SquaresPlusIcon, ChevronLeftIcon, ChevronDoubleLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, DocumentPlusIcon, UserCircleIcon, ArrowRightOnRectangleIcon, InboxStackIcon, InboxIcon, SquaresPlusIcon, ChevronLeftIcon, ChevronDoubleLeftIcon, ChevronRightIcon, QuestionMarkCircleIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -33,7 +33,7 @@ type SidebarProps = {
  * @param onDragStateChange - ドラッグ状態を更新する関数
  */
 const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, setOpen, sidebarWidth, setSidebarWidth, onDragStateChange }: SidebarProps) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { logout, isLoggingOut } = useAuth();
     const { categories } = useCategoryStore();
     const { boxesByCategoryId } = useBoxStore();
@@ -121,6 +121,13 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
 
     const handleTodayBoxClick = (categoryId: string, boxId: string) => {
         navigate(`/today?category=${categoryId}&box=${boxId}`);
+    };
+
+    const handleContactClick = () => {
+        const contactUrl = i18n.language === 'ja'
+            ? 'https://docs.google.com/forms/d/e/1FAIpQLSfFw5rrigVARCM_B8T_dCaZagSenX-xjp41QUkqW2IncrgVEA/viewform?usp=header'
+            : 'https://docs.google.com/forms/d/e/1FAIpQLSf42zxGjMQaIahXiF-1XB7hI3Dz8V4xvRrRHdYDTJL4EXCvVg/viewform?usp=header';
+        window.open(contactUrl, '_blank');
     };
 
     // ドラッグ開始処理
@@ -624,7 +631,7 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`h-11 w-full flex items-center rounded-lg justify-center `}
+                                    className={`h-11 w-full flex items-center rounded-lg justify-center text-muted-foreground hover:text-foreground`}
                                     onClick={() => {
                                         if (location.pathname === '/today') {
                                             // カテゴリー選択中かつボックスが「全て」または未指定なら未分類を初期値に
@@ -680,6 +687,28 @@ const Sidebar = ({ onOpenCreateItem, onOpenCreatePattern, onOpenSettings, open, 
                                 </Button>
                             </TooltipTrigger>
                             {!open && !suppressTooltips && <TooltipContent side="right">{t('sidebar.createPattern')}</TooltipContent>}
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`h-11 w-full flex items-center rounded-lg justify-center text-muted-foreground hover:text-foreground`}
+                                    onClick={handleContactClick}
+                                >
+                                    <span className="flex items-center w-full">
+                                        <span className="flex justify-center items-center min-w-[32px]">
+                                            <QuestionMarkCircleIcon className="h-6 w-6" />
+                                        </span>
+                                        <span className={`text-left ml-2 text-sm transition-all duration-200 overflow-hidden whitespace-nowrap text-ellipsis text-muted-foreground ${open ? 'flex-1 opacity-100' : 'max-w-0 opacity-0'} flex items-center gap-1`}>
+                                            {t('sidebar.contact')}
+                                            <ArrowTopRightOnSquareIcon className="h-4 w-4 text-muted-foreground" />
+                                        </span>
+                                    </span>
+                                    <span className="sr-only">{t('sidebar.contact')}</span>
+                                </Button>
+                            </TooltipTrigger>
+                            {!open && !suppressTooltips && <TooltipContent side="right">{t('sidebar.contact')}</TooltipContent>}
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
