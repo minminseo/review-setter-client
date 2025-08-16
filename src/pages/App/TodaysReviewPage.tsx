@@ -126,7 +126,7 @@ const TodaysReviewPage = () => {
     const [editingReviewDate, seteditingReviewDate] = React.useState<{ item: ItemResponse; reviewDate: ReviewDateResponse } | null>(null);
 
     // (復習物名列の幅調整)
-    const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
+    const [nameColumnWidth, setNameColumnWidth] = React.useState(420);
     const [isResizing, setIsResizing] = React.useState(false);
     const [isHovering, setIsHovering] = React.useState(false);
     const [startX, setStartX] = React.useState(0);
@@ -260,7 +260,7 @@ const TodaysReviewPage = () => {
     }, []);
 
     const handleResetWidth = () => {
-        setNameColumnWidth(300);
+        setNameColumnWidth(420);
     };
 
     React.useEffect(() => {

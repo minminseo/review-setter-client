@@ -65,7 +65,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     const [isCreateItemModalOpen, setCreateItemModalOpen] = React.useState(false);
 
     // --- State (復習物名列の幅調整) ---
-    const [nameColumnWidth, setNameColumnWidth] = React.useState(300);
+    const [nameColumnWidth, setNameColumnWidth] = React.useState(430);
     const [isResizing, setIsResizing] = React.useState(false);
     const [isHovering, setIsHovering] = React.useState(false);
     const [startX, setStartX] = React.useState(0);
@@ -143,7 +143,7 @@ export const Box = ({ items, isLoading, currentCategory, currentBox }: BoxProps)
     }, []);
 
     const handleResetWidth = () => {
-        setNameColumnWidth(300); // 初期値にリセット
+        setNameColumnWidth(430); // 初期値にリセット
     };
 
     React.useEffect(() => {
