@@ -208,7 +208,8 @@
         "moveToBox": "To Box",
         "daily": "Today's Review",
         "details": "Details",
-        "notSelected": "Not Selected"
+        "notSelected": "Not Selected",
+        "copy": "Copy"
     },
     "review": {
         "itemLabel": "Review Items",
