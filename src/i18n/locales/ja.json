@@ -207,7 +207,8 @@
         "moveToBox": "ボックスへ移動",
         "daily": "今日の復習",
         "details": "詳細",
-        "notSelected": "未設定"
+        "notSelected": "未設定",
+        "copy": "コピー"
     },
     "review": {
         "itemLabel": "復習物",

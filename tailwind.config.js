@@ -1,11 +1,13 @@
 import animatePlugin from "tailwindcss-animate"
 import { tailwindcssPlugin } from "@tailwindcss/vite"
+import typographyPlugin from "@tailwindcss/typography"
 
 export default {
     content: ["./src/**/*.{ts,tsx}"],
     plugins: [
         animatePlugin,
-        tailwindcssPlugin
+        tailwindcssPlugin,
+        typographyPlugin
     ],
     theme: {
         extend: {
