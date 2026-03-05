@@ -11,31 +11,27 @@ export const AuthThemeProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // 既存のテーマクラスを削除
-    root.classList.remove('light', 'dark');
-
-    // 新しいテーマクラスを追加
-    root.classList.add(theme);
-
-    // コンポーネントがアンマウントされた時、ユーザーの実際のテーマを適用
-    return () => {
+    const applyTheme = () => {
       root.classList.remove('light', 'dark');
+      root.classList.add(theme);
+    };
 
-      // ユーザーのテーマ設定をlocalStorageから読み取り
-      try {
-        const zustandStorage = localStorage.getItem('review-setter-user-storage');
-        if (zustandStorage) {
-          const parsed = JSON.parse(zustandStorage);
-          const userTheme = parsed.state?.theme;
-          if (userTheme) {
-            root.classList.add(userTheme);
+    applyTheme();
+
+    // ThemeProvider(グローバルなテーマコンテキスト)の変更を監視して、強制的にAuthThemeを適用する
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          if (!root.classList.contains(theme)) {
+            applyTheme();
           }
         }
-      } catch (error) {
-        // パースエラーの場合はdarkテーマを適用
-        root.classList.add('dark');
-      }
-    };
+      });
+    });
+
+    observer.observe(root, { attributes: true });
+
+    return () => observer.disconnect();
   }, [theme]);
 
   return <>{children}</>;
