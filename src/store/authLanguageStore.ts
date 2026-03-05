@@ -65,6 +65,7 @@ export interface AuthTexts {
     verifyCodeDescription: string;
     verifyCode: string;
     newPassword: string;
+    confirmPassword: string;
 
     // 認証画面
     verifyTitle: string;
@@ -78,6 +79,7 @@ export interface AuthTexts {
     passwordRequired: string;
     passwordRequirements: string;
     passwordMinLength: string;
+    passwordsDoNotMatch: string;
     timezoneRequired: string;
     invalidAccess: string;
     passwordResetFailed: string;
@@ -130,6 +132,7 @@ const japaneseTexts: AuthTexts = {
     verifyCodeDescription: 'メールで送信された認証コードと新しいパスワードを入力してください。',
     verifyCode: '認証コード',
     newPassword: '新しいパスワード',
+    confirmPassword: '新しいパスワード（確認用）',
 
     // 認証画面
     verifyTitle: 'メール認証',
@@ -143,6 +146,7 @@ const japaneseTexts: AuthTexts = {
     passwordRequired: 'パスワードを入力してください',
     passwordRequirements: 'パスワードは6文字以上で入力してください',
     passwordMinLength: 'パスワードは6文字以上で入力してください',
+    passwordsDoNotMatch: 'パスワードが一致しません',
     timezoneRequired: 'タイムゾーンを選択してください',
     invalidAccess: '不正なアクセスです。サインアップからやり直してください。',
     passwordResetFailed: 'パスワードリセットに失敗しました',
@@ -195,6 +199,7 @@ const englishTexts: AuthTexts = {
     verifyCodeDescription: 'Please enter the authentication code sent to your email and your new password.',
     verifyCode: 'Verification Code',
     newPassword: 'New Password',
+    confirmPassword: 'Confirm New Password',
 
     // 認証画面
     verifyTitle: 'Email Verification',
@@ -208,6 +213,7 @@ const englishTexts: AuthTexts = {
     passwordRequired: 'Please enter your password',
     passwordRequirements: 'Password must be at least 6 characters',
     passwordMinLength: 'Password must be at least 6 characters',
+    passwordsDoNotMatch: 'Passwords do not match',
     timezoneRequired: 'Please select a timezone',
     invalidAccess: 'Invalid access. Please start over from the signup page.',
     passwordResetFailed: 'Password reset failed',
