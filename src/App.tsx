@@ -10,12 +10,14 @@ import { setLanguage } from './i18n';
 // レイアウト
 import AppLayout from './components/layout/AppLayout';
 import AuthLayout from './components/layout/AuthLayout';
+import FullScreenLayout from './components/layout/FullScreenLayout';
 import { ThemeProvider } from "./components/theme-provider";
 
 // 各ページ
 import LoginPage from './pages/Auth/LoginPage';
 import SignupPage from './pages/Auth/SignupPage';
 import VerifyPage from './pages/Auth/VerifyPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import HomePage from './pages/App/HomePage';
 import BoxAndCategoryPage from './pages/App/BoxAndCategoryPage';
 import TodaysReviewPage from './pages/App/TodaysReviewPage';
@@ -44,18 +46,20 @@ const ProtectedRoute = () => {
 
 // 既に認証済みのユーザーが認証ページにアクセスした場合はホームページにリダイレクト。
 // 未認証ユーザーまたはローディング中の場合は認証ページを表示。
-const AuthGuard = () => {
+const AuthGuard = ({ customLayout }: { customLayout?: React.ReactNode }) => {
   const { isAuthenticated, isUserLoading } = useAuth({ enabled: false });
 
+  const Layout = customLayout || <AuthLayout />;
+
   if (isUserLoading) {
-    return <AuthLayout />;
+    return Layout;
   }
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  return <AuthLayout />;
+  return Layout;
 };
 
 const App = () => {
@@ -86,6 +90,10 @@ const App = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/verify" element={<VerifyPage />} />
+        </Route>
+
+        <Route element={<AuthGuard customLayout={<FullScreenLayout />} />}>
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
         {/* 認証済みページ */}
