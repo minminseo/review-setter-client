@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 /**
  * 未ログイン時（認証画面）専用の言語・テーマ状態管理
@@ -16,12 +17,19 @@ interface AuthLanguageState {
     setTheme: (theme: AuthTheme) => void;
 }
 
-export const useAuthLanguageStore = create<AuthLanguageState>((set) => ({
-    language: 'ja',
-    theme: 'dark',
-    setLanguage: (language) => set({ language }),
-    setTheme: (theme) => set({ theme }),
-}));
+export const useAuthLanguageStore = create<AuthLanguageState>()(
+    persist(
+        (set) => ({
+            language: 'ja',
+            theme: 'dark',
+            setLanguage: (language) => set({ language }),
+            setTheme: (theme) => set({ theme }),
+        }),
+        {
+            name: 'auth-language-storage', // localStorageのキー名
+        }
+    )
+);
 
 /**
  * 認証画面用のテキスト定義
