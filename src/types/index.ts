@@ -52,6 +52,16 @@ export interface UpdatePasswordRequest {
     password: string;
 }
 
+export interface ResetPasswordRequest {
+    email: string;
+}
+
+export interface ResetPasswordConfirmRequest {
+    email: string;
+    code: string;
+    password: string;
+}
+
 export interface CreateCategoryInput {
     name: string;
 }

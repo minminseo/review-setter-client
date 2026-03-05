@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { login, logout, signup, fetchUser, verifyEmail } from '@/api/authApi';
+import { login, logout, signup, fetchUser, verifyEmail, resetPassword } from '@/api/authApi';
 import { useUserStore } from '@/store';
 import { useAuthTexts } from '@/store/authLanguageStore';
 
@@ -64,6 +64,18 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
         }
     });
 
+    const resetPasswordMutation = useMutation({
+        mutationFn: resetPassword,
+        onSuccess: () => {
+            navigate('/login');
+            toast.success(texts.resetPassword);
+        },
+        onError: (error: any) => {
+            const message = error.response?.data?.error || texts.resetPassword;
+            toast.error(message, { description: texts.passwordResetFailed });
+        }
+    });
+
     const verifyEmailMutation = useMutation({
         mutationFn: verifyEmail,
         onSuccess: () => {
@@ -98,6 +110,8 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
         }
     });
 
+
+
     const actualIsAuthenticated = isSuccess && !!user;
     const actualIsUserLoading = isUserLoading;
 
@@ -113,5 +127,7 @@ export const useAuth = (options: { enabled?: boolean } = {}) => {
         isVerifying: verifyEmailMutation.isPending,
         logout: logoutMutation.mutate,
         isLoggingOut: logoutMutation.isPending,
+        resetPassword: resetPasswordMutation.mutate,
+        isResetingPassword: resetPasswordMutation.isPending,
     };
 };
