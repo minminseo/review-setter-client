@@ -1,6 +1,7 @@
 // 認証関連（ユーザー登録、ログイン、ログアウトなど）のAPI関数をまとめたファイル。
 import api from './index';
-import { GetUserOutput, LoginUserInput, CreateUserInput, VerifyEmailRequest, UpdateUserInput, UpdatePasswordRequest, LoginUserOutput, VerifyEmailResponse } from '@/types';
+import { GetUserOutput, LoginUserInput, CreateUserInput, VerifyEmailRequest, UpdateUserInput, UpdatePasswordRequest, LoginUserOutput, VerifyEmailResponse, ResetPasswordRequest, ResetPasswordConfirmRequest } from '@/types';
+
 
 export const signup = async (data: CreateUserInput) => {
     const response = await api.post('/signup', data);
@@ -35,3 +36,14 @@ export const updateUser = async (data: UpdateUserInput) => {
 export const updatePassword = async (data: UpdatePasswordRequest) => {
     await api.put('/user/password', data);
 }
+
+// パスワードリセットの認証番号発行をリクエスト
+export const requestPasswordReset = async (data: ResetPasswordRequest) => {
+    await api.post('/password-reset/request', data);
+};
+
+// 認証番号と新しいパスワードを送信して更新を実行
+export const resetPassword = async (data: ResetPasswordConfirmRequest) => {
+    const response = await api.post('/password-reset/reset', data);
+    return response.data;
+};
