@@ -49,6 +49,15 @@ export interface AuthTexts {
     selectTheme: string;
     selectLanguage: string;
 
+    // パスワードリセット
+    forgotPassword: string;
+    resetPassword: string;
+    sendResetCode: string;
+    resetPasswordDescription: string;
+    verifyCodeDescription: string;
+    verifyCode: string;
+    newPassword: string;
+
     // 認証画面
     verifyTitle: string;
     verifySubtitle: string;
@@ -56,11 +65,15 @@ export interface AuthTexts {
     submit: string;
 
     // エラーメッセージ
+    invalidCode: string;
     invalidEmail: string;
     passwordRequired: string;
     passwordRequirements: string;
+    passwordMinLength: string;
     timezoneRequired: string;
     invalidAccess: string;
+    passwordResetFailed: string;
+    sendResetCodeError: string;
 
     // 成功メッセージ
     loginSuccess: string;
@@ -101,6 +114,15 @@ const japaneseTexts: AuthTexts = {
     selectTheme: 'テーマを選択してください',
     selectLanguage: '言語を選択してください',
 
+    // パスワードリセット
+    forgotPassword: 'パスワードをお忘れですか？',
+    resetPassword: 'パスワードをリセット',
+    sendResetCode: '認証コードを送信',
+    resetPasswordDescription: '登録したメールアドレスを入力してください。',
+    verifyCodeDescription: 'メールで送信された認証コードと新しいパスワードを入力してください。',
+    verifyCode: '認証コード',
+    newPassword: '新しいパスワード',
+
     // 認証画面
     verifyTitle: 'メール認証',
     verifySubtitle: 'メールで送信された認証コードを入力してください',
@@ -108,11 +130,15 @@ const japaneseTexts: AuthTexts = {
     submit: '送信',
 
     // エラーメッセージ
+    invalidCode: '無効な認証コードです',
     invalidEmail: '有効なメールアドレスを入力してください',
     passwordRequired: 'パスワードを入力してください',
     passwordRequirements: 'パスワードは6文字以上で入力してください',
+    passwordMinLength: 'パスワードは6文字以上で入力してください',
     timezoneRequired: 'タイムゾーンを選択してください',
     invalidAccess: '不正なアクセスです。サインアップからやり直してください。',
+    passwordResetFailed: 'パスワードリセットに失敗しました',
+    sendResetCodeError: '認証コードの送信に失敗しました',
 
     // 成功メッセージ
     loginSuccess: 'ログインしました。',
@@ -153,6 +179,15 @@ const englishTexts: AuthTexts = {
     selectTheme: 'Please select a theme',
     selectLanguage: 'Please select a language',
 
+    // パスワードリセット
+    forgotPassword: 'Forgot your password?',
+    resetPassword: 'Reset Password',
+    sendResetCode: 'Send Authentication Code',
+    resetPasswordDescription: 'Please enter your registered email address.',
+    verifyCodeDescription: 'Please enter the authentication code sent to your email and your new password.',
+    verifyCode: 'Verification Code',
+    newPassword: 'New Password',
+
     // 認証画面
     verifyTitle: 'Email Verification',
     verifySubtitle: 'Enter the verification code sent to your email',
@@ -160,11 +195,15 @@ const englishTexts: AuthTexts = {
     submit: 'Submit',
 
     // エラーメッセージ
+    invalidCode: 'Invalid authentication code.',
     invalidEmail: 'Please enter a valid email address',
     passwordRequired: 'Please enter your password',
     passwordRequirements: 'Password must be at least 6 characters',
+    passwordMinLength: 'Password must be at least 6 characters',
     timezoneRequired: 'Please select a timezone',
     invalidAccess: 'Invalid access. Please start over from the signup page.',
+    passwordResetFailed: 'Password reset failed',
+    sendResetCodeError: 'Failed to send authentication code',
 
     // 成功メッセージ
     loginSuccess: 'Logged in successfully.',
