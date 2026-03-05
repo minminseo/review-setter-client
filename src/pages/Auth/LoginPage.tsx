@@ -111,6 +111,26 @@ const LoginPage = () => {
                                     </FormItem>
                                 )}
                             />
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ }) => (
+                                    <FormItem>
+                                        <div className="flex items-center justify-between">
+                                            {/* 新規タブで開くパスワードリセットリンク */}
+                                            <Link
+                                                to="/forgot-password"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-muted-foreground underline hover:text-primary"
+                                            >
+                                                {texts.forgotPassword}
+                                            </Link>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                             <Button type="submit" className="w-full" disabled={isLoggingIn}>
                                 {isLoggingIn ? texts.loading : texts.login}
                             </Button>
