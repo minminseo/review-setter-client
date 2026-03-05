@@ -23,10 +23,14 @@ const createEmailSchema = (texts: { invalidEmail: string }) => z.object({
 });
 
 // パスワードリセットステップのバリデーションスキーマ
-const createResetSchema = (texts: { invalidCode: string, invalidEmail: string, passwordMinLength: string }) => z.object({
+const createResetSchema = (texts: { invalidCode: string, invalidEmail: string, passwordMinLength: string, passwordsDoNotMatch: string }) => z.object({
     email: z.string().email({ message: texts.invalidEmail }),
     code: z.string().length(6, { message: texts.invalidCode }),
     password: z.string().min(6, { message: texts.passwordMinLength }),
+    confirm: z.string().min(6, { message: texts.passwordMinLength }),
+}).refine((data) => data.password === data.confirm, {
+    message: texts.passwordsDoNotMatch,
+    path: ['confirm'],
 });
 
 const ForgotPasswordPage = () => {
@@ -39,6 +43,7 @@ const ForgotPasswordPage = () => {
     const [isLoading, setIsLoading] = React.useState(false);
     // パスワード表示/非表示の状態
     const [showPassword, setShowPassword] = React.useState(false);
+    const [showConfirm, setShowConfirm] = React.useState(false);
 
     // ステップ1: メールアドレス入力
     const emailSchema = createEmailSchema(texts);
@@ -54,7 +59,8 @@ const ForgotPasswordPage = () => {
         defaultValues: {
             email: '',
             code: '',
-            password: ''
+            password: '',
+            confirm: '',
         },
     });
 
@@ -70,7 +76,7 @@ const ForgotPasswordPage = () => {
             }); // フォーム状態をリセットしつつemailを設定
             setStep('reset');
             toast.success(texts.sendResetCode);
-        } catch (error) {
+        } catch {
             toast.error(texts.sendResetCodeError);
         } finally {
             setIsLoading(false);
@@ -84,13 +90,14 @@ const ForgotPasswordPage = () => {
 
     // 監視：パスワードと認証番号の入力状態
     const password = resetForm.watch('password');
+    const confirm = resetForm.watch('confirm');
     const code = resetForm.watch('code');
-    const isResetButtonDisabled = !password || (code?.length ?? 0) < 6 || isLoading;
+    const isResetButtonDisabled = !password || !confirm || (code?.length ?? 0) < 6 || isLoading;
 
     return (
         <AuthThemeProvider>
             <div className="container flex h-screen h-dvh w-screen flex-col justify-center">
-                <Card className="w-full max-w-[530px] h-full max-h-[300px] aspect-[9/4] flex flex-col">
+                <Card className="w-full max-w-[530px] h-full max-h-[400px] aspect-[9/4] flex flex-col">
                     <CardHeader>
                         <CardTitle className="text-2xl">Review Setter</CardTitle>
                         <CardDescription>
@@ -159,7 +166,13 @@ const ForgotPasswordPage = () => {
                                                     <FormControl>
                                                         <Input
                                                             type={showPassword ? 'text' : 'password'}
+                                                            autoComplete="new-password"
                                                             {...field}
+                                                            onChange={(e) => {
+                                                                field.onChange(e);
+                                                                resetForm.clearErrors('password');
+                                                                resetForm.clearErrors('confirm');
+                                                            }}
                                                         />
                                                     </FormControl>
                                                     {/* パスワード表示/非表示ボタン */}
@@ -167,10 +180,49 @@ const ForgotPasswordPage = () => {
                                                         type="button"
                                                         variant="ghost"
                                                         size="icon"
+                                                        tabIndex={-1}
                                                         className="absolute inset-y-0 right-0 h-full px-3"
                                                         onClick={() => setShowPassword(!showPassword)}
                                                     >
                                                         {showPassword ? (
+                                                            <EyeSlashIcon className="h-5 w-5" />
+                                                        ) : (
+                                                            <EyeIcon className="h-5 w-5" />
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={resetForm.control}
+                                        name="confirm"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{texts.confirmPassword}</FormLabel>
+                                                <div className="relative">
+                                                    <FormControl>
+                                                        <Input
+                                                            type={showConfirm ? 'text' : 'password'}
+                                                            autoComplete="new-password"
+                                                            {...field}
+                                                            onChange={(e) => {
+                                                                field.onChange(e);
+                                                                resetForm.clearErrors('password');
+                                                                resetForm.clearErrors('confirm');
+                                                            }}
+                                                        />
+                                                    </FormControl>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        tabIndex={-1}
+                                                        className="absolute inset-y-0 right-0 h-full px-3"
+                                                        onClick={() => setShowConfirm(!showConfirm)}
+                                                    >
+                                                        {showConfirm ? (
                                                             <EyeSlashIcon className="h-5 w-5" />
                                                         ) : (
                                                             <EyeIcon className="h-5 w-5" />
