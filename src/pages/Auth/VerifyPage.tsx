@@ -64,12 +64,12 @@ const VerifyPage = () => {
         <AuthThemeProvider>
             <Card>
                 <CardHeader>
-                    <CardTitle>{texts.verifyTitle}</CardTitle>
-                    <CardDescription>
-                        {texts.verifySubtitle}
+                    <CardTitle>{texts.emailSentTitle}</CardTitle>
+                    <CardDescription className="whitespace-pre-wrap">
+                        {texts.emailSentDetail.replace('{{email}}', email)}
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
                     <div className="flex justify-center">
                         <InputOTP
                             maxLength={6}
@@ -87,8 +87,27 @@ const VerifyPage = () => {
                             </InputOTPGroup>
                         </InputOTP>
                     </div>
+
+                    <div className="space-y-4 text-sm text-muted-foreground border-t pt-6">
+                        <p className="font-medium text-foreground">{texts.otpInstructionsTitle}</p>
+                        
+                        <div className="space-y-2">
+                            <p className="font-medium text-foreground">{texts.otpCheckSpamTitle}</p>
+                            <p>{texts.otpCheckSpamDetail}</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <p className="font-medium text-foreground">{texts.otpCheckEmailTitle}</p>
+                            <p>{texts.otpCheckEmailDetail}</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <p className="font-medium text-foreground">{texts.otpStillNotReceivedTitle}</p>
+                            <p>{texts.otpStillNotReceivedDetail}</p>
+                        </div>
+                    </div>
                 </CardContent>
-                <CardFooter className="flex justify-between">
+                <CardFooter className="flex justify-between border-t pt-6">
                     <Button variant="outline" onClick={() => navigate('/signup')} disabled={isVerifying}>
                         {texts.back}
                     </Button>
