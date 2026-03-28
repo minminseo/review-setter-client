@@ -57,7 +57,7 @@ const SignupPage = () => {
         defaultValues: {
             email: '',
             password: '',
-            timezone: 'Asia/Tokyo',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             theme_color: theme,
             language: language,
         },
