@@ -99,19 +99,6 @@ export interface AuthTexts {
     loginErrorDescription: string;
     signupErrorDescription: string;
     verificationErrorDescription: string;
-
-    // 認証コード送信後の詳細説明
-    emailSentTitle: string;
-    emailSentDetail: string;
-    otpInstructionsTitle: string;
-    otpCheckSpamTitle: string;
-    otpCheckSpamDetail: string;
-    otpCheckEmailTitle: string;
-    otpCheckEmailDetail: string;
-    otpStillNotReceivedTitle: string;
-    otpStillNotReceivedDetail: string;
-
-    contact: string;
 }
 
 const japaneseTexts: AuthTexts = {
@@ -179,19 +166,6 @@ const japaneseTexts: AuthTexts = {
     loginErrorDescription: 'メールアドレスとパスワードを確認してください。',
     signupErrorDescription: 'このメールアドレスはすでに使用されています。',
     verificationErrorDescription: 'コードが正しくないか、期限切れです。',
-
-    // 認証コード送信後の詳細説明
-    emailSentTitle: 'メールを送信しました',
-    emailSentDetail: '{{email}} 宛に認証番号を記載したメールをお送りしました。',
-    otpInstructionsTitle: '数分待っても届かない場合は、以下をご確認ください。',
-    otpCheckSpamTitle: '・迷惑メールフォルダを確認する',
-    otpCheckSpamDetail: 'プロモーションやゴミ箱フォルダに振り分けられている場合があります。',
-    otpCheckEmailTitle: '・メールアドレスに間違いがないか確認する',
-    otpCheckEmailDetail: '入力したアドレスが正しいか、もう一度お確かめください。',
-    otpStillNotReceivedTitle: '上記を確認しても届かない場合',
-    otpStillNotReceivedDetail: '通信状況により到着が遅れることがあります。数分待っても届かない場合は、お手数ですが新規登録画面に戻り、最初からお手続きをお願いします。',
-
-    contact: 'フィードバックを送信',
 };
 
 const englishTexts: AuthTexts = {
@@ -259,19 +233,6 @@ const englishTexts: AuthTexts = {
     loginErrorDescription: 'Please check your email and password.',
     signupErrorDescription: 'This email address is already in use.',
     verificationErrorDescription: 'The code is incorrect or has expired.',
-
-    // 認証コード送信後の詳細説明
-    emailSentTitle: 'Email Sent',
-    emailSentDetail: 'We’ve sent a verification code to {{email}}.',
-    otpInstructionsTitle: 'If you don’t receive it within a few minutes, please try the following:',
-    otpCheckSpamTitle: 'Check your spam folder',
-    otpCheckSpamDetail: 'It might have been filtered into your Junk, Promotions, or Trash folders.',
-    otpCheckEmailTitle: 'Verify your email address',
-    otpCheckEmailDetail: 'Please double-check that the address you entered is correct.',
-    otpStillNotReceivedTitle: "Still haven't received it?",
-    otpStillNotReceivedDetail: 'Delivery can sometimes be delayed. If it still doesn\'t arrive, please go back to the Sign-up screen and try the process again from the beginning.',
-
-    contact: 'Send Feedback',
 };
 
 // 現在の言語設定に基づいてテキストを取得するフック
