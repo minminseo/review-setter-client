@@ -30,9 +30,12 @@ import { ClockIcon, Cog8ToothIcon, DocumentIcon, InboxIcon, InboxStackIcon, Plus
 import { SortDropdown } from '@/components/shared/SortDropdown';
 
 
+import { useAuth } from '@/hooks/useAuth';
+
 const HomePage = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
     const { setCategories } = useCategoryStore();
 
     // モーダルの開閉状態を一元管理
@@ -44,13 +47,13 @@ const HomePage = () => {
     // useQueriesを使い、ホームページに必要なデータを並列で取得
     const results = useQueries({
         queries: [
-            { queryKey: ['categories'], queryFn: fetchCategories },
-            { queryKey: ['summary', 'totalDailyReviewCount'], queryFn: fetchTotalDailyReviewCount },
-            { queryKey: ['summary', 'unclassifiedItemCount'], queryFn: fetchUnclassifiedItemCount },
-            { queryKey: ['summary', 'itemCountByBox'], queryFn: fetchItemCountByBox },
-            { queryKey: ['summary', 'unclassifiedItemCountByCategory'], queryFn: fetchUnclassifiedItemCountByCategory },
-            { queryKey: ['summary', 'dailyReviewCountByBox'], queryFn: fetchDailyReviewCountByBox },
-            { queryKey: ['summary', 'dailyUnclassifiedReviewCountByCategory'], queryFn: fetchDailyUnclassifiedReviewCountByCategory },
+            { queryKey: ['categories'], queryFn: fetchCategories, enabled: isAuthenticated },
+            { queryKey: ['summary', 'totalDailyReviewCount'], queryFn: fetchTotalDailyReviewCount, enabled: isAuthenticated },
+            { queryKey: ['summary', 'unclassifiedItemCount'], queryFn: fetchUnclassifiedItemCount, enabled: isAuthenticated },
+            { queryKey: ['summary', 'itemCountByBox'], queryFn: fetchItemCountByBox, enabled: isAuthenticated },
+            { queryKey: ['summary', 'unclassifiedItemCountByCategory'], queryFn: fetchUnclassifiedItemCountByCategory, enabled: isAuthenticated },
+            { queryKey: ['summary', 'dailyReviewCountByBox'], queryFn: fetchDailyReviewCountByBox, enabled: isAuthenticated },
+            { queryKey: ['summary', 'dailyUnclassifiedReviewCountByCategory'], queryFn: fetchDailyUnclassifiedReviewCountByCategory, enabled: isAuthenticated },
         ],
     });
 
@@ -135,6 +138,7 @@ const HomePage = () => {
         queryKey: ['patterns'],
         queryFn: fetchPatterns,
         staleTime: 1000 * 60 * 5,
+        enabled: isAuthenticated,
     });
 
     return (
