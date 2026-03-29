@@ -33,7 +33,7 @@ const ProtectedRoute = () => {
   const { isAuthenticated, isUserLoading } = useAuth();
 
   if (isUserLoading) {
-    return <AppLayout />;
+    return <LoadingPage />;
   }
 
   if (!isAuthenticated) {
