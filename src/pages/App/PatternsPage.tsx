@@ -14,8 +14,12 @@ import { EditPatternModal } from '@/components/modals/EditPatternModal';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 
+import { useAuth } from '@/hooks/useAuth';
+
+
 const PatternsPage = () => {
     const { t } = useTranslation();
+    const { isAuthenticated } = useAuth();
     const { patterns, setPatterns } = usePatternStore();
 
     // 編集モーダルを開くために、どのパターンを編集中か管理するstate
@@ -31,6 +35,7 @@ const PatternsPage = () => {
         retry: 1,
         refetchOnMount: true,
         refetchOnWindowFocus: false,
+        enabled: isAuthenticated,
     });
 
     // データ取得成功時に、Zustandストアの状態を更新
