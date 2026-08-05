@@ -26,3 +26,7 @@ dist-ssr
 .env.local
 
 memo.md
+
+# Project setup files
+AGENTS.md
+.github/
